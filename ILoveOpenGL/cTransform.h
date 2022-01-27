@@ -1,0 +1,33 @@
+#pragma once
+
+
+
+#include "cComponent.h"
+#include <glm/vec3.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <vector>
+
+class cTransform : public cComponent
+{
+public:
+	cTransform(glm::vec3 position, glm::quat rotation, glm::vec3 scale) : position(position), rotation(rotation), scale(scale) {}
+	cTransform(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale) : position(position), rotation(glm::quat(rotation)), scale(scale) {}
+	cTransform() : position(glm::vec3(0.f)), rotation(glm::vec3(0.0f)), scale(1.0f){}
+
+	void SetRotation(glm::quat q);
+	void SetRotation(glm::vec3 v);
+
+	glm::quat GetQuatRotation();
+	glm::vec3 GetEulerRotation();
+
+	void Rotate(glm::quat q);
+	void Rotate(glm::vec3 v);
+
+	virtual void Update();
+
+	glm::vec3 position;
+	glm::vec3 scale;
+
+private:
+	glm::quat rotation;
+};

@@ -1,0 +1,323 @@
+<Scene>
+	<Camera>
+		<Transform>
+			<Position x="-4.248472" y="12.637508" z="-28.320147"/>
+		</Transform>
+	</Camera>
+	<Models>
+		<Model>SkyBoxUV.ply</Model>
+		<Model>Beachball.ply</Model>
+		<Model>ball.ply</Model>
+		<Model>ISO.ply</Model>
+		<Model>house.ply</Model>
+		<Model>cloud1.ply</Model>
+		<Model>cloud2.ply</Model>
+		<Model>tree.ply</Model>
+		<Model>tree2.ply</Model>
+		<Model>tree3.ply</Model>
+		<Model>tree4.ply</Model>
+		<Model>painting.ply</Model>
+		<Model>glass.ply</Model>
+		<Model>pool.ply</Model>
+		<Model>Floor.ply</Model>
+		<Model>worldMap.ply</Model>
+		<Model>plane.ply</Model>
+	</Models>
+	<Description>
+		<Mesh FriendlyName="Sky" MeshName="SkyBoxUV.ply">
+			<Transform>
+				<Position x="-4.248472" y="12.637508" z="-28.320147"/>
+				<Rotation x="0.000000" y="0.000000" z="0.000000"/>
+				<Scale>200.000000</Scale>
+			</Transform>
+			<Misc>
+				<UseLighting>false</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000" Type="SkyBox">NightSky</Texture>
+					<Texture Ratio="0.000000" Type="SkyBox"/>
+					<Texture Ratio="0.000000" Type="SkyBox"/>
+					<Texture Ratio="0.000000" Type="SkyBox"/>
+				</Textures>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="testing!" MeshName="Beachball.ply">
+			<Transform>
+				<Position x="-2.099999" y="-0.700000" z="-0.200000"/>
+				<Rotation x="0.000000" y="0.000000" z="-41.000011"/>
+				<Scale>0.000850</Scale>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="minecraft" MeshName="house.ply">
+			<Transform>
+				<Position x="0.000000" y="0.000000" z="0.000000"/>
+				<Rotation x="0.000000" y="0.000000" z="0.000000"/>
+				<Scale>1.000000</Scale>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">testing-RGB.bmp</Texture>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+				</Textures>
+				<AlphaMask>testing-Alpha.bmp</AlphaMask>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="minecraftTree1" MeshName="tree.ply">
+			<Transform>
+				<Position x="-5.000000" y="1.940000" z="-8.000000"/>
+				<Rotation x="0.000000" y="0.000000" z="0.000000"/>
+				<Scale>1.000000</Scale>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">testing-RGB.bmp</Texture>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+				</Textures>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="minecraftTree2" MeshName="tree2.ply">
+			<Transform>
+				<Position x="9.000000" y="1.940000" z="-10.700010"/>
+				<Rotation x="0.000000" y="94.000061" z="0.000000"/>
+				<Scale>0.988750</Scale>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">tree2-RGB.bmp</Texture>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+				</Textures>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="minecraftTree1" MeshName="tree4.ply">
+			<Transform>
+				<Position x="-12.000000" y="1.940000" z="0.000000"/>
+				<Rotation x="0.000000" y="0.000000" z="0.000000"/>
+				<Scale>1.000000</Scale>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">tree4-RGB.bmp</Texture>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+				</Textures>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="minecraftTree1CloneClone" MeshName="tree3.ply">
+			<Transform>
+				<Position x="4.650001" y="1.940000" z="11.600039"/>
+				<Rotation x="0.000000" y="0.000000" z="0.000000"/>
+				<Scale>1.000000</Scale>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">tree3-RGB.bmp</Texture>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+				</Textures>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="painting" MeshName="painting.ply">
+			<Transform>
+				<Position x="-0.950000" y="5.500002" z="-1.400000"/>
+				<Rotation x="0.000000" y="180.000000" z="-90.000061"/>
+				<Scale>0.373955</Scale>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">Untitled.bmp</Texture>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+				</Textures>
+				<NormalMap>canvasNormalMap.bmp</NormalMap>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="world map" MeshName="worldMap.ply">
+			<Transform>
+				<Position x="-3.999997" y="4.699999" z="6.000004"/>
+				<Rotation x="90.000061" y="180.000000" z="-90.000061"/>
+				<Scale>0.107816</Scale>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">world.bmp</Texture>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+				</Textures>
+				<HeightMap>worldHeightMap.bmp</HeightMap>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="glass" MeshName="glass.ply">
+			<Transform>
+				<Position x="-1.050000" y="3.949998" z="7.050009"/>
+				<Rotation x="0.000000" y="90.000000" z="-90.000000"/>
+				<Scale>1.000000</Scale>
+			</Transform>
+			<Colors>
+				<OverrideColor>true</OverrideColor>
+				<Color r="1.000000" g="1.000000" b="1.000000" a="0.450000"/>
+			</Colors>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<UseSpecular/>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="glassClone" MeshName="glass.ply">
+			<Transform>
+				<Position x="-0.050000" y="3.949998" z="7.050009"/>
+				<Rotation x="0.000000" y="90.000000" z="-90.000000"/>
+				<Scale>1.000000</Scale>
+			</Transform>
+			<Colors>
+				<OverrideColor>true</OverrideColor>
+				<Color r="1.000000" g="1.000000" b="1.000000" a="0.450000"/>
+			</Colors>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<UseSpecular/>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="glassCloneClone" MeshName="glass.ply">
+			<Transform>
+				<Position x="-8.200013" y="4.049998" z="3.999997"/>
+				<Rotation x="0.000000" y="90.000000" z="-90.000000"/>
+				<Scale>1.000000</Scale>
+			</Transform>
+			<Colors>
+				<OverrideColor>true</OverrideColor>
+				<Color r="1.000000" g="1.000000" b="1.000000" a="0.450000"/>
+			</Colors>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<UseSpecular/>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="paintingTwo" MeshName="painting.ply">
+			<Transform>
+				<Position x="2.799999" y="10.100020" z="0.600000"/>
+				<Rotation x="180.000000" y="180.000000" z="-90.000000"/>
+				<Scale>0.234258</Scale>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">frame.bmp</Texture>
+					<Texture Ratio="1.000000">paintingSkull.bmp</Texture>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+				</Textures>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="pool" MeshName="pool.ply">
+			<Transform>
+				<Position x="2.899999" y="1.849999" z="22.999935"/>
+				<Rotation x="0.000000" y="0.000000" z="0.000000"/>
+				<Scale>0.730000</Scale>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">pool-RGB.bmp</Texture>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+					<Texture Ratio="0.000000"/>
+				</Textures>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="poolwater" MeshName="Floor.ply">
+			<Transform>
+				<Position x="3.799998" y="3.500000" z="22.199947"/>
+				<Rotation x="0.000000" y="0.000000" z="0.000000"/>
+				<Scale>7.085928</Scale>
+			</Transform>
+			<Colors>
+				<OverrideColor>true</OverrideColor>
+				<Color r="0.000000" g="0.230000" b="1.000000" a="0.450000"/>
+			</Colors>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<NormalMap>waterNormalMap.bmp</NormalMap>
+				<UseSpecular/>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="glassClone" MeshName="glass.ply">
+			<Transform>
+				<Position x="7.000009" y="4.950001" z="10.250021"/>
+				<Rotation x="0.000000" y="90.000000" z="-90.000000"/>
+				<Scale>1.000000</Scale>
+			</Transform>
+			<Colors>
+				<OverrideColor>true</OverrideColor>
+				<Color r="1.000000" g="1.000000" b="1.000000" a="0.450000"/>
+			</Colors>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<UseSpecular/>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="glassCloneClone" MeshName="glass.ply">
+			<Transform>
+				<Position x="7.000009" y="9.000016" z="10.250021"/>
+				<Rotation x="0.000000" y="90.000000" z="-90.000000"/>
+				<Scale>1.000000</Scale>
+			</Transform>
+			<Colors>
+				<OverrideColor>true</OverrideColor>
+				<Color r="1.000000" g="1.000000" b="1.000000" a="0.450000"/>
+			</Colors>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<UseSpecular/>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="glassCloneCloneClone" MeshName="glass.ply">
+			<Transform>
+				<Position x="10.100020" y="9.000016" z="7.000009"/>
+				<Rotation x="0.000000" y="90.000000" z="-90.000000"/>
+				<Scale>1.000000</Scale>
+			</Transform>
+			<Colors>
+				<OverrideColor>true</OverrideColor>
+				<Color r="1.000000" g="1.000000" b="1.000000" a="0.450000"/>
+			</Colors>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<UseSpecular/>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="glassCloneCloneCloneClone" MeshName="glass.ply">
+			<Transform>
+				<Position x="7.050009" y="9.000016" z="2.049999"/>
+				<Rotation x="0.000000" y="90.000000" z="-90.000000"/>
+				<Scale>1.000000</Scale>
+			</Transform>
+			<Colors>
+				<OverrideColor>true</OverrideColor>
+				<Color r="1.000000" g="1.000000" b="1.000000" a="0.450000"/>
+			</Colors>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<UseSpecular/>
+			</Misc>
+		</Mesh>
+	</Description>
+</Scene>
+
