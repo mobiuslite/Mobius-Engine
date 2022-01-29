@@ -978,6 +978,13 @@ int main(void)
     uniformLocations.insert(std::pair<std::string, GLint>("texture_02", glGetUniformLocation(program, "texture_02")));
     uniformLocations.insert(std::pair<std::string, GLint>("texture_03", glGetUniformLocation(program, "texture_03")));
 
+    uniformLocations.insert(std::pair<std::string, GLint>("texLightpassColorBuf", glGetUniformLocation(program, "texLightpassColorBuf")));
+
+    uniformLocations.insert(std::pair<std::string, GLint>("texture_MatColor", glGetUniformLocation(program, "texture_MatColor")));
+    uniformLocations.insert(std::pair<std::string, GLint>("texture_Normal", glGetUniformLocation(program, "texture_Normal")));
+    uniformLocations.insert(std::pair<std::string, GLint>("texture_WorldPos", glGetUniformLocation(program, "texture_WorldPos")));
+    uniformLocations.insert(std::pair<std::string, GLint>("texture_Specular", glGetUniformLocation(program, "texture_Specular")));
+
     uniformLocations.insert(std::pair<std::string, GLint>("textureRatios", glGetUniformLocation(program, "textureRatios")));
 
     uniformLocations.insert(std::pair<std::string, GLint>("bUseAlphaMask", glGetUniformLocation(program, "bUseAlphaMask")));
@@ -1160,9 +1167,13 @@ int main(void)
         glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
 
-        v = glm::lookAt(g_FlyCamera->getEye(),     // "eye"
+        glm::vec3 cameraEye = g_FlyCamera->getEye();
+
+        v = glm::lookAt(cameraEye,     // "eye"
             g_FlyCamera->getAtInWorldSpace(),  // "at"
             g_FlyCamera->getUpVector());
+
+        glUniform4f(uniformLocations["eyeLocation"], cameraEye.x, cameraEye.y, cameraEye.z, 1.0f);
 
         glUniformMatrix4fv(matView_Location, 1, GL_FALSE, glm::value_ptr(v));
         glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
@@ -1295,25 +1306,73 @@ int main(void)
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glfwGetFramebufferSize(window, &width, &height);
-        ratio = width / (float)height;
+        //glfwGetFramebufferSize(window, &width, &height);
+       // ratio = width / (float)height;
+         //glViewport(0, 0, width, height);
 
-        p = glm::perspective(glm::radians(75.0f),
-            ratio,
-            0.1f,
-            1000.0f);
+        glViewport(0, 0, g_fbo->width, g_fbo->height);
+        ratio = g_fbo->width / (float)g_fbo->height;
 
-        //v = glm::lookAt(fullscreenPos,     // "eye"
-        //    fullscreenPos + glm::vec3(0.f, 0.f, 1.0f) ,  // "at"
-        //    g_FlyCamera->getUpVector());
+        //p = glm::perspective(glm::radians(75.0f),
+        //    ratio,
+        //    0.1f,
+        //    1000.0f);
 
-        v = glm::ortho(0.0f, 1.0f/(float)width, 0.0f, 1.0f / (float)height, 0.01f, 1000.0f);
+        v = glm::lookAt(fullscreenPos,     // "eye"
+            fullscreenPos + glm::vec3(0.f, 0.f, 1.0f) ,  // "at"
+            g_FlyCamera->getUpVector());
+
+        p = glm::ortho(0.0f, 1.0f/(float)width, 0.0f, 1.0f / (float)height, 0.01f, 1000.0f);
 
         glUniformMatrix4fv(matView_Location, 1, GL_FALSE, glm::value_ptr(v));
+        glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
 
-        glViewport(0, 0, width, height);
+       
 
         glUniform2f(uniformLocations["screenWidthHeight"], width, height);
+        glUniform1ui(uniformLocations["passNumber"], RENDER_PASS_1_LIGHTING);
+
+
+
+        //Uploading textures to gpu
+        GLint textureMatId = g_fbo->vertexMatColour_1_ID;
+        if (textureMatId != 0)
+        {
+            GLint unit = 0;
+            glActiveTexture(unit + GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textureMatId);
+            glUniform1i(uniformLocations["texture_MatColor"], unit);
+        }
+
+        GLint textureNormalId = g_fbo->vertexNormal_2_ID;
+        if (textureNormalId != 0)
+        {
+            GLint unit = 1;
+            glActiveTexture(unit + GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textureNormalId);
+            glUniform1i(uniformLocations["texture_Normal"], unit);
+        }
+
+        GLint textureWorldId = g_fbo->vertexWorldPos_3_ID;
+        if (textureWorldId != 0)
+        {
+            GLint unit = 2;
+            glActiveTexture(unit + GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textureWorldId);
+            glUniform1i(uniformLocations["texture_WorldPos"], unit);
+        }
+
+        GLint textureSpecularId = g_fbo->vertexSpecular_4_ID;
+        if (textureSpecularId != 0)
+        {
+            GLint unit = 3;
+            glActiveTexture(unit + GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textureSpecularId);
+            glUniform1i(uniformLocations["texture_Specular"], unit);
+        }
+
+        DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, uniformLocations, fullscreenPos);
+
         glUniform1ui(uniformLocations["passNumber"], RENDER_PASS_2_EFFECTS);
 
         GLint textureId = g_fbo->colourTexture_0_ID;
@@ -1322,13 +1381,13 @@ int main(void)
             GLint unit = 0;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureId);
-            glUniform1i(uniformLocations["texture_00"], unit);
+            glUniform1i(uniformLocations["texLightpassColorBuf"], unit);
         }
 
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
 
-        DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, uniformLocations, fullscreenPos);
+        
 
         g_entityManager.DeleteEntity(fullscreenEntity);
         // "Present" what we've drawn.

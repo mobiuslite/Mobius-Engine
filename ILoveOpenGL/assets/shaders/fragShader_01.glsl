@@ -69,6 +69,13 @@ uniform sampler2D texture_01;
 uniform sampler2D texture_02;
 uniform sampler2D texture_03;
 
+uniform sampler2D texture_MatColor;
+uniform sampler2D texture_Normal;
+uniform sampler2D texture_WorldPos;
+uniform sampler2D texture_Specular;
+
+uniform sampler2D texLightpassColorBuf;
+
 uniform bool bUseAlphaMask;
 uniform sampler2D alphaMask;
 
@@ -94,25 +101,47 @@ void main()
 	// Just ONE pixel, though.
 	pixelColour = vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
+	vec4 normals = fNormal;
+	vec4 vertexDiffuseColour = fVertexColour;
+
 	if(passNumber == RENDER_PASS_2_EFFECTS_PASS)
 	{
-	
-		vec2 UVLookup;
-		UVLookup.x = gl_FragCoord.x / screenWidthHeight.x;
-		UVLookup.y = gl_FragCoord.y / screenWidthHeight.y;
-
-		vec3 sampleColor = texture(texture_00, UVLookup).rgb;
-
-		pixelColour.rgb = sampleColor;
-		//pixelColour.rg = UVLookup;
-		return;
-	
+		//vec2 UVLookup;
+		//UVLookup.x = gl_FragCoord.x / screenWidthHeight.x;
+		//UVLookup.y = gl_FragCoord.y / screenWidthHeight.y;
+//
+		//vec3 sampleColor = texture(texLightpassColorBuf, UVLookup).rgb;
+		//pixelColour.rgb = sampleColor;
+		//return;
 	}
 
 	if(passNumber == RENDER_PASS_1_LIGHT_PASS)
 	{
-	
-	
+		vec2 UVLookup;
+		UVLookup.x = gl_FragCoord.x / screenWidthHeight.x;
+		UVLookup.y = gl_FragCoord.y / screenWidthHeight.y;
+
+		vec4 vertDif = texture(texture_MatColor, UVLookup).rgba;
+		vec4 vertWorldPos = texture(texture_WorldPos, UVLookup).rgba;
+
+		//If not lit
+		//if(vertWorldPos.w == 0.0f)
+		//{
+			//pixelColour.rgb = vertDif.rgb;
+			//pixelColour.a = 1.0f;
+			//return;
+		//}
+
+		vec4 vertNormal = texture(texture_Normal, UVLookup).rgba;		
+		vec4 vertSpecular = texture(texture_Specular, UVLookup).rgba;
+
+		pixelColour = calcualteLightContrib( vertDif.rgb,vertNormal.xyz, vertWorldPos.xyz,vertSpecular.rgba );
+											
+		pixelColour.a = 1.0f;
+		//pixelColour.rg = UVLookup;
+		//pixelColour.rgb = vertSpecular.rgb;
+
+		//pixelColour.r = 1.0f;
 		return;
 	}
 
@@ -122,14 +151,10 @@ void main()
 	
 	}
 
-	vec4 normals = fNormal;
-
-	vec4 vertexDiffuseColour = fVertexColour;
-
 	if(bUseSkybox)
 	{	
 		vec4 skyBoxTexture = texture(skyBox, fVertPosition.xyz);
-		pixelColour = skyBoxTexture;
+		//pixelColour = skyBoxTexture;
 
 		pixelMatColor = vec4(skyBoxTexture.rgb, 1.0f);
 		pixelWorldPos = vec4(fVertWorldLocation.xyz, 0.0f);
@@ -200,7 +225,8 @@ void main()
 	// Used for drawing "debug" objects (usually wireframe)
 	if ( bDontLightObject )
 	{
-		pixelColour = vertexDiffuseColour;
+		pixelMatColor = vertexDiffuseColour;
+		//pixelColour = vertexDiffuseColour;
 		// Early exit from shader
 		return;
 	}
@@ -209,20 +235,28 @@ void main()
 
 	if((bDebugMode && bDebugShowLighting) || !bDebugMode)
 	{
-		outColour = calcualteLightContrib( vertexDiffuseColour.rgb,		
-	                                        normals.xyz, 		// Normal at the vertex (in world coords)
-                                            fVertWorldLocation.xyz,	// Vertex WORLD position
-											wholeObjectSpecularColour.rgba );
+		//outColour = calcualteLightContrib( vertexDiffuseColour.rgb,		
+	     //                                   normals.xyz, 		// Normal at the vertex (in world coords)
+        //                                    fVertWorldLocation.xyz,	// Vertex WORLD position
+		//									wholeObjectSpecularColour.rgba );
 	}
 	
-	pixelColour = outColour;
-	pixelColour.a = vertexDiffuseColour.a;
+	//pixelColour = outColour;
+	//pixelColour.a = vertexDiffuseColour.a;
 
 	pixelMatColor = vec4(vertexDiffuseColour.rgb, 1.0f);
-	pixelNormal = vec4(normals.xyz, 1.0f);
+	pixelNormal = vec4(normalize(normals.xyz), 1.0f);
 	pixelWorldPos = vec4(fVertWorldLocation.xyz, 1.0f);
-	pixelSpecular = wholeObjectSpecularColour.rgba;
 
+	if(bUseSpecular){
+		//pixelSpecular = wholeObjectSpecularColour.rgba;
+		pixelSpecular = wholeObjectSpecularColour;
+		pixelSpecular.a *= 0.001f;
+	}else{
+		pixelSpecular = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	}
+
+	
 };
 
 
@@ -301,12 +335,13 @@ vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal,
 		vec3 eyeVector = normalize(eyeLocation.xyz - vertexWorldPos.xyz);
 
 		// To simplify, we are NOT using the light specular value, just the object’s.
-		float objectSpecularPower = vertexSpecular.w; 
+		float objectSpecularPower = vertexSpecular.a * 1000.0f; 
+		//float objectSpecularPower = 10.0f; 
 		
 //		lightSpecularContrib = pow( max(0.0f, dot( eyeVector, reflectVector) ), objectSpecularPower )
 //			                   * vertexSpecular.rgb;	//* theLights[lightIndex].Specular.rgb
 
-		if(dotProduct > 0.0f && bUseSpecular)
+		if(dotProduct > 0.0f && vertexSpecular.w > 0.0f)
 		{
 			lightSpecularContrib = pow( clamp(dot( reflectVector, eyeVector), 0.0f, 1.0f ), objectSpecularPower )
 			                   * theLights[index].specular.rgb;

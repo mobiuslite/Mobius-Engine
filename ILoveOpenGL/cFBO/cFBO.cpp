@@ -73,7 +73,7 @@ bool cFBO::init( int width, int height, std::string &error )
 
 	glGenTextures(1, &(this->vertexSpecular_4_ID));
 	glBindTexture(GL_TEXTURE_2D, this->vertexSpecular_4_ID);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB8, this->width, this->height);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, this->width, this->height);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -189,12 +189,14 @@ void cFBO::clearBuffers(bool bClearColour, bool bClearDepth)
 	{
 		glClearBufferfv(GL_DEPTH, 0, &one);		// Depth is normalized 0.0 to 1.0f
 	}
+
 	// If buffer is GL_STENCIL, drawbuffer must be zero, and value points to a 
 	//  single value to clear the stencil buffer to. Masking is performed in the 
 	//  same fashion as for glClearStencil. Only the *iv forms of these commands 
 	//  should be used to clear stencil buffers; be used to clear stencil buffers; 
 	//  other forms do not accept a buffer of GL_STENCIL.
-	
+
+
 	// 
 	glStencilMask(0xFF);
 

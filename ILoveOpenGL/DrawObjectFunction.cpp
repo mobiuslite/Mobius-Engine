@@ -259,8 +259,6 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
         glUniform1f(uniformLocations["bUseSpecular"], (float)GL_FALSE);
     }
 
-    glUniform4f(uniformLocations["eyeLocation"], eyeLocation.x, eyeLocation.y, eyeLocation.z, 1.0f);
-
     // Wireframe
     if (curMesh->bIsWireframe)                // GL_POINT, GL_LINE, and GL_FILL)
     {
