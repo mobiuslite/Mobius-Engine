@@ -22,7 +22,6 @@
 		<Model>Floor.ply</Model>
 		<Model>worldMap.ply</Model>
 		<Model>plane.ply</Model>
-		<Model>fullscreenquad.ply</Model>
 	</Models>
 	<Description>
 		<Mesh FriendlyName="Sky" MeshName="SkyBoxUV.ply">

@@ -40,9 +40,42 @@ sModelDrawInfo::sModelDrawInfo()
 //	scale = 5.0/maxExtent;		-> 5x5x5
 	//float maxExtent;
 
+    this->bLoadedFromFile = false;
+    this->bLoadedIntoVAO = false;
+
 	return;
 }
 
+cVAOManager::cVAOManager()
+{
+    m_pendingLoadingModel = nullptr;
+    this->shaderProgramID_ThreadedLoader = 0;
+}
+
+bool cVAOManager::LoadPendingModelIntoVAO(std::string fileName,
+    sModelDrawInfo& drawInfo)
+{
+    if (this->LoadModelIntoVAO(fileName, drawInfo, this->shaderProgramID_ThreadedLoader))
+    {
+        this->m_pendingLoadingModel = new sModelDrawInfo();
+        *this->m_pendingLoadingModel = drawInfo;
+
+        return true;
+    }
+
+    return false;
+}
+
+bool cVAOManager::LoadModelIntoVAO_Threaded(std::string fileName,
+    sModelDrawInfo& drawInfo)
+{
+    return false;
+}
+
+void cVAOManager::SetShaderProgramID_Threaded(unsigned int shaderProgram)
+{
+    this->shaderProgramID_ThreadedLoader = shaderProgram;
+}
 
 bool cVAOManager::LoadModelIntoVAO(
 		std::string fileName, 
@@ -176,7 +209,8 @@ bool cVAOManager::LoadModelIntoVAO(
 // We don't want to return an int, likely
 bool cVAOManager::FindDrawInfoByModelName(
 		std::string filename,
-		sModelDrawInfo &drawInfo) 
+		sModelDrawInfo &drawInfo,
+        bool returnPendingModelIfNotFound)
 {
 	std::map< std::string /*model name*/,
 			sModelDrawInfo /* info needed to draw*/ >::iterator 
@@ -185,7 +219,13 @@ bool cVAOManager::FindDrawInfoByModelName(
 	// Find it? 
 	if ( itDrawInfo == this->m_map_ModelName_to_VAOID.end() )
 	{
-		// Nope
+		// Nope didn't find model
+
+        if (returnPendingModelIfNotFound && this->m_pendingLoadingModel != nullptr)
+        {
+            drawInfo = *this->m_pendingLoadingModel;
+            return true;       
+        }
 		return false;
 	}
 

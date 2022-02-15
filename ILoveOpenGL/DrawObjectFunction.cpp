@@ -87,8 +87,8 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
         GLint textureId = textureManager.getTextureIDFromName(curMesh->textures[0].name);
         if (textureId != 0)
         {
-            //Make cubemap unit 40 so they don't overlap with normal textures
-            GLint unit = 40;
+            //Make cubemap unit 20 so they don't overlap with normal textures
+            GLint unit = 20;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_CUBE_MAP, textureId);
             glUniform1i(uniformLocations["skyBox"], unit);

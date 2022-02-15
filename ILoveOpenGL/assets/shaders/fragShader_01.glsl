@@ -85,6 +85,7 @@ uniform vec2 normalOffset;
 
 uniform bool bUseSkybox;
 uniform bool bIsImposter;
+uniform bool bUseSpyglass;
 
 uniform vec4 textureRatios;
 
@@ -106,13 +107,25 @@ void main()
 
 	if(passNumber == RENDER_PASS_2_EFFECTS_PASS)
 	{
-		//vec2 UVLookup;
-		//UVLookup.x = gl_FragCoord.x / screenWidthHeight.x;
-		//UVLookup.y = gl_FragCoord.y / screenWidthHeight.y;
-//
-		//vec3 sampleColor = texture(texLightpassColorBuf, UVLookup).rgb;
-		//pixelColour.rgb = sampleColor;
-		//return;
+		vec2 UVLookup;
+		UVLookup.x = gl_FragCoord.x / screenWidthHeight.x;
+		UVLookup.y = gl_FragCoord.y / screenWidthHeight.y;
+//		
+		pixelColour.a = 1.0f;
+
+		if(bUseSpyglass){
+			vec3 spyglassTex = texture(texture_00, UVLookup).rgb;
+
+			if(spyglassTex.r + spyglassTex.g + spyglassTex.b < 0.01f){		
+				pixelColour.rgb = texture(texLightpassColorBuf, UVLookup).rgb;	
+			}else{
+				pixelColour.rgb = spyglassTex;
+			}		
+		}else{
+			
+			pixelColour.rgb = texture(texLightpassColorBuf, UVLookup).rgb;
+		
+		}
 	}
 
 	if(passNumber == RENDER_PASS_1_LIGHT_PASS)
@@ -125,17 +138,19 @@ void main()
 		vec4 vertWorldPos = texture(texture_WorldPos, UVLookup).rgba;
 
 		//If not lit
-		//if(vertWorldPos.w == 0.0f)
-		//{
-			//pixelColour.rgb = vertDif.rgb;
-			//pixelColour.a = 1.0f;
-			//return;
-		//}
+		if(vertWorldPos.w == 0.0f)
+		{
+			pixelColour.rgb = vertDif.rgb;
+			//pixelColour *= 0.001f;
+			//pixelColour.rgb += vec3(1.0f, 0.0f, 0.0f);
+			pixelColour.a = 1.0f;
+			return;
+		}
 
 		vec4 vertNormal = texture(texture_Normal, UVLookup).rgba;		
 		vec4 vertSpecular = texture(texture_Specular, UVLookup).rgba;
 
-		pixelColour = calcualteLightContrib( vertDif.rgb,vertNormal.xyz, vertWorldPos.xyz,vertSpecular.rgba );
+		pixelColour = calcualteLightContrib( vertDif.rgb, vertNormal.xyz, vertWorldPos.xyz, vertSpecular.rgba );
 											
 		pixelColour.a = 1.0f;
 		//pixelColour.rg = UVLookup;
@@ -226,6 +241,7 @@ void main()
 	if ( bDontLightObject )
 	{
 		pixelMatColor = vertexDiffuseColour;
+		pixelMatColor.w = 0.0f;
 		//pixelColour = vertexDiffuseColour;
 		// Early exit from shader
 		return;
@@ -251,6 +267,7 @@ void main()
 	if(bUseSpecular){
 		//pixelSpecular = wholeObjectSpecularColour.rgba;
 		pixelSpecular = wholeObjectSpecularColour;
+		pixelSpecular.rgb *= 10.0f;
 		pixelSpecular.a *= 0.001f;
 	}else{
 		pixelSpecular = vec4(0.0f, 0.0f, 0.0f, 0.0f);

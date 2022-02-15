@@ -17,6 +17,7 @@
 //};
 
 #include "../sVertex_Types.h"
+#include <list>
 
 struct sModelDrawInfo
 {
@@ -41,6 +42,8 @@ struct sModelDrawInfo
 	sVertex_XYZW_RGBA_N_UV_T_B* pVertices;	//  = 0;
 	// The index buffer (CPU side)
 	unsigned int* pIndices;
+	bool bLoadedFromFile;
+	bool bLoadedIntoVAO;
 };
 
 
@@ -48,17 +51,34 @@ class cVAOManager
 {
 public:
 
+	cVAOManager();
+	~cVAOManager() { delete m_pendingLoadingModel; }
+
 	bool LoadModelIntoVAO(std::string fileName, 
 						  sModelDrawInfo &drawInfo, 
 						  unsigned int shaderProgramID);
 
+	bool LoadPendingModelIntoVAO(std::string fileName,
+		sModelDrawInfo& drawInfo);
+
+	void SetShaderProgramID_Threaded(unsigned int shaderId);
+	bool LoadModelIntoVAO_Threaded(std::string fileName,
+						  sModelDrawInfo& drawInfo);
+
 	// We don't want to return an int, likely
 	bool FindDrawInfoByModelName(std::string filename,
-								 sModelDrawInfo &drawInfo);
+								 sModelDrawInfo &drawInfo, bool returnPendingModelIfNotFound = true);
 
 	std::string getLastError(bool bAndClear = true);
 
 private:
+
+	std::list<sModelDrawInfo> listPendingModelsToLoad;
+	unsigned int shaderProgramID_ThreadedLoader;
+
+	bool workerThreadIsRunning = false;
+
+	sModelDrawInfo* m_pendingLoadingModel;
 
 	std::map< std::string /*model name*/,
 		      sModelDrawInfo /* info needed to draw*/ >

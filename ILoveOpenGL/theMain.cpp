@@ -88,6 +88,8 @@ bool debugShowNormals = false;
 cEntity* g_skyBox;
 
 bool preWarm = true;
+bool bUseSpyglass = false;
+float fov = 70.0f;
 
 //Method in DrawObjectFunction
 void extern DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManager* VAOManager,
@@ -189,10 +191,10 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     }
     else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
     {
-        if (sceneLoader->SaveScene(sceneName, g_FlyCamera->getEye(), &g_entityManager))
-        {
-            std::cout << "Saved scene: " << sceneName << std::endl;
-        }
+        //if (sceneLoader->SaveScene(sceneName, g_FlyCamera->getEye(), &g_entityManager))
+        //{
+        //    std::cout << "Saved scene: " << sceneName << std::endl;
+        //}
     }
     else if (key == GLFW_KEY_C && action == GLFW_PRESS)
     {
@@ -410,6 +412,11 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         {
             std::cout << "That is not a valid option" << std::endl << std::endl;
         }
+    }
+
+    if (key == GLFW_KEY_B && action == GLFW_PRESS)
+    {
+        bUseSpyglass = !bUseSpyglass;
     }
 
     bool bShiftDown = false;
@@ -922,6 +929,17 @@ int main(void)
     }
 
     g_textureManager.Create2DTextureFromBMPFile("smoke.bmp", true);
+    g_textureManager.Create2DTextureFromBMPFile("spyglass.bmp", true);
+
+    gVAOManager.SetShaderProgramID_Threaded(program);
+    sModelDrawInfo loadingModel;
+    gVAOManager.LoadPendingModelIntoVAO("loading.ply", loadingModel);
+
+    sModelDrawInfo fullscreenQuadInfo;
+    if (!gVAOManager.LoadModelIntoVAO("fullscreenquad.ply", fullscreenQuadInfo, program))
+    {
+        std::cout << "Issue loading fullscreenquad" << std::endl;
+    }
 
     //Loads the scene and the textures used in the scene
     std::cout << "Loading scene " << sceneName << "...." << std::endl;
@@ -1008,6 +1026,8 @@ int main(void)
 
     uniformLocations.insert(std::pair<std::string, GLint>("passNumber", glGetUniformLocation(program, "passNumber")));
     uniformLocations.insert(std::pair<std::string, GLint>("screenWidthHeight", glGetUniformLocation(program, "screenWidthHeight")));
+
+    uniformLocations.insert(std::pair<std::string, GLint>("bUseSpyglass", glGetUniformLocation(program, "bUseSpyglass")));
 
     /*sModelDrawInfo debugSphere;
     if (!gVAOManager.LoadModelIntoVAO("ISO_Shphere_flat_3div_xyz_n_rgba_uv.ply", debugSphere, program))
@@ -1156,7 +1176,9 @@ int main(void)
 
         // Place the "debug sphere" at the same location as the selected light (again)
         // HACK: Debug sphere is 5th item added
-        p = glm::perspective(glm::radians(75.0f),
+        float usedFov = (bUseSpyglass) ? fov / 10.0f : fov;
+
+        p = glm::perspective(glm::radians(usedFov),
             ratio,
             0.1f,
             1000.0f);     
@@ -1338,7 +1360,7 @@ int main(void)
         GLint textureMatId = g_fbo->vertexMatColour_1_ID;
         if (textureMatId != 0)
         {
-            GLint unit = 0;
+            GLint unit = 1;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureMatId);
             glUniform1i(uniformLocations["texture_MatColor"], unit);
@@ -1347,7 +1369,7 @@ int main(void)
         GLint textureNormalId = g_fbo->vertexNormal_2_ID;
         if (textureNormalId != 0)
         {
-            GLint unit = 1;
+            GLint unit = 2;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureNormalId);
             glUniform1i(uniformLocations["texture_Normal"], unit);
@@ -1356,7 +1378,7 @@ int main(void)
         GLint textureWorldId = g_fbo->vertexWorldPos_3_ID;
         if (textureWorldId != 0)
         {
-            GLint unit = 2;
+            GLint unit = 3;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureWorldId);
             glUniform1i(uniformLocations["texture_WorldPos"], unit);
@@ -1365,17 +1387,17 @@ int main(void)
         GLint textureSpecularId = g_fbo->vertexSpecular_4_ID;
         if (textureSpecularId != 0)
         {
-            GLint unit = 3;
+            GLint unit = 4;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureSpecularId);
             glUniform1i(uniformLocations["texture_Specular"], unit);
         }
 
         DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, uniformLocations, fullscreenPos);
-
+        //SECOND PASS
         glUniform1ui(uniformLocations["passNumber"], RENDER_PASS_2_EFFECTS);
 
-        GLint textureId = g_fbo->colourTexture_0_ID;
+        GLint textureId = g_fbo->vertexMatColour_1_ID;
         if (textureId != 0)
         {
             GLint unit = 0;
@@ -1384,10 +1406,23 @@ int main(void)
             glUniform1i(uniformLocations["texLightpassColorBuf"], unit);
         }
 
+        //Set spyglass texture
+        GLint spyTextureId = g_textureManager.getTextureIDFromName("spyglass.bmp");
+        if (textureId != 0)
+        {
+            GLint unit = 19;
+            glActiveTexture(unit + GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, spyTextureId);
+            glUniform1i(uniformLocations["texture_00"], unit);
+        }
+
+        glUniform1f(uniformLocations["bUseSpyglass"], (bUseSpyglass) ? (float)GL_TRUE : (float)GL_FALSE);
+
+        fullscreenEntity->GetComponent<cTransform>()->position.z -= .5f;
+        DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, uniformLocations, fullscreenPos);
+
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
-
-        
 
         g_entityManager.DeleteEntity(fullscreenEntity);
         // "Present" what we've drawn.

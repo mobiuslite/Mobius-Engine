@@ -205,7 +205,7 @@ bool cSceneLoader::LoadIntoVAO(cVAOManager* vao, GLuint program)
 		if (vao->LoadModelIntoVAO(models[i].fileName, modelInfo, program))
 		{
 			std::cout << "\tLoaded model: " << models[i].fileName << std::endl;
-
+		
 			models[i].defaultScale = modelInfo.defaultScale;
 		}
 		else

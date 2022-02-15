@@ -73,7 +73,7 @@ bool cFBO::init( int width, int height, std::string &error )
 
 	glGenTextures(1, &(this->vertexSpecular_4_ID));
 	glBindTexture(GL_TEXTURE_2D, this->vertexSpecular_4_ID);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, this->width, this->height);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, this->width, this->height);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -181,8 +181,12 @@ void cFBO::clearBuffers(bool bClearColour, bool bClearDepth)
 	glViewport(0, 0, this->width, this->height);
 	GLfloat	zero = 0.0f;
 	GLfloat one = 1.0f;
+
+	//For some reason using floats makes clearing the buffer weird???????
+	const GLuint test = 1;
 	if ( bClearColour )
 	{
+		//GL_COLOR_ATTACHMENT0,
 		glClearBufferfv(GL_COLOR, 0, &zero);		// Colour
 	}
 	if ( bClearDepth )
@@ -190,12 +194,20 @@ void cFBO::clearBuffers(bool bClearColour, bool bClearDepth)
 		glClearBufferfv(GL_DEPTH, 0, &one);		// Depth is normalized 0.0 to 1.0f
 	}
 
+	//GL_COLOR_ATTACHMENT1,
+	//GL_COLOR_ATTACHMENT2,
+	//GL_COLOR_ATTACHMENT3,
+	//GL_COLOR_ATTACHMENT4
+
+	glClearBufferfv(GL_COLOR, 1, &zero);
+	glClearBufferfv(GL_COLOR, 2, &zero);
+	glClearBufferfv(GL_COLOR, 3, &zero);
+	glClearBufferuiv(GL_COLOR, 4, &test);
 	// If buffer is GL_STENCIL, drawbuffer must be zero, and value points to a 
 	//  single value to clear the stencil buffer to. Masking is performed in the 
 	//  same fashion as for glClearStencil. Only the *iv forms of these commands 
 	//  should be used to clear stencil buffers; be used to clear stencil buffers; 
 	//  other forms do not accept a buffer of GL_STENCIL.
-
 
 	// 
 	glStencilMask(0xFF);
