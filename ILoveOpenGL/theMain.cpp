@@ -759,7 +759,7 @@ int main(void)
     GLint max_uniform_location = 0;
     GLint* p_max_uniform_location = NULL;
     p_max_uniform_location = &max_uniform_location;
-    glGetIntegerv(GL_MAX_UNIFORM_LOCATIONS, p_max_uniform_location);
+    glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, p_max_uniform_location);
 
     cShaderManager::cShader vertShader;
     vertShader.fileName = "assets/shaders/vertShader_01.glsl";
@@ -969,6 +969,9 @@ int main(void)
     //gets the sky box model so we can change the skybox texture
     g_skyBox = *std::find_if(entities.begin(), entities.end(), [](cEntity* mesh) { return mesh->GetComponent<cMeshRenderer>()->friendlyName == "Sky"; });
 
+    cEntity* waterEntity = *std::find_if(entities.begin(), entities.end(), [](cEntity* mesh) { return mesh->GetComponent<cMeshRenderer>()->friendlyName == "poolwater"; });
+    waterEntity->GetComponent<cMeshRenderer>()->bUseSkyboxReflection = true;
+
     std::map<std::string, GLint> uniformLocations;
 
     uniformLocations.insert(std::pair<std::string, GLint>("matModel", glGetUniformLocation(program, "matModel")));
@@ -1028,6 +1031,7 @@ int main(void)
     uniformLocations.insert(std::pair<std::string, GLint>("screenWidthHeight", glGetUniformLocation(program, "screenWidthHeight")));
 
     uniformLocations.insert(std::pair<std::string, GLint>("bUseSpyglass", glGetUniformLocation(program, "bUseSpyglass")));
+    uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxReflections", glGetUniformLocation(program, "bUseSkyboxReflections")));
 
     /*sModelDrawInfo debugSphere;
     if (!gVAOManager.LoadModelIntoVAO("ISO_Shphere_flat_3div_xyz_n_rgba_uv.ply", debugSphere, program))
@@ -1349,12 +1353,8 @@ int main(void)
         glUniformMatrix4fv(matView_Location, 1, GL_FALSE, glm::value_ptr(v));
         glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
 
-       
-
         glUniform2f(uniformLocations["screenWidthHeight"], width, height);
         glUniform1ui(uniformLocations["passNumber"], RENDER_PASS_1_LIGHTING);
-
-
 
         //Uploading textures to gpu
         GLint textureMatId = g_fbo->vertexMatColour_1_ID;
@@ -1397,10 +1397,10 @@ int main(void)
         //SECOND PASS
         glUniform1ui(uniformLocations["passNumber"], RENDER_PASS_2_EFFECTS);
 
-        GLint textureId = g_fbo->vertexMatColour_1_ID;
+        GLint textureId = g_fbo->firstPass_5_ID;
         if (textureId != 0)
         {
-            GLint unit = 0;
+            GLint unit = 10;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureId);
             glUniform1i(uniformLocations["texLightpassColorBuf"], unit);

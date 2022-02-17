@@ -254,7 +254,7 @@
 			</Colors>
 			<Misc>
 				<UseLighting>true</UseLighting>
-				<NormalMap>waterNormalMap.bmp</NormalMap>
+				<NormalMap>0001.bmp</NormalMap>
 				<UseSpecular/>
 			</Misc>
 		</Mesh>

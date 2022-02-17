@@ -22,6 +22,8 @@ bool cFBO::shutdown(void)
 	glDeleteTextures( 1, &(this->vertexWorldPos_3_ID) );
 	glDeleteTextures( 1, &(this->vertexSpecular_4_ID) );
 
+	glDeleteTextures( 1, &(this->firstPass_5_ID) );
+
 	glDeleteTextures( 1, &(this->depthTexture_ID) );
 
 	glDeleteFramebuffers( 1, &(this->ID) );
@@ -77,6 +79,12 @@ bool cFBO::init( int width, int height, std::string &error )
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+	glGenTextures(1, &(this->firstPass_5_ID));
+	glBindTexture(GL_TEXTURE_2D, this->firstPass_5_ID);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, this->width, this->height);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
 	// Create the depth buffer (texture)
 	glGenTextures(1, &( this->depthTexture_ID ));			//g_FBO_depthTexture
 	glBindTexture(GL_TEXTURE_2D, this->depthTexture_ID);
@@ -116,6 +124,9 @@ bool cFBO::init( int width, int height, std::string &error )
 	glFramebufferTexture(GL_FRAMEBUFFER,
 						 GL_COLOR_ATTACHMENT4,
 						 this->vertexSpecular_4_ID, 0);
+	glFramebufferTexture(GL_FRAMEBUFFER,
+						 GL_COLOR_ATTACHMENT5,
+						 this->firstPass_5_ID, 0);
 
 //	glFramebufferTexture(GL_FRAMEBUFFER,
 //						 GL_DEPTH_ATTACHMENT,
@@ -130,9 +141,10 @@ bool cFBO::init( int width, int height, std::string &error )
 		GL_COLOR_ATTACHMENT1,
 		GL_COLOR_ATTACHMENT2,
 		GL_COLOR_ATTACHMENT3,
-		GL_COLOR_ATTACHMENT4
+		GL_COLOR_ATTACHMENT4,
+		GL_COLOR_ATTACHMENT5
 	};
-	glDrawBuffers(5, draw_bufers);		// There are 4 outputs now
+	glDrawBuffers(6, draw_bufers);		// There are 4 outputs now
 
 	// ***************************************************************
 
@@ -182,12 +194,14 @@ void cFBO::clearBuffers(bool bClearColour, bool bClearDepth)
 	GLfloat	zero = 0.0f;
 	GLfloat one = 1.0f;
 
+	GLfloat rgbBlack[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
 	//For some reason using floats makes clearing the buffer weird???????
-	const GLuint test = 1;
+	//const GLuint test = 1;
 	if ( bClearColour )
 	{
 		//GL_COLOR_ATTACHMENT0,
-		glClearBufferfv(GL_COLOR, 0, &zero);		// Colour
+		glClearBufferfv(GL_COLOR, 0, rgbBlack);		// Colour
 	}
 	if ( bClearDepth )
 	{
@@ -199,10 +213,11 @@ void cFBO::clearBuffers(bool bClearColour, bool bClearDepth)
 	//GL_COLOR_ATTACHMENT3,
 	//GL_COLOR_ATTACHMENT4
 
-	glClearBufferfv(GL_COLOR, 1, &zero);
-	glClearBufferfv(GL_COLOR, 2, &zero);
+	glClearBufferfv(GL_COLOR, 1, rgbBlack);
+	glClearBufferfv(GL_COLOR, 2, rgbBlack);
 	glClearBufferfv(GL_COLOR, 3, &zero);
-	glClearBufferuiv(GL_COLOR, 4, &test);
+	glClearBufferfv(GL_COLOR, 4, rgbBlack);
+	glClearBufferfv(GL_COLOR, 5, rgbBlack);
 	// If buffer is GL_STENCIL, drawbuffer must be zero, and value points to a 
 	//  single value to clear the stencil buffer to. Masking is performed in the 
 	//  same fashion as for glClearStencil. Only the *iv forms of these commands 

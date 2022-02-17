@@ -259,6 +259,17 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
         glUniform1f(uniformLocations["bUseSpecular"], (float)GL_FALSE);
     }
 
+    if (curMesh->bUseSkyboxReflection)
+    {
+        // Override the colour...
+        glUniform1f(uniformLocations["bUseSkyboxReflections"], (float)GL_TRUE);
+    }
+    else
+    {
+        // DON'T override the colour
+        glUniform1f(uniformLocations["bUseSkyboxReflections"], (float)GL_FALSE);
+    }
+
     // Wireframe
     if (curMesh->bIsWireframe)                // GL_POINT, GL_LINE, and GL_FILL)
     {

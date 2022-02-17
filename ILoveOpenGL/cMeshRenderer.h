@@ -58,6 +58,7 @@ public:
 	bool bUseHeightMap;
 
 	bool bUseSkybox;
+	bool bUseSkyboxReflection;
 
 	bool bIsImposter = false;
 

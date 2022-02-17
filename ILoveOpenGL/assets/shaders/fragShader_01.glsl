@@ -8,11 +8,12 @@ in vec4 fUVx2;
 in vec4 fVertPosition;
 in mat3 TBN;
 // Replaces gl_FragColor
-out vec4 pixelColour;
-out vec4 pixelMatColor;
-out vec4 pixelNormal;
-out vec4 pixelWorldPos;
-out vec4 pixelSpecular;
+layout (location = 0)out vec4 pixelColour;
+layout (location = 1)out vec4 pixelMatColor;
+layout (location = 2)out vec4 pixelNormal;
+layout (location = 3)out vec4 pixelWorldPos;
+layout (location = 4)out vec4 pixelSpecular;
+layout (location = 5)out vec4 pixelFirstPass;
 
 // The "whole object" colour (diffuse and specular)
 uniform vec4 wholeObjectDiffuseColour;	// Whole object diffuse colour
@@ -87,6 +88,8 @@ uniform bool bUseSkybox;
 uniform bool bIsImposter;
 uniform bool bUseSpyglass;
 
+uniform bool bUseSkyboxReflections;
+
 uniform vec4 textureRatios;
 
 uniform vec2 screenWidthHeight;
@@ -104,6 +107,8 @@ void main()
 
 	vec4 normals = fNormal;
 	vec4 vertexDiffuseColour = fVertexColour;
+	pixelFirstPass = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	
 
 	if(passNumber == RENDER_PASS_2_EFFECTS_PASS)
 	{
@@ -130,6 +135,7 @@ void main()
 
 	if(passNumber == RENDER_PASS_1_LIGHT_PASS)
 	{
+		pixelFirstPass = vec4(0.0f, 0.0f, 1.0f, 1.0f);
 		vec2 UVLookup;
 		UVLookup.x = gl_FragCoord.x / screenWidthHeight.x;
 		UVLookup.y = gl_FragCoord.y / screenWidthHeight.y;
@@ -142,21 +148,24 @@ void main()
 		{
 			pixelColour.rgb = vertDif.rgb;
 			//pixelColour *= 0.001f;
-			//pixelColour.rgb += vec3(1.0f, 0.0f, 0.0f);
+			//pixelColour += vec4(1.0f, 0.0f, 0.0f, 1.0f);
+			return;
+		}
+		else{
+
+			vec4 vertNormal = texture(texture_Normal, UVLookup).rgba;		
+			vec4 vertSpecular = texture(texture_Specular, UVLookup).rgba;
+
+			pixelColour = calcualteLightContrib( vertDif.rgb, vertNormal.xyz, vertWorldPos.xyz, vertSpecular.rgba );
+												
 			pixelColour.a = 1.0f;
+			//pixelColour.rg = UVLookup;
+			//pixelColour.rgb = vertSpecular.rgb;
+
+			//pixelColour.r = 1.0f;
 			return;
 		}
 
-		vec4 vertNormal = texture(texture_Normal, UVLookup).rgba;		
-		vec4 vertSpecular = texture(texture_Specular, UVLookup).rgba;
-
-		pixelColour = calcualteLightContrib( vertDif.rgb, vertNormal.xyz, vertWorldPos.xyz, vertSpecular.rgba );
-											
-		pixelColour.a = 1.0f;
-		//pixelColour.rg = UVLookup;
-		//pixelColour.rgb = vertSpecular.rgb;
-
-		//pixelColour.r = 1.0f;
 		return;
 	}
 
@@ -246,19 +255,13 @@ void main()
 		// Early exit from shader
 		return;
 	}
-	
-	vec4 outColour = vec4(vertexDiffuseColour.rgb, 1.0f);
 
-	if((bDebugMode && bDebugShowLighting) || !bDebugMode)
+	if(bUseSkyboxReflections)
 	{
-		//outColour = calcualteLightContrib( vertexDiffuseColour.rgb,		
-	     //                                   normals.xyz, 		// Normal at the vertex (in world coords)
-        //                                    fVertWorldLocation.xyz,	// Vertex WORLD position
-		//									wholeObjectSpecularColour.rgba );
+		vec3 cameraDir = normalize(fVertWorldLocation.xyz - eyeLocation.xyz);
+		vec3 reflection = reflect(cameraDir, normalize(normals.xyz));
+		vertexDiffuseColour.rgb += texture(skyBox, reflection).rgb * 2f;
 	}
-	
-	//pixelColour = outColour;
-	//pixelColour.a = vertexDiffuseColour.a;
 
 	pixelMatColor = vec4(vertexDiffuseColour.rgb, 1.0f);
 	pixelNormal = vec4(normalize(normals.xyz), 1.0f);

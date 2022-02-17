@@ -16,6 +16,7 @@ public:
 		vertexNormal_2_ID(0),
 		vertexWorldPos_3_ID(0),
 		vertexSpecular_4_ID(0),
+		firstPass_5_ID(0),
 		width(-1), height(-1) {};
 
 	GLuint ID;						// = 0;
@@ -25,6 +26,8 @@ public:
 	GLuint vertexNormal_2_ID;
 	GLuint vertexWorldPos_3_ID;
 	GLuint vertexSpecular_4_ID;
+
+	GLuint firstPass_5_ID;
 
 //	GLuint TBDTexture_1_ID;
 //	GLuint TBDTexture_2_ID;
