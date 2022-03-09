@@ -135,6 +135,9 @@
     <ClCompile Include="AnimationSystem.cpp">
       <Filter>Animation</Filter>
     </ClCompile>
+    <ClCompile Include="cTextureViewer.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cShaderManager.h">
@@ -222,6 +225,9 @@
       <Filter>Components</Filter>
     </ClInclude>
     <ClInclude Include="cKeyframe.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="cTextureViewer.h">
       <Filter>Components</Filter>
     </ClInclude>
   </ItemGroup>

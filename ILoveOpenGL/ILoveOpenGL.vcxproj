@@ -160,6 +160,7 @@
     <ClCompile Include="cMeshRenderer.cpp" />
     <ClCompile Include="cShader.cpp" />
     <ClCompile Include="cShaderManager.cpp" />
+    <ClCompile Include="cTextureViewer.cpp" />
     <ClCompile Include="cTransform.cpp" />
     <ClCompile Include="cVAOManager.cpp" />
     <ClCompile Include="DrawObjectFunction.cpp" />
@@ -192,6 +193,7 @@
     <ClInclude Include="cLightManager.h" />
     <ClInclude Include="cMeshRenderer.h" />
     <ClInclude Include="cShaderManager.h" />
+    <ClInclude Include="cTextureViewer.h" />
     <ClInclude Include="cTransform.h" />
     <ClInclude Include="cVAOManager.h" />
     <ClInclude Include="FlyCamera\cFlyCamera.h" />

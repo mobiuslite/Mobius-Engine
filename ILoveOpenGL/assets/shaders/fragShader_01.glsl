@@ -135,10 +135,18 @@ void main()
 
 	if(passNumber == RENDER_PASS_1_LIGHT_PASS)
 	{
-		pixelFirstPass = vec4(0.0f, 0.0f, 1.0f, 1.0f);
+		
+		
 		vec2 UVLookup;
 		UVLookup.x = gl_FragCoord.x / screenWidthHeight.x;
 		UVLookup.y = gl_FragCoord.y / screenWidthHeight.y;
+
+		//Sends the textures back to their fbo buffers, so we can display them for debugging purposes
+		pixelMatColor = texture(texture_MatColor, UVLookup).rgba;
+		pixelNormal = texture(texture_Normal, UVLookup).rgba;
+		pixelWorldPos = texture(texture_WorldPos, UVLookup).rgba;
+		pixelSpecular = texture(texture_Specular, UVLookup).rgba;
+
 
 		vec4 vertDif = texture(texture_MatColor, UVLookup).rgba;
 		vec4 vertWorldPos = texture(texture_WorldPos, UVLookup).rgba;

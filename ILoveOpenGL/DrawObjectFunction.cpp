@@ -7,15 +7,23 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "cBasicTextureManager/cBasicTextureManager.h"
 #include "cTransform.h"
+#include "cTextureViewer.h"
 
 void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std::map<std::string, GLint> uniformLocations)
 {
     cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
+    cTextureViewer* curTextureViewer = curEntity->GetComponent<cTextureViewer>();
 
+    
     float ratioOne = curMesh->textures[0].ratio;
     float ratioTwo = curMesh->textures[1].ratio;
     float ratioThree = curMesh->textures[2].ratio;
     float ratioFour = curMesh->textures[3].ratio;
+
+    if (curTextureViewer != nullptr)
+    {
+        ratioOne = 1.0f;
+    }
 
     glUniform4f(uniformLocations["textureRatios"],
         ratioOne, ratioTwo, ratioThree, ratioFour);
@@ -27,7 +35,7 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
         GLint textureId = textureManager.getTextureIDFromName(curMesh->alphaMaskName);
         if (textureId != 0)
         {
-            GLint unit = 10;
+            GLint unit = 1;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureId);
             glUniform1i(uniformLocations["alphaMask"], unit);
@@ -45,7 +53,7 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
         GLint textureId = textureManager.getTextureIDFromName(curMesh->normalMapName);
         if (textureId != 0)
         {
-            GLint unit = 11;
+            GLint unit = 2;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureId);
             glTexParameteri(textureId, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -67,7 +75,7 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
         GLint textureId = textureManager.getTextureIDFromName(curMesh->heightMapName);
         if (textureId != 0)
         {
-            GLint unit = 12;
+            GLint unit = 3;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureId);
             glTexParameteri(textureId, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -88,7 +96,7 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
         if (textureId != 0)
         {
             //Make cubemap unit 20 so they don't overlap with normal textures
-            GLint unit = 20;
+            GLint unit = 4;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_CUBE_MAP, textureId);
             glUniform1i(uniformLocations["skyBox"], unit);
@@ -100,10 +108,21 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
 
         if (ratioOne > 0.0f)
         {
-            GLint textureId = textureManager.getTextureIDFromName(curMesh->textures[0].name);
+            GLint textureId = 0;
+
+            if (curTextureViewer != nullptr)
+            {
+                textureId = curTextureViewer->GetCurrentTextId();
+            }
+            else
+            {
+                textureId = textureManager.getTextureIDFromName(curMesh->textures[0].name);
+            }
+
+            
             if (textureId != 0)
             {
-                GLint unit = 1;
+                GLint unit = 5;
                 glActiveTexture(unit + GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, textureId);
                 glUniform1i(uniformLocations["texture_00"], unit);
@@ -113,7 +132,7 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
         if (ratioTwo > 0.0f)
         {
             GLint textureId = textureManager.getTextureIDFromName(curMesh->textures[1].name);
-            GLint unit = 2;
+            GLint unit = 6;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureId);
             glUniform1i(uniformLocations["texture_01"], unit);
@@ -268,6 +287,17 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
     {
         // DON'T override the colour
         glUniform1f(uniformLocations["bUseSkyboxReflections"], (float)GL_FALSE);
+    }
+
+    if (curMesh->bUseSkyboxRefraction)
+    {
+        // Override the colour...
+        glUniform1f(uniformLocations["bUseSkyboxRefraction"], (float)GL_TRUE);
+    }
+    else
+    {
+        // DON'T override the colour
+        glUniform1f(uniformLocations["bUseSkyboxRefraction"], (float)GL_FALSE);
     }
 
     // Wireframe

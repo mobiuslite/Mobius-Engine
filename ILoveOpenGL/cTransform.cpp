@@ -1,6 +1,6 @@
 #include "cTransform.h"
 
-void cTransform::Update()
+void cTransform::Update(float dt)
 {
 
 }

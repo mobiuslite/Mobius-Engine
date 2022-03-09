@@ -19,7 +19,7 @@ public:
 
 	cMeshRenderer();
 
-	virtual void Update() {};
+	virtual void Update(float dt) {};
 
 	std::string meshName;		// The 3D Mesh model we are drawing
 
@@ -59,6 +59,7 @@ public:
 
 	bool bUseSkybox;
 	bool bUseSkyboxReflection;
+	bool bUseSkyboxRefraction;
 
 	bool bIsImposter = false;
 

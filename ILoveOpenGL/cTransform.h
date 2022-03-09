@@ -23,7 +23,7 @@ public:
 	void Rotate(glm::quat q);
 	void Rotate(glm::vec3 v);
 
-	virtual void Update();
+	virtual void Update(float dt);
 
 	glm::vec3 position;
 	glm::vec3 scale;

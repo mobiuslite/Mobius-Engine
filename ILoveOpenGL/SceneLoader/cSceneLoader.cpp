@@ -6,6 +6,7 @@
 #include <rapidxml/rapidxml_utils.hpp>
 #include "../cMeshRenderer.h"
 #include "../cTransform.h"
+#include "../cTextureViewer.h"
 
 cSceneLoader::cSceneLoader()
 {
@@ -27,6 +28,7 @@ cSceneLoader cSceneLoader::_instance;
 bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textureManager, cEntityManager* entityManager)
 {
 	using namespace rapidxml;
+	bool useFBOTexture = false;
 
 	std::string sceneFile("assets/scenes/" + sceneName + ".xml");
 
@@ -121,6 +123,12 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 
 						if(textureType == "SkyBox")
 							newMesh->bUseSkybox = true;
+
+						if (textureType == "FBO")
+						{
+							useFBOTexture = true;
+							continue;
+						}
 					}
 
 					newMesh->textures[index] = newTexture;
@@ -185,8 +193,14 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 		newMesh->bIsSceneObject = true;
 		
 		cEntity* newEntity = entityManager->CreateEntity();
+		newEntity->name = newMesh->friendlyName;
 		newEntity->AddComponent<cMeshRenderer>(newMesh);
 		*newEntity->GetComponent<cTransform>() = newTransform;
+
+		if (useFBOTexture)
+		{
+			newEntity->AddComponent<cTextureViewer>();
+		}
 	}
 
 	delete xmlFile;

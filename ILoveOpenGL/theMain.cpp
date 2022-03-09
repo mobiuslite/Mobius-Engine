@@ -41,6 +41,7 @@
 #include "cMeshRenderer.h"
 #include "cEntityManager.h"
 #include "cTransform.h"
+#include "cTextureViewer.h"
 
 enum class Transform
 {
@@ -78,22 +79,21 @@ Transform transformType = Transform::Translate;
 cSceneLoader* sceneLoader;
 std::string sceneName = "project2";
 
-std::vector<cEntity*> clouds;
-bool isNightTime = true;
-
 bool isDebugMode = false;
 bool debugShowLighting = true;
 bool debugShowNormals = false;
 
+int showTextureIndex = 0;
+
 cEntity* g_skyBox;
 
-bool preWarm = true;
-bool bUseSpyglass = false;
 float fov = 70.0f;
 
 //Method in DrawObjectFunction
 void extern DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManager* VAOManager,
     cBasicTextureManager textureManager, std::map<std::string, GLint> uniformLocations, glm::vec3 eyeLocation);
+
+void Draw(std::vector<cEntity*> opaqueMeshes, std::vector<cEntity*> transparentMeshes, std::map<std::string, int> uniformLocations, float deltaTime);
 
 static void GLFW_cursor_enter_callback(GLFWwindow* window, int entered)
 {
@@ -152,41 +152,10 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     }
     else if (key == GLFW_KEY_N && action == GLFW_PRESS)
     {
-        isNightTime = !isNightTime;
-
-        if (isNightTime)
+        showTextureIndex++;
+        if (showTextureIndex > 4)
         {
-            gTheLights.TurnOffLight(8);
-            gTheLights.TurnOffLight(12);
-
-            gTheLights.TurnOnLight(0);
-            gTheLights.TurnOnLight(1);
-            gTheLights.TurnOnLight(2);
-            gTheLights.TurnOnLight(3);
-            gTheLights.TurnOnLight(4);
-            gTheLights.TurnOnLight(5);
-            gTheLights.TurnOnLight(6);
-            gTheLights.TurnOnLight(7);
-            gTheLights.TurnOnLight(9);
-
-            g_skyBox->GetComponent<cMeshRenderer>()->textures[0].name = "NightSky";
-        }
-        else
-        {
-            gTheLights.TurnOnLight(8);
-            gTheLights.TurnOnLight(12);
-
-            gTheLights.TurnOffLight(0);
-            gTheLights.TurnOffLight(1);
-            gTheLights.TurnOffLight(2);
-            gTheLights.TurnOffLight(3);
-            gTheLights.TurnOffLight(4);
-            gTheLights.TurnOffLight(5);
-            gTheLights.TurnOffLight(6);
-            gTheLights.TurnOffLight(7);
-            gTheLights.TurnOffLight(9);
-
-            g_skyBox->GetComponent<cMeshRenderer>()->textures[0].name = "TropicalSunnyDay";
+            showTextureIndex = 0;
         }
     }
     else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
@@ -412,11 +381,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         {
             std::cout << "That is not a valid option" << std::endl << std::endl;
         }
-    }
-
-    if (key == GLFW_KEY_B && action == GLFW_PRESS)
-    {
-        bUseSpyglass = !bUseSpyglass;
     }
 
     bool bShiftDown = false;
@@ -788,7 +752,7 @@ int main(void)
     
     GLint matView_Location = glGetUniformLocation(program, "matView");
     GLint matProjection_Location = glGetUniformLocation(program, "matProjection");
-
+    
     //OUTSIDE LIGHTS
     gTheLights.theLights[0].position = glm::vec4(-4.5f, 6.0f, -1.5f, 1.0f);
     gTheLights.theLights[0].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
@@ -802,8 +766,8 @@ int main(void)
     gTheLights.theLights[1].position = glm::vec4(3.25f, 5.5f, 8.5f, 1.0f);
     gTheLights.theLights[1].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
     gTheLights.theLights[1].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100000.0f);
-   // gTheLights.theLights[1].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
-    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+    // gTheLights.theLights[1].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
+     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[1].param1.x = 0;
     gTheLights.TurnOnLight(1);  // Or this!
     gTheLights.SetUpUniformLocations(program, 1);
@@ -891,7 +855,6 @@ int main(void)
     gTheLights.theLights[12].diffuse = glm::vec4(.5f, 0.5f, .5f, 1.0f);
     gTheLights.theLights[12].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100000.0f);
     gTheLights.theLights[12].direction = glm::vec4(0.0f, .9f, .4f, 1.0f);
-    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[12].param1.x = 2;
     gTheLights.TurnOffLight(12);  // Or this!
     gTheLights.SetUpUniformLocations(program, 12);
@@ -902,19 +865,6 @@ int main(void)
     g_textureManager.SetBasePath("assets/textures");
 
     std::string errorString;
-    if (!g_textureManager.CreateCubeTextureFromBMPFiles("TropicalSunnyDay",
-        "TropicalSunnyDayRight2048.bmp",
-        "TropicalSunnyDayLeft2048.bmp",
-        "TropicalSunnyDayUp2048.bmp",
-        "TropicalSunnyDayDown2048.bmp",
-        "TropicalSunnyDayFront2048.bmp",
-        "TropicalSunnyDayBack2048.bmp",
-        //Is seamless
-        true, errorString))
-    {
-        std::cout << errorString << std::endl;
-    }
-
     if (!g_textureManager.CreateCubeTextureFromBMPFiles("NightSky",
         "SpaceBox_right1_posX.bmp",
         "SpaceBox_left2_negX.bmp",
@@ -928,8 +878,8 @@ int main(void)
         std::cout << errorString << std::endl;
     }
 
-    g_textureManager.Create2DTextureFromBMPFile("smoke.bmp", true);
-    g_textureManager.Create2DTextureFromBMPFile("spyglass.bmp", true);
+   //g_textureManager.Create2DTextureFromBMPFile("smoke.bmp", true);
+   //g_textureManager.Create2DTextureFromBMPFile("spyglass.bmp", true);
 
     gVAOManager.SetShaderProgramID_Threaded(program);
     sModelDrawInfo loadingModel;
@@ -964,13 +914,10 @@ int main(void)
         return -1;
     }
 
-    std::vector<cEntity*> entities = g_entityManager.GetEntities();
-
     //gets the sky box model so we can change the skybox texture
-    g_skyBox = *std::find_if(entities.begin(), entities.end(), [](cEntity* mesh) { return mesh->GetComponent<cMeshRenderer>()->friendlyName == "Sky"; });
+    g_skyBox = g_entityManager.GetEntityByName("Sky");
 
-    cEntity* waterEntity = *std::find_if(entities.begin(), entities.end(), [](cEntity* mesh) { return mesh->GetComponent<cMeshRenderer>()->friendlyName == "poolwater"; });
-    waterEntity->GetComponent<cMeshRenderer>()->bUseSkyboxReflection = true;
+    g_entityManager.GetEntityByName("poolwater")->GetComponent<cMeshRenderer>()->bUseSkyboxReflection = true;
 
     std::map<std::string, GLint> uniformLocations;
 
@@ -1032,6 +979,7 @@ int main(void)
 
     uniformLocations.insert(std::pair<std::string, GLint>("bUseSpyglass", glGetUniformLocation(program, "bUseSpyglass")));
     uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxReflections", glGetUniformLocation(program, "bUseSkyboxReflections")));
+    uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxRefraction", glGetUniformLocation(program, "bUseSkyboxRefraction")));
 
     /*sModelDrawInfo debugSphere;
     if (!gVAOManager.LoadModelIntoVAO("ISO_Shphere_flat_3div_xyz_n_rgba_uv.ply", debugSphere, program))
@@ -1046,75 +994,8 @@ int main(void)
     debugMesh->bIsWireframe = true;
     g_DebugSphere->AddComponent<cMeshRenderer>(debugMesh);
 
-    cMeshRenderer* cloudOne = new cMeshRenderer();
-    cloudOne->meshName = "cloud1.ply";
-    cloudOne->bUseWholeObjectDiffuseColour = true;
-    cloudOne->wholeObjectDiffuseRGBA = glm::vec4(0.9f, 0.9f, 1.0f, 0.10f);
-
-    cEntity* cloudOneEntity = g_entityManager.CreateEntity();
-    cloudOneEntity->GetComponent<cTransform>()->position = glm::vec3(0.0f, 20.0f, -18.0f);
-
-    cloudOneEntity->AddComponent<cMeshRenderer>(cloudOne);
-    clouds.push_back(cloudOneEntity);
-
-    cMeshRenderer* cloudTwo = new cMeshRenderer();
-    cloudTwo->meshName = "cloud2.ply";  
-    cloudTwo->bUseWholeObjectDiffuseColour = true;
-    cloudTwo->wholeObjectDiffuseRGBA = glm::vec4(1.0f, 1.0f, 1.0f, 0.92f);
-    
-
-    cEntity* cloudTwoEntity = g_entityManager.CreateEntity();
-
-    cTransform* cloudTwoTransform = cloudTwoEntity->GetComponent<cTransform>();
-    cloudTwoTransform->position = glm::vec3(-15.0f, 24.0f, 0.0f);
-    cloudTwoTransform->SetRotation(glm::vec3(0.0f, glm::radians(90.f), 0.0f));
-    cloudTwoTransform->scale = glm::vec3(0.65f);
-
-    cloudTwoEntity->AddComponent<cMeshRenderer>(cloudTwo);
-    clouds.push_back(cloudTwoEntity);
-
-    cMeshRenderer* cloudThree = new cMeshRenderer();
-    cloudThree->meshName = "cloud1.ply";
-    cloudThree->bUseWholeObjectDiffuseColour = true;
-    cloudThree->wholeObjectDiffuseRGBA = glm::vec4(0.9f, 0.9f, 1.0f, 0.50f);
-
-    cEntity* cloudThreeEntity = g_entityManager.CreateEntity();
-
-    cTransform* cloudThreeTransform = cloudTwoEntity->GetComponent<cTransform>();
-    cloudThreeTransform->position = glm::vec3(20.0f, 19.0f, -28.0f);
-    cloudThreeTransform->scale = glm::vec3(0.78f);
-
-    cloudThreeEntity->AddComponent<cMeshRenderer>(cloudThree);
-    clouds.push_back(cloudThreeEntity);
-
     const float MAX_DELTA_TIME = 0.1f;	// 100 ms
     float previousTime = (float)glfwGetTime();
-
-    cWorld* world = new cWorld();
-
-    cEmitters emitters;
-    emitters.SetWorld(world);
-
-    cEmitter emitOne = cEmitter(0.3f, glm::vec3(-4.5f, 6.0f, -1.5f));
-    emitters.AddEmitter(&emitOne);
-
-    cEmitter emitTwo = cEmitter(0.3f, glm::vec3(3.5f, 6.f, 8.f));
-    emitters.AddEmitter(&emitTwo);
-
-    cEmitter emitThree = cEmitter(0.3f, glm::vec3(0.5f, 6.f, -5.5f));
-    emitters.AddEmitter(&emitThree);
-
-    cEmitter emitFour = cEmitter(0.3f, glm::vec3(4.4f, 6.f, -5.5f));
-    emitters.AddEmitter(&emitFour);
-
-    cEmitter emitFive = cEmitter(0.3f, glm::vec3(8.3f, 6.f, -5.5f));
-    emitters.AddEmitter(&emitFive);
-
-    cEmitter emitSix = cEmitter(0.3f, glm::vec3(-9.25f, 6.f, 7.5f));
-    emitters.AddEmitter(&emitSix);
-
-    cForceGenerator gravity = cForceGenerator(glm::vec3(0.0f, 0.05f, 0.0f));
-    emitters.SetForce(&gravity);
 
     float ratio;
     int width, height;
@@ -1150,26 +1031,24 @@ int main(void)
         glm::mat4 p;
         glm::mat4 v;
 
+        g_fbo->clearBuffers(true, true);
+
         glBindFramebuffer(GL_FRAMEBUFFER, g_fbo->ID);
 
         glViewport(0, 0, g_fbo->width, g_fbo->height);
         ratio = g_fbo->width / (float)g_fbo->height;
+
+        glUniform2f(uniformLocations["screenWidthHeight"], g_fbo->width, g_fbo->height);
+
         // Turn on the depth buffer
         glEnable(GL_DEPTH);         // Turns on the depth buffer
         glEnable(GL_DEPTH_TEST);    // Check if the pixel is already closer
 
-        //glEnable(GL_CULL_FACE);
-       // glCullFace(GL_BACK);
+   
+       
 
-        //glfwGetFramebufferSize(window, &width, &height);
-        
-        g_fbo->clearBuffers(true, true);
-
-
-        //glViewport(0, 0, width, height);
-
-        //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-       // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // *******************************************************
         // Screen is cleared and we are ready to draw the scene...
@@ -1180,7 +1059,7 @@ int main(void)
 
         // Place the "debug sphere" at the same location as the selected light (again)
         // HACK: Debug sphere is 5th item added
-        float usedFov = (bUseSpyglass) ? fov / 10.0f : fov;
+        float usedFov = fov;
 
         p = glm::perspective(glm::radians(usedFov),
             ratio,
@@ -1211,7 +1090,9 @@ int main(void)
         std::vector<cEntity*> entityVector = g_entityManager.GetEntities();
         for (unsigned int index = 0; index != entityVector.size(); index++)
         {
-            cMeshRenderer* curMesh = entityVector.at(index)->GetComponent<cMeshRenderer>();
+            cEntity* curEntity = entityVector.at(index);
+
+            cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
 
             if (curMesh->wholeObjectDiffuseRGBA.a < 1.0f)
             {
@@ -1219,188 +1100,127 @@ int main(void)
             }
             else
             {
-                opaqueMeshes.push_back(entityVector.at(index));
+                opaqueMeshes.push_back(curEntity);
             }
         }
-
-        std::vector<cParticle*>* particleList = world->GetParticleList();
-        //Add particles to render list
-        for (unsigned int index = 0; index != particleList->size(); index++)
-        {
-            cEntity* curEntity = particleList->at(index)->entity;
-            cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
-
-            if (curMesh != nullptr)
-            {
-                if ((curMesh->wholeObjectDiffuseRGBA.a < 1.0f || curMesh->bUseAlphaMask || curMesh->bIsImposter))
-                {
-                    transparentMeshes.push_back(curEntity);
-                }
-                else
-                {
-                    opaqueMeshes.push_back(curEntity);
-                }
-            }
-        }
-
         //Sort transparent objects.
         std::sort(transparentMeshes.begin(), transparentMeshes.end(), DistanceToCameraPredicate);
-
-        //Draw non transparent objects
-        for (unsigned int index = 0; index != opaqueMeshes.size(); index++)
-        {         
-            cEntity* curEntity = opaqueMeshes[index];
-            matModel = glm::mat4(1.0f);  // "Identity" ("do nothing", like x1)
-            //mat4x4_identity(m);
-
-            if (curEntity->GetComponent<cMeshRenderer>()->friendlyName == "Sky")
-            {
-                curEntity->GetComponent<cTransform>()->position = g_FlyCamera->getEye();
-            }
-
-            DrawObject(curEntity, matModel, program, &gVAOManager, g_textureManager, uniformLocations, g_FlyCamera->getEye());
-        }//for (unsigned int index
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        //Draw transparent objects
-        for (unsigned int index = 0; index != transparentMeshes.size(); index++)
-        {
-            cEntity* curEntity = transparentMeshes[index];
-            cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
-            matModel = glm::mat4(1.0f);  // "Identity" ("do nothing", like x1)
-            //mat4x4_identity(m);
-
-            //Scroll pool normal effect
-            if (curMesh->friendlyName == "poolwater")
-            {
-                curMesh->normalOffset.x += (float)deltaTime / 50.0f;
-                curMesh->normalOffset.y += (float)deltaTime / 75.0f;
-            }
-
-            DrawObject(curEntity, matModel, program, &gVAOManager, g_textureManager, uniformLocations, g_FlyCamera->getEye());
-        }//for (unsigned int index
-
-        //Render debug sphere
-        if (isDebugMode)
-        {
-            glUniform1f(uniformLocations["bDebugMode"], (float)GL_TRUE);
-
-            glUniform1f(uniformLocations["bDebugShowLighting"], (float)debugShowLighting);
-            glUniform1f(uniformLocations["bDebugShowNormals"], (float)debugShowNormals);
-
-            cMeshRenderer* debugSphereMesh = g_DebugSphere->GetComponent<cMeshRenderer>();
-            cTransform* debugSphereTransform = g_DebugSphere->GetComponent<cTransform>();
-
-            debugSphereTransform->position = gTheLights.theLights[g_selectedLight].position;
-            debugSphereTransform->scale = glm::vec3(0.01f);
-            debugSphereMesh->bDontLight = true;
-            debugSphereMesh->bUseObjectDebugColour = true;
-            debugSphereMesh->objectDebugColourRGBA = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-
-            glm::mat4 matModelDS = glm::mat4(1.0f);
-            DrawObject(g_DebugSphere, matModelDS, program, &gVAOManager, g_textureManager, uniformLocations, g_FlyCamera->getEye());
-        }
-        else
-        {
-            glUniform1f(uniformLocations["bDebugMode"], (float)GL_FALSE);
-        }
-
-        //End of first pass
-
-        glm::vec3 fullscreenPos = glm::vec3(0.f, 0.f, -1.f);
-
-        cMeshRenderer* fullscreenMesh = new cMeshRenderer();
-        fullscreenMesh->meshName = "fullscreenquad.ply";
-        fullscreenMesh->friendlyName = "Fullscreen Quad";
-
-        fullscreenMesh->bDontLight = true;
-        fullscreenMesh->bUseWholeObjectDiffuseColour = true;
-        fullscreenMesh->wholeObjectDiffuseRGBA = glm::vec4(1.0f);
         
+        
+        Draw(opaqueMeshes, transparentMeshes, uniformLocations, deltaTime);
+       
 
-        cEntity* fullscreenEntity = g_entityManager.CreateEntity(false);
-        fullscreenEntity->AddComponent<cMeshRenderer>(fullscreenMesh);
-
-        cTransform* fullscreenTransform = fullscreenEntity->GetComponent<cTransform>();
-        fullscreenTransform->scale = glm::vec3(10.0f);
-        fullscreenTransform->Rotate(glm::vec3(0.0f, glm::radians(180.0f), 0.0f));
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        //glfwGetFramebufferSize(window, &width, &height);
-       // ratio = width / (float)height;
-         //glViewport(0, 0, width, height);
-
-        glViewport(0, 0, g_fbo->width, g_fbo->height);
-        ratio = g_fbo->width / (float)g_fbo->height;
-
-        //p = glm::perspective(glm::radians(75.0f),
-        //    ratio,
-        //    0.1f,
-        //    1000.0f);
-
+       glm::vec3 fullscreenPos = glm::vec3(0.f, 0.f, -1.f);
+       
+       cMeshRenderer* fullscreenMesh = new cMeshRenderer();
+       fullscreenMesh->meshName = "fullscreenquad.ply";
+       fullscreenMesh->friendlyName = "Fullscreen Quad";
+       
+       fullscreenMesh->bDontLight = true;
+       fullscreenMesh->bUseWholeObjectDiffuseColour = true;
+       fullscreenMesh->wholeObjectDiffuseRGBA = glm::vec4(1.0f);
+       
+       
+       cEntity* fullscreenEntity = g_entityManager.CreateEntity(false);
+       fullscreenEntity->AddComponent<cMeshRenderer>(fullscreenMesh);
+       
+       cTransform* fullscreenTransform = fullscreenEntity->GetComponent<cTransform>();
+       fullscreenTransform->scale = glm::vec3(10.0f);
+       fullscreenTransform->Rotate(glm::vec3(0.0f, glm::radians(180.0f), 0.0f));
+       
+       
         v = glm::lookAt(fullscreenPos,     // "eye"
             fullscreenPos + glm::vec3(0.f, 0.f, 1.0f) ,  // "at"
             g_FlyCamera->getUpVector());
-
-        p = glm::ortho(0.0f, 1.0f/(float)width, 0.0f, 1.0f / (float)height, 0.01f, 1000.0f);
-
         glUniformMatrix4fv(matView_Location, 1, GL_FALSE, glm::value_ptr(v));
+        
+        p = glm::ortho(0.0f, 1.0f / (float)width, 0.0f, 1.0f / (float)height, 0.01f, 1000.0f);
         glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
-
-        glUniform2f(uniformLocations["screenWidthHeight"], width, height);
+        
         glUniform1ui(uniformLocations["passNumber"], RENDER_PASS_1_LIGHTING);
-
+        
         //Uploading textures to gpu
         GLint textureMatId = g_fbo->vertexMatColour_1_ID;
         if (textureMatId != 0)
         {
-            GLint unit = 1;
+            GLint unit = 7;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureMatId);
             glUniform1i(uniformLocations["texture_MatColor"], unit);
         }
-
+        
         GLint textureNormalId = g_fbo->vertexNormal_2_ID;
         if (textureNormalId != 0)
         {
-            GLint unit = 2;
+            GLint unit = 8;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureNormalId);
             glUniform1i(uniformLocations["texture_Normal"], unit);
         }
-
+        
         GLint textureWorldId = g_fbo->vertexWorldPos_3_ID;
         if (textureWorldId != 0)
         {
-            GLint unit = 3;
+            GLint unit = 9;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureWorldId);
             glUniform1i(uniformLocations["texture_WorldPos"], unit);
         }
-
+        
         GLint textureSpecularId = g_fbo->vertexSpecular_4_ID;
         if (textureSpecularId != 0)
         {
-            GLint unit = 4;
+            GLint unit = 10;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureSpecularId);
             glUniform1i(uniformLocations["texture_Specular"], unit);
         }
-
+        g_fbo->clearColourBuffer(0);   
         DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, uniformLocations, fullscreenPos);
-        //SECOND PASS
+        
+        //BEGINNING OF SECOND PASS
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        glfwGetFramebufferSize(window, &width, &height);
+        ratio = width / (float)height;
+        
+        p = glm::perspective(glm::radians(usedFov),
+            ratio,
+            0.1f,
+            1000.0f);
+        
+        glViewport(0, 0, width, height);
+        
+        glUniform2f(uniformLocations["screenWidthHeight"], width, height);
         glUniform1ui(uniformLocations["passNumber"], RENDER_PASS_2_EFFECTS);
-
-        GLint textureId = g_fbo->firstPass_5_ID;
+        
+        GLint textureId = 0;
+        
+        switch (showTextureIndex)
+        {
+        case 0:
+            textureId = g_fbo->colourTexture_0_ID;
+            break;
+        case 1:
+            textureId = g_fbo->vertexMatColour_1_ID;
+            break;
+        case 2:
+            textureId = g_fbo->vertexNormal_2_ID;
+            break;
+        case 3:
+            textureId = g_fbo->vertexSpecular_4_ID;
+            break;
+        case 4:
+            textureId = g_fbo->vertexWorldPos_3_ID;
+            break;
+        }
+        
         if (textureId != 0)
         {
-            GLint unit = 10;
+            GLint unit = 11;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureId);
             glUniform1i(uniformLocations["texLightpassColorBuf"], unit);
@@ -1410,17 +1230,16 @@ int main(void)
         GLint spyTextureId = g_textureManager.getTextureIDFromName("spyglass.bmp");
         if (textureId != 0)
         {
-            GLint unit = 19;
+            GLint unit = 12;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, spyTextureId);
             glUniform1i(uniformLocations["texture_00"], unit);
         }
 
-        glUniform1f(uniformLocations["bUseSpyglass"], (bUseSpyglass) ? (float)GL_TRUE : (float)GL_FALSE);
+        //glUniform1f(uniformLocations["bUseSpyglass"], (bUseSpyglass) ? (float)GL_TRUE : (float)GL_FALSE);
 
-        fullscreenEntity->GetComponent<cTransform>()->position.z -= .5f;
+        fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
         DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, uniformLocations, fullscreenPos);
-
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
 
@@ -1432,6 +1251,8 @@ int main(void)
         ProcessAsyncMouse(window, (float)deltaTime);
         ProcessAsyncKeyboard(window, (float)deltaTime);
 
+        g_FlyCamera->Update(deltaTime);   
+
         //Flicker lights
         gTheLights.theLights[0].atten.x = (rand() % 200 + 100) / 1000.0f;
         gTheLights.theLights[1].atten.x = (rand() % 200 + 100) / 1000.0f;
@@ -1440,38 +1261,9 @@ int main(void)
         gTheLights.theLights[6].atten.x = (rand() % 200 + 100) / 1000.0f;
         gTheLights.theLights[7].atten.x = (rand() % 200 + 100) / 1000.0f;
 
-        //Move clouds
-        for (cEntity* cloud : clouds)
-        {
-            cTransform* transform = cloud->GetComponent<cTransform>();
-
-            transform->position.z +=  1.0f * (float)deltaTime;
-
-            if (transform->position.z > 30.0f)
-                transform->position.z = -30.0f;
-        }
-
-        if (preWarm)
-        {
-            for (int i = 0; i < 100; i++)
-            {
-                world->EulerTimeStep(0.3f);
-                emitters.Integrate(0.3f);
-            }
-
-            preWarm = false;
-        }
-        else
-        {
-            world->EulerTimeStep(deltaTime);
-            emitters.Integrate(deltaTime);
-        }
-       
-        g_FlyCamera->Update(deltaTime);   
     }
 
     delete g_FlyCamera;
-    delete world;
     g_entityManager.DeleteEntity(g_DebugSphere);
 
     if (!g_fbo->shutdown())
@@ -1479,9 +1271,77 @@ int main(void)
         std::cout << "Error shutting down fbo" << std::endl;
     }
 
+    delete g_fbo;
+
     glfwDestroyWindow(window);
 
     glfwTerminate();
     exit(EXIT_SUCCESS);
+}
+
+void Draw(std::vector<cEntity*> opaqueMeshes, std::vector<cEntity*> transparentMeshes, std::map<std::string, int> uniformLocations, float deltaTime)
+{
+
+    //Draw non transparent objects
+    for (unsigned int index = 0; index != opaqueMeshes.size(); index++)
+    {
+        cEntity* curEntity = opaqueMeshes[index];
+        glm::mat4 matModel = glm::mat4(1.0f);  // "Identity" ("do nothing", like x1)
+        //mat4x4_identity(m);
+
+        if (curEntity->GetComponent<cMeshRenderer>()->friendlyName == "Sky")
+        {
+            curEntity->GetComponent<cTransform>()->position = g_FlyCamera->getEye();
+        }
+
+        DrawObject(curEntity, matModel, program, &gVAOManager, g_textureManager, uniformLocations, g_FlyCamera->getEye());
+    }//for (unsigned int index
+
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    //Draw transparent objects
+    for (unsigned int index = 0; index != transparentMeshes.size(); index++)
+    {
+        cEntity* curEntity = transparentMeshes[index];
+        cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
+        glm::mat4 matModel = glm::mat4(1.0f);  // "Identity" ("do nothing", like x1)
+        //mat4x4_identity(m);
+
+        //Scroll pool normal effect
+        if (curMesh->friendlyName == "poolwater")
+        {
+            curMesh->normalOffset.x += (float)deltaTime / 70.0f;
+            curMesh->normalOffset.y += (float)deltaTime / 100.0f;
+        }
+
+        DrawObject(curEntity, matModel, program, &gVAOManager, g_textureManager, uniformLocations, g_FlyCamera->getEye());
+    }//for (unsigned int index
+
+
+    //Render debug sphere
+    if (isDebugMode)
+    {
+        glUniform1f(uniformLocations["bDebugMode"], (float)GL_TRUE);
+
+        glUniform1f(uniformLocations["bDebugShowLighting"], (float)debugShowLighting);
+        glUniform1f(uniformLocations["bDebugShowNormals"], (float)debugShowNormals);
+
+        cMeshRenderer* debugSphereMesh = g_DebugSphere->GetComponent<cMeshRenderer>();
+        cTransform* debugSphereTransform = g_DebugSphere->GetComponent<cTransform>();
+
+        debugSphereTransform->position = gTheLights.theLights[g_selectedLight].position;
+        debugSphereTransform->scale = glm::vec3(0.01f);
+        debugSphereMesh->bDontLight = true;
+        debugSphereMesh->bUseObjectDebugColour = true;
+        debugSphereMesh->objectDebugColourRGBA = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+
+        glm::mat4 matModelDS = glm::mat4(1.0f);
+        DrawObject(g_DebugSphere, matModelDS, program, &gVAOManager, g_textureManager, uniformLocations, g_FlyCamera->getEye());
+    }
+    else
+    {
+        glUniform1f(uniformLocations["bDebugMode"], (float)GL_FALSE);
+    }
 }
 

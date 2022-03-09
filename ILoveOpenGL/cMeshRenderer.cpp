@@ -41,4 +41,5 @@ cMeshRenderer::cMeshRenderer()
 
 	bIsSceneObject = false;
 	bUseSkyboxReflection = false;
+	bUseSkyboxRefraction = false;
 }

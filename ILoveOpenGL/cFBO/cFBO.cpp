@@ -182,7 +182,8 @@ void cFBO::clearColourBuffer(int bufferindex)
 {
 	glViewport(0, 0, this->width, this->height);
 	GLfloat	zero = 0.0f;
-	glClearBufferfv(GL_COLOR, bufferindex, &zero);
+	GLfloat rgbBlack[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	glClearBufferfv(GL_COLOR, bufferindex, rgbBlack);
 
 	return;
 }
@@ -190,7 +191,7 @@ void cFBO::clearColourBuffer(int bufferindex)
 
 void cFBO::clearBuffers(bool bClearColour, bool bClearDepth)
 {
-	glViewport(0, 0, this->width, this->height);
+	//glViewport(0, 0, this->width, this->height);
 	GLfloat	zero = 0.0f;
 	GLfloat one = 1.0f;
 

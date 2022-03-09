@@ -1,6 +1,6 @@
-Graphics Project 3 by Ethan Robertson
+Graphics 2 Project 1 by Ethan Robertson
 
-Video link: https://youtu.be/mvn2OGxhdPk
+Video link: https://youtu.be/kPtUtEliFWI
 
 Model sources:
 	Models created in Minecraft, exported with Mineways
@@ -12,16 +12,5 @@ HOW TO RUN:
 CONTROLS:
 	*W-A-S-D / E-Q to move camera
 	*LEFT CLICK and move mouse to look around
-	*N to switch between day and night
-	*F1 to enable debugging mode (Shows debug sphere)
-	*F3 to disable/enable lighting (Only in debug mode)
-	*F4 to show normals (Only in debug mode)
-
-LOCATION OF ENHANCED CODE:
-
-	ILoveOpenGl/Physics
-	Emission creation: theMain.cpp lines, 1050-1074
-
-	Tangent/BiTangent calculations
-	cVAOManager.cpp lines 424-477
-	
+	*N to switch between off-screen textures.
+	*B to turn on scope
