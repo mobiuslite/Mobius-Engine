@@ -11,6 +11,8 @@ struct sLight
 	// You could put a constructor here, if you'd like
 	sLight();
 
+	std::string name;
+
 	glm::vec4 position;
 	glm::vec4 diffuse;
 	glm::vec4 specular;	// rgb = highlight colour, w = power
@@ -20,7 +22,7 @@ struct sLight
 					// 0 = pointlight
 					// 1 = spot light
 					// 2 = directional light
-	glm::vec4 param2;	// x = 0 for off, 1 for on
+	bool on;
 
 	// Here's the uniform locations of the light values in the shader
 	int position_uniform_location;

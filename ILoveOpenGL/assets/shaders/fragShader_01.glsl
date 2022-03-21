@@ -94,6 +94,8 @@ uniform vec4 textureRatios;
 
 uniform vec2 screenWidthHeight;
 
+uniform float gamma;
+
 uniform samplerCube skyBox; // GL_TEXTURE_CUBE_MAP
 
 vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal, 
@@ -112,6 +114,8 @@ void main()
 
 	if(passNumber == RENDER_PASS_2_EFFECTS_PASS)
 	{
+		vec3 finalColour = vec3(0.0f, 0.0f, 0.0f);
+
 		vec2 UVLookup;
 		UVLookup.x = gl_FragCoord.x / screenWidthHeight.x;
 		UVLookup.y = gl_FragCoord.y / screenWidthHeight.y;
@@ -122,15 +126,18 @@ void main()
 			vec3 spyglassTex = texture(texture_00, UVLookup).rgb;
 
 			if(spyglassTex.r + spyglassTex.g + spyglassTex.b < 0.01f){		
-				pixelColour.rgb = texture(texLightpassColorBuf, UVLookup).rgb;	
+				finalColour = texture(texLightpassColorBuf, UVLookup).rgb;	
 			}else{
-				pixelColour.rgb = spyglassTex;
+				finalColour = spyglassTex;
 			}		
 		}else{
 			
-			pixelColour.rgb = texture(texLightpassColorBuf, UVLookup).rgb;
+			finalColour = texture(texLightpassColorBuf, UVLookup).rgb;
 		
 		}
+
+		//Gamma adjustment
+		pixelColour.rgb = pow(finalColour, vec3(1.0/gamma));
 	}
 
 	if(passNumber == RENDER_PASS_1_LIGHT_PASS)
@@ -188,7 +195,7 @@ void main()
 		vec4 skyBoxTexture = texture(skyBox, fVertPosition.xyz);
 		//pixelColour = skyBoxTexture;
 
-		pixelMatColor = vec4(skyBoxTexture.rgb, 1.0f);
+		pixelMatColor = pow(vec4(skyBoxTexture.rgb, 1.0f), vec4(gamma));	
 		pixelWorldPos = vec4(fVertWorldLocation.xyz, 0.0f);
 
 		return;
@@ -257,7 +264,7 @@ void main()
 	// Used for drawing "debug" objects (usually wireframe)
 	if ( bDontLightObject )
 	{
-		pixelMatColor = vertexDiffuseColour;
+		pixelMatColor = pow(vec4(vertexDiffuseColour.rgb, 1.0f), vec4(gamma));
 		pixelMatColor.w = 0.0f;
 		//pixelColour = vertexDiffuseColour;
 		// Early exit from shader
@@ -271,7 +278,12 @@ void main()
 		vertexDiffuseColour.rgb += texture(skyBox, reflection).rgb * 2f;
 	}
 
-	pixelMatColor = vec4(vertexDiffuseColour.rgb, 1.0f);
+	//Inverse gamma, to fix the issue of color correcting twice
+	//Most textures are already in linear space, because they are created by an artist wit their eyes
+	//and monitors are already corrected
+	//So using gamma correction again would correct them twice
+	pixelMatColor = pow(vec4(vertexDiffuseColour.rgb, 1.0f), vec4(gamma));
+
 	pixelNormal = vec4(normalize(normals.xyz), 1.0f);
 	pixelWorldPos = vec4(fVertWorldLocation.xyz, 1.0f);
 
@@ -323,7 +335,7 @@ vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal,
 			
 			// Get the dot product of the light and normalize
 			float dotProduct = dot( -theLights[index].direction.xyz,  
-									   normalize(norm.xyz) );	// -1 to 1
+									   norm.xyz );	// -1 to 1
 
 			dotProduct = max( 0.0f, dotProduct );		// 0 to 1
 		
@@ -361,7 +373,7 @@ vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal,
 		// Get eye or view vector
 		// The location of the vertex in the world to your eye
 		vec3 eyeVector = normalize(eyeLocation.xyz - vertexWorldPos.xyz);
-
+		vec3 halfwayVec = normalize(lightVector + eyeVector);
 		// To simplify, we are NOT using the light specular value, just the object’s.
 		float objectSpecularPower = vertexSpecular.a * 1000.0f; 
 		//float objectSpecularPower = 10.0f; 
@@ -371,7 +383,7 @@ vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal,
 
 		if(dotProduct > 0.0f && vertexSpecular.w > 0.0f)
 		{
-			lightSpecularContrib = pow( clamp(dot( reflectVector, eyeVector), 0.0f, 1.0f ), objectSpecularPower )
+			lightSpecularContrib = pow( clamp(dot( norm.xyz, halfwayVec), 0.0f, 1.0f ), objectSpecularPower )
 			                   * theLights[index].specular.rgb;
 		}
 		// Attenuation

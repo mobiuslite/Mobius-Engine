@@ -30,7 +30,7 @@
 #include "SceneLoader/cSceneLoader.h"
 #include "SceneLoader/sModel.h"
 
-#include "FlyCamera/cFlyCamera.h"
+#include "cEntity.h"
 #include "cBasicTextureManager/cBasicTextureManager.h"
 #include <algorithm>
 #include "Physics/cWorld.h"
@@ -55,9 +55,20 @@ cFBO* g_fbo;
 
 // Global things are here:
 
-cFlyCamera* g_FlyCamera = NULL;
+glm::vec3 cameraEye = glm::vec3(0);
+
+glm::vec3 cameraDir = glm::vec3(0.0f, 0.0f, 1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+glm::vec3 cameraRight = glm::vec3(0);
+
+bool firstMouse = true;
+float lastX;
+float lastY;
+
+float yaw = 90.0f;
+float pitch = 0.0f;
+
 float flyCameraSpeed = 5.0f;
-bool g_MouseIsInsideWindow = false;
 
 cVAOManager     gVAOManager;
 cShaderManager  gShaderManager;
@@ -87,134 +98,264 @@ int showTextureIndex = 0;
 
 cEntity* g_skyBox;
 
+bool showDebugGui = true;
+ImGuiIO* io = nullptr;
+size_t selectedEntityDebug = 0;
+size_t selectedLightDebug = 0;
+
 float fov = 70.0f;
+float gamma = 1.7f;
+
+bool g_MouseIsInsideWindow = false;
 
 //Method in DrawObjectFunction
 void extern DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManager* VAOManager,
     cBasicTextureManager textureManager, std::map<std::string, GLint> uniformLocations, glm::vec3 eyeLocation);
 
 void Draw(std::vector<cEntity*> opaqueMeshes, std::vector<cEntity*> transparentMeshes, std::map<std::string, int> uniformLocations, float deltaTime);
+void DrawGUI();
 
-static void GLFW_cursor_enter_callback(GLFWwindow* window, int entered)
-{
-    if (entered)
-    {
-       // std::cout << "Mouse cursor is over the window" << std::endl;
-        ::g_MouseIsInsideWindow = true;
-    }
-    else
-    {
-        //std::cout << "Mouse cursor is no longer over the window" << std::endl;
-        ::g_MouseIsInsideWindow = false;
-    }
-    return;
-}
-static void GLFW_scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
-    float mouseScrollWheelSensitivity = 0.1f;
-
-    ::g_FlyCamera->setMouseWheelDelta(yoffset * mouseScrollWheelSensitivity);
-
-    return;
-
-}
 static void error_callback(int error, const char* description)
 {
     fprintf(stderr, "Error: %s\n", description);
 }
 
+static void GLFW_cursor_enter_callback(GLFWwindow* window, int entered)
+{
+    if (entered)
+    {
+        // std::cout << "Mouse cursor is over the window" << std::endl;
+        g_MouseIsInsideWindow = true;
+    }
+    else
+    {
+        //std::cout << "Mouse cursor is no longer over the window" << std::endl;
+        g_MouseIsInsideWindow = false;
+    }
+    return;
+}
+
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    if (!io->WantCaptureKeyboard)
     {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
-    else if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
-    {
-        isDebugMode = !isDebugMode;
-
-        if (isDebugMode)
+        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         {
-            std::cout << "Debug mode: ENABLED" << std::endl;
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
-        else
+        else if (key == GLFW_KEY_GRAVE_ACCENT && action == GLFW_PRESS)
         {
-            std::cout << "Debug mode: DISABLED" << std::endl;
+            showDebugGui = !showDebugGui;
         }
-    }
-    else if (key == GLFW_KEY_F3 && action == GLFW_PRESS)
-    {
-        debugShowLighting = !debugShowLighting;
-    }
-    else if (key == GLFW_KEY_F4 && action == GLFW_PRESS)
-    {
-        debugShowNormals = !debugShowNormals;
-    }
-    else if (key == GLFW_KEY_N && action == GLFW_PRESS)
-    {
-        showTextureIndex++;
-        if (showTextureIndex > 4)
+        else if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
         {
-            showTextureIndex = 0;
-        }
-    }
-    else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-    {
-        //if (sceneLoader->SaveScene(sceneName, g_FlyCamera->getEye(), &g_entityManager))
-        //{
-        //    std::cout << "Saved scene: " << sceneName << std::endl;
-        //}
-    }
-    else if (key == GLFW_KEY_C && action == GLFW_PRESS)
-    {
-        cEntity* cloneMesh = g_entityManager.GetEntities().at(g_selectedObject)->clone();
-        cloneMesh->GetComponent<cMeshRenderer>()->friendlyName += "Clone";
+            isDebugMode = !isDebugMode;
 
-        cEntity* newEntity = g_entityManager.CreateEntity();
-        *newEntity = *cloneMesh;
-
-        g_entityManager.DeleteEntity(cloneMesh);
-
-        g_selectedObject = (int)g_entityManager.GetEntities().size() - 1;
-
-        std::cout << "Cloned mesh!" << std::endl;
-
-    }
-    else if (key == GLFW_KEY_INSERT && action == GLFW_PRESS)
-    {
-
-        //ADDING NEW OR EXISTING MODELS.
-        std::string type;
-        std::string param;
-
-        std::cout << "What would you like do to? (add/del): ";
-
-        std::cin >> type;
-        std::cout << std::endl;
-
-        if (type == "add")
-        {
-            std::cout << "Add mesh from existing model? (y/n): ";
-            std::cin >> type;
-
-            //Add a new mesh from a model already loaded into the VAO
-            if (type == "y")
+            if (isDebugMode)
             {
-                std::cout << std::endl;
-                std::cout << "Add a friendly name for the object: ";
-                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                std::cout << "Debug mode: ENABLED" << std::endl;
+            }
+            else
+            {
+                std::cout << "Debug mode: DISABLED" << std::endl;
+            }
+        }
+        else if (key == GLFW_KEY_F3 && action == GLFW_PRESS)
+        {
+            debugShowLighting = !debugShowLighting;
+        }
+        else if (key == GLFW_KEY_F4 && action == GLFW_PRESS)
+        {
+            debugShowNormals = !debugShowNormals;
+        }
+        else if (key == GLFW_KEY_N && action == GLFW_PRESS)
+        {
+            showTextureIndex++;
+            if (showTextureIndex > 4)
+            {
+                showTextureIndex = 0;
+            }
+        }
+        else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+        {
+            //if (sceneLoader->SaveScene(sceneName, g_FlyCamera->getEye(), &g_entityManager))
+            //{
+            //    std::cout << "Saved scene: " << sceneName << std::endl;
+            //}
+        }
+        else if (key == GLFW_KEY_C && action == GLFW_PRESS)
+        {
+            cEntity* cloneMesh = g_entityManager.GetEntities().at(g_selectedObject)->clone();
+            cloneMesh->GetComponent<cMeshRenderer>()->friendlyName += "Clone";
 
-                std::string name;
-                std::getline(std::cin, name);
+            cEntity* newEntity = g_entityManager.CreateEntity();
+            *newEntity = *cloneMesh;
+
+            g_entityManager.DeleteEntity(cloneMesh);
+
+            g_selectedObject = (int)g_entityManager.GetEntities().size() - 1;
+
+            std::cout << "Cloned mesh!" << std::endl;
+
+        }
+        else if (key == GLFW_KEY_INSERT && action == GLFW_PRESS)
+        {
+
+            //ADDING NEW OR EXISTING MODELS.
+            std::string type;
+            std::string param;
+
+            std::cout << "What would you like do to? (add/del): ";
+
+            std::cin >> type;
+            std::cout << std::endl;
+
+            if (type == "add")
+            {
+                std::cout << "Add mesh from existing model? (y/n): ";
+                std::cin >> type;
+
+                //Add a new mesh from a model already loaded into the VAO
+                if (type == "y")
+                {
+                    std::cout << std::endl;
+                    std::cout << "Add a friendly name for the object: ";
+                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+                    std::string name;
+                    std::getline(std::cin, name);
+
+                    std::cout << std::endl;
+                    std::cout << "Select a model to create a mesh from (1-" << (*sceneLoader->GetModels()).size() << "): " << std::endl;
+
+                    //Prints out all models being used.
+                    int i = 1;
+                    for (sModel model : *sceneLoader->GetModels())
+                    {
+                        std::cout << "\t" << i << "." << model.fileName << std::endl;
+
+                        i++;
+                    }
+
+                    std::cout << std::endl;
+
+                    std::string selectionString;
+                    std::cin >> selectionString;
+                    int selection = -1;
+
+                    //Attempts to get the user's response
+                    try
+                    {
+
+                        selection = std::stoi(selectionString) - 1;
+                    }
+                    catch (const std::exception& e)
+                    {
+                        std::cout << "Please use numbers to select a model" << std::endl;
+                        std::cout << e.what() << std::endl;
+                    }
+
+
+                    //Creates a new mesh and adds it to the list of meshes if the response of good!
+                    cMeshRenderer* newMesh = new cMeshRenderer();
+                    cTransform newTransform;
+
+                    try
+                    {
+                        sModel selectedModel = (*sceneLoader->GetModels()).at(selection);
+
+                        newMesh->meshName = selectedModel.fileName;
+                        newTransform.scale = glm::vec3(selectedModel.defaultScale);
+                        newMesh->friendlyName = name;
+                    }
+                    catch (const std::exception& e)
+                    {
+                        std::cout << "Selection out of bound" << std::endl;
+                        std::cout << e.what() << std::endl;
+                    }
+
+                    //Adds the new mesh to the list of meshes to render
+                    if (newMesh->meshName != "")
+                    {
+                        cEntity* newEntity = g_entityManager.CreateEntity();
+                        newEntity->AddComponent<cMeshRenderer>(newMesh);
+                        *newEntity->GetComponent<cTransform>() = newTransform;
+
+                        g_selectedObject = (int)g_entityManager.GetEntities().size() - 1;
+
+                        std::cout << "Added new mesh from model: " << newMesh->meshName << std::endl;
+                    }
+
+                }
+                //If you want to import a new model
+                else if (type == "n")
+                {
+
+                    std::cout << std::endl;
+                    std::cout << "Enter the name of the file (e.g. bunny.ply | make sure it's in the \"assets\\models\" folder): ";
+                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+                    std::string fileName;
+                    std::getline(std::cin, fileName);
+
+                    sModel newModel;
+                    sModelDrawInfo modelDrawInfo;
+
+                    //Attempts to load the model into the vao
+                    if (gVAOManager.LoadModelIntoVAO(fileName, modelDrawInfo, program))
+                    {
+                        std::cout << "Loaded " << fileName << " into the VAO!" << std::endl;
+
+                        newModel.fileName = fileName;
+                        newModel.defaultScale = modelDrawInfo.defaultScale;
+
+                        (*sceneLoader->GetModels()).push_back(newModel);
+
+                        std::cout << std::endl;
+                        std::cout << "Add a friendly name for the object: ";
+
+                        std::string name;
+                        std::getline(std::cin, name);
+
+
+                        //Adds the new mesh to the screen.
+                        cMeshRenderer* newMesh = new cMeshRenderer();
+                        cTransform newTransform;
+
+                        newMesh->meshName = newModel.fileName;
+                        newTransform.scale = glm::vec3(newModel.defaultScale);
+                        newMesh->friendlyName = name;
+
+                        cEntity* newEntity = g_entityManager.CreateEntity();
+
+                        *newEntity->GetComponent<cTransform>() = newTransform;
+                        newEntity->AddComponent<cMeshRenderer>(newMesh);
+
+                        g_selectedObject = (int)g_entityManager.GetEntities().size() - 1;
+
+                        std::cout << "Added new mesh from model: " << newMesh->meshName << std::endl;
+                    }
+                    else
+                    {
+                        std::cout << "ERROR: Could not load " << fileName << " into the VAO" << std::endl;
+                    }
+
+                }
+            }
+
+            //Deleting a mesh from the scene
+            else if (type == "del")
+            {
+                std::vector<cEntity*> entities = g_entityManager.GetEntities();
 
                 std::cout << std::endl;
-                std::cout << "Select a model to create a mesh from (1-" << (*sceneLoader->GetModels()).size() << "): " << std::endl;
+                std::cout << "Select a mesh to delete (1-" << entities.size() << "): " << std::endl;
 
                 //Prints out all models being used.
                 int i = 1;
-                for (sModel model : *sceneLoader->GetModels())
+                for (cEntity* model : entities)
                 {
-                    std::cout << "\t" << i << "." << model.fileName << std::endl;
+                    std::cout << "\t" << i << "." << model->GetComponent<cMeshRenderer>()->friendlyName << std::endl;
 
                     i++;
                 }
@@ -233,22 +374,19 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
                 }
                 catch (const std::exception& e)
                 {
-                    std::cout << "Please use numbers to select a model" << std::endl;
+                    std::cout << "Please use numbers to select a mesh" << std::endl;
                     std::cout << e.what() << std::endl;
                 }
 
-
-                //Creates a new mesh and adds it to the list of meshes if the response of good!
-                cMeshRenderer* newMesh = new cMeshRenderer();
-                cTransform newTransform;
-
                 try
                 {
-                    sModel selectedModel = (*sceneLoader->GetModels()).at(selection);
+                    cEntity* selectedSceneEntity = entities.at(selection);
+                    cMeshRenderer selectedMesh = *selectedSceneEntity->GetComponent<cMeshRenderer>();
 
-                    newMesh->meshName = selectedModel.fileName;
-                    newTransform.scale = glm::vec3(selectedModel.defaultScale);
-                    newMesh->friendlyName = name;
+                    g_entityManager.RemoveEntity(selection);
+
+                    std::cout << "Deleted mesh " << selectedMesh.friendlyName << std::endl;
+                    g_selectedObject = (int)g_entityManager.GetEntities().size() - 1;
                 }
                 catch (const std::exception& e)
                 {
@@ -256,334 +394,19 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
                     std::cout << e.what() << std::endl;
                 }
 
-                //Adds the new mesh to the list of meshes to render
-                if (newMesh->meshName != "")
-                {
-                    cEntity* newEntity = g_entityManager.CreateEntity();
-                    newEntity->AddComponent<cMeshRenderer>(newMesh);
-                    *newEntity->GetComponent<cTransform>() = newTransform;
-
-                    g_selectedObject = (int)g_entityManager.GetEntities().size() - 1;
-
-                    std::cout << "Added new mesh from model: " << newMesh->meshName << std::endl;
-                }
-
             }
-            //If you want to import a new model
-            else if (type == "n")
+            else
             {
-
-                std::cout << std::endl;
-                std::cout << "Enter the name of the file (e.g. bunny.ply | make sure it's in the \"assets\\models\" folder): ";
-                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-                std::string fileName;
-                std::getline(std::cin, fileName);
-
-                sModel newModel;
-                sModelDrawInfo modelDrawInfo;
-
-                //Attempts to load the model into the vao
-                if (gVAOManager.LoadModelIntoVAO(fileName, modelDrawInfo, program))
-                {
-                    std::cout << "Loaded " << fileName << " into the VAO!" << std::endl;
-
-                    newModel.fileName = fileName;
-                    newModel.defaultScale = modelDrawInfo.defaultScale;
-
-                    (*sceneLoader->GetModels()).push_back(newModel);
-
-                    std::cout << std::endl;
-                    std::cout << "Add a friendly name for the object: ";
-
-                    std::string name;
-                    std::getline(std::cin, name);
-
-
-                    //Adds the new mesh to the screen.
-                    cMeshRenderer* newMesh = new cMeshRenderer();
-                    cTransform newTransform;
-
-                    newMesh->meshName = newModel.fileName;
-                    newTransform.scale = glm::vec3(newModel.defaultScale);
-                    newMesh->friendlyName = name;
-
-                    cEntity* newEntity = g_entityManager.CreateEntity();
-
-                    *newEntity->GetComponent<cTransform>() = newTransform;
-                    newEntity->AddComponent<cMeshRenderer>(newMesh);
-
-                    g_selectedObject = (int)g_entityManager.GetEntities().size() - 1;
-
-                    std::cout << "Added new mesh from model: " << newMesh->meshName << std::endl;
-                }
-                else
-                {
-                    std::cout << "ERROR: Could not load " << fileName << " into the VAO" << std::endl;
-                }
-
+                std::cout << "That is not a valid option" << std::endl << std::endl;
             }
         }
-
-        //Deleting a mesh from the scene
-        else if (type == "del")
-        {
-            std::vector<cEntity*> entities = g_entityManager.GetEntities();
-
-            std::cout << std::endl;
-            std::cout << "Select a mesh to delete (1-" << entities.size() << "): " << std::endl;
-
-            //Prints out all models being used.
-            int i = 1;
-            for (cEntity* model : entities)
-            {
-                std::cout << "\t" << i << "." << model->GetComponent<cMeshRenderer>()->friendlyName << std::endl;
-
-                i++;
-            }
-
-            std::cout << std::endl;
-
-            std::string selectionString;
-            std::cin >> selectionString;
-            int selection = -1;
-
-            //Attempts to get the user's response
-            try
-            {
-
-                selection = std::stoi(selectionString) - 1;
-            }
-            catch (const std::exception& e)
-            {
-                std::cout << "Please use numbers to select a mesh" << std::endl;
-                std::cout << e.what() << std::endl;
-            }
-
-            try
-            {
-                cEntity* selectedSceneEntity = entities.at(selection);
-                cMeshRenderer selectedMesh = *selectedSceneEntity->GetComponent<cMeshRenderer>();
-
-                g_entityManager.RemoveEntity(selection);
-
-                std::cout << "Deleted mesh " << selectedMesh.friendlyName << std::endl;
-                g_selectedObject = (int)g_entityManager.GetEntities().size() - 1;
-            }
-            catch (const std::exception& e)
-            {
-                std::cout << "Selection out of bound" << std::endl;
-                std::cout << e.what() << std::endl;
-            }
-
-        }
-        else
-        {
-            std::cout << "That is not a valid option" << std::endl << std::endl;
-        }
     }
-
-    bool bShiftDown = false;
-    bool bControlDown = false;
-    bool bAltDown = false;
-
-//    // Shift down?
-//    if ( mods == GLFW_MOD_SHIFT )       // 0x0001   0000 0001
-//    {
-//        // ONLY shift is down
-//    }
-//    // Control down?
-//    if ( mods == GLFW_MOD_CONTROL  )    // 0x0002   0000 0010
-//    // Alt down?
-//    if ( mods == GLFW_MOD_ALT   )       // 0x0004   0000 0100
-
-    //   0000 0111 
-    // & 0000 0001
-    // -----------
-    //   0000 0001 --> Same as the shift mask
-    
-    // Use bitwise mask to filter out just the shift
-    if ( (mods & GLFW_MOD_SHIFT) == GLFW_MOD_SHIFT)
-    {
-        // Shift is down and maybe other things, too
-        bShiftDown = true;
-    }
-    if ( (mods & GLFW_MOD_CONTROL) == GLFW_MOD_CONTROL)
-    {
-        // Shift is down and maybe other things, too
-        bControlDown = true;
-    }
-    if ( (mods & GLFW_MOD_ALT) == GLFW_MOD_ALT)
-    {
-        // Shift is down and maybe other things, too
-        bAltDown = true;
-    }
-
-    // If you are using a bunch of combos, maybe make a set of 
-    //  functions like "isShiftDownByItself()" and "isShiftDown()", etc.
-    float cameraSpeed = 0.1f;
-    float lightMovementSpeed = .25f;
-    float moveSpeed = 0.05f;
-    float rotateSpeed = 1.0f;
-    float scaleSpeed = 0.015f;
-
-    //Fixes scale speed;
-    for (int i = 0; i < sceneLoader->GetModels()->size(); i++)
-    {
-        if (sceneLoader->GetModels()->at(i).fileName == g_entityManager.GetEntities().at(g_selectedObject)->GetComponent<cMeshRenderer>()->meshName)
-        {
-            scaleSpeed *= sceneLoader->GetModels()->at(i).defaultScale;
-        }
-    }
-
-    // If JUST the shift is down, move the "selected" object
-    if ( bShiftDown && ( ! bControlDown ) && ( ! bAltDown ) )
-    {
-        if (transformType == Transform::Translate)
-        {
-            if (key == GLFW_KEY_A) { g_entityManager.GetEntities().at(::g_selectedObject)->GetComponent<cTransform>()->position.x -= moveSpeed; } // Go left
-            if (key == GLFW_KEY_D) { g_entityManager.GetEntities().at(::g_selectedObject)->GetComponent<cTransform>()->position.x += moveSpeed; } // Go right
-            if (key == GLFW_KEY_W) { g_entityManager.GetEntities().at(::g_selectedObject)->GetComponent<cTransform>()->position.z += moveSpeed; }// Go forward 
-            if (key == GLFW_KEY_S) { g_entityManager.GetEntities().at(::g_selectedObject)->GetComponent<cTransform>()->position.z -= moveSpeed; }// Go backwards
-            if (key == GLFW_KEY_Q) { g_entityManager.GetEntities().at(::g_selectedObject)->GetComponent<cTransform>()->position.y -= moveSpeed; }// Go "Down"
-            if (key == GLFW_KEY_E) { g_entityManager.GetEntities().at(::g_selectedObject)->GetComponent<cTransform>()->position.y += moveSpeed; }// Go "Up"
-        }
-        else if (transformType == Transform::Rotate)
-        {
-            glm::vec3 euler = g_entityManager.GetEntities().at(::g_selectedObject)->GetComponent<cTransform>()->GetEulerRotation();
-
-            if (key == GLFW_KEY_A) { euler.x -= glm::radians(rotateSpeed); } // Go left
-            if (key == GLFW_KEY_D) { euler.x += glm::radians(rotateSpeed); } // Go right
-            if (key == GLFW_KEY_W) { euler.z += glm::radians(rotateSpeed); }// Go forward 
-            if (key == GLFW_KEY_S) { euler.z -= glm::radians(rotateSpeed); }// Go backwards
-            if (key == GLFW_KEY_Q) { euler.y -= glm::radians(rotateSpeed); }// Go "Down"
-            if (key == GLFW_KEY_E) { euler.y += glm::radians(rotateSpeed); }// Go "Up"
-
-            g_entityManager.GetEntities().at(::g_selectedObject)->GetComponent<cTransform>()->SetRotation(euler);
-        }
-        else if (transformType == Transform::Scale)
-        {
-            if (key == GLFW_KEY_W)
-            {
-                g_entityManager.GetEntities().at(::g_selectedObject)->GetComponent<cTransform>()->scale += scaleSpeed;
-            }
-            else if (key == GLFW_KEY_S)
-            {
-                g_entityManager.GetEntities().at(::g_selectedObject)->GetComponent<cTransform>()->scale -= scaleSpeed;
-            }
-        }
-    // TODO: Add some controls to change the "selcted object"
-    // i.e. change the ::g_selectedObject value
-
-
-    }//if ( bShiftDown && ( ! bControlDown ) && ( ! bAltDown ) )
-
-    if (key == GLFW_KEY_R && action == GLFW_PRESS)
-    {
-        transformType = Transform::Translate;
-    }
-    else if (key == GLFW_KEY_T && action == GLFW_PRESS)
-    {
-        transformType = Transform::Rotate;
-    }
-    else if (key == GLFW_KEY_Y && action == GLFW_PRESS)
-    {
-        transformType = Transform::Scale;
-    }
-
-    // If JUST the ALT is down, move the "selected" light
-    if ( ( ! bShiftDown ) && ( ! bControlDown ) && bAltDown )
-    {
-        if (key == GLFW_KEY_A)  {   ::gTheLights.theLights[::g_selectedLight].position.x -= lightMovementSpeed;     } // Go left
-        if (key == GLFW_KEY_D)  {   ::gTheLights.theLights[::g_selectedLight].position.x += lightMovementSpeed;     } // Go right
-        if (key == GLFW_KEY_W)  {   ::gTheLights.theLights[::g_selectedLight].position.z += lightMovementSpeed;     }// Go forward 
-        if (key == GLFW_KEY_S)  {   ::gTheLights.theLights[::g_selectedLight].position.z -= lightMovementSpeed;     }// Go backwards
-        if (key == GLFW_KEY_Q)  {   ::gTheLights.theLights[::g_selectedLight].position.y -= lightMovementSpeed;     }// Go "Down"
-        if (key == GLFW_KEY_E)  {   ::gTheLights.theLights[::g_selectedLight].position.y += lightMovementSpeed;     }// Go "Up"
-
-        // constant attenuation
-        if (key == GLFW_KEY_1 ) 
-        {  
-            ::gTheLights.theLights[::g_selectedLight].atten.x *= 0.99f; // -1% less
-        }
-        else if (key == GLFW_KEY_2 ) 
-        {  
-            ::gTheLights.theLights[::g_selectedLight].atten.x *= 1.01f; // +1% more
-        }
-        // linear attenuation
-        else if (key == GLFW_KEY_3 )
-        {  
-            ::gTheLights.theLights[::g_selectedLight].atten.y *= 0.99f; // -1% less
-        }
-        else if (key == GLFW_KEY_4 )
-        {  
-            ::gTheLights.theLights[::g_selectedLight].atten.y *= 1.01f; // +1% more
-        }
-        // quardatic attenuation
-        else if (key == GLFW_KEY_5 )
-        {  
-            ::gTheLights.theLights[::g_selectedLight].atten.z *= 0.99f; // -1% less
-        }
-        else if (key == GLFW_KEY_6 )
-        {  
-            ::gTheLights.theLights[::g_selectedLight].atten.z *= 1.01f; // +1% more
-        }
-
-        if (key == GLFW_KEY_PAGE_UP)
-        {
-            ::gTheLights.theLights[::g_selectedLight].param2.x = 1.0f;
-        }
-        else if (key == GLFW_KEY_PAGE_DOWN)
-        {
-            ::gTheLights.theLights[::g_selectedLight].param2.x = 0.0f;
-        }
-
-        if (key == GLFW_KEY_PERIOD && action == GLFW_PRESS)
-        {
-            if(g_selectedLight >= 1)
-                g_selectedLight--;
-        }
-        else if (key == GLFW_KEY_SLASH && action == GLFW_PRESS)
-        {
-            if (g_selectedLight < cLightManager::NUMBER_OF_LIGHTS - 1)
-                g_selectedLight++;
-        }
-
-        std::cout << ::g_selectedLight << " positionXYZ : "
-            << ::gTheLights.theLights[::g_selectedLight].position.x << ", "
-            << ::gTheLights.theLights[::g_selectedLight].position.y << ", "
-            << ::gTheLights.theLights[::g_selectedLight].position.z << "  "
-            << "attenuation (C, L, Q): " 
-            << ::gTheLights.theLights[::g_selectedLight].atten.x << ", "        // Const
-            << ::gTheLights.theLights[::g_selectedLight].atten.y << ", "        // Linear
-            << ::gTheLights.theLights[::g_selectedLight].atten.z << "  "        // Quadratic
-            << std::endl;
-
-    // TODO: Add some controls to change the "selcted object"
-    // i.e. change the ::g_selectedObject value
-
-
-    }//if ( bShiftDown && ( ! bControlDown ) && ( ! bAltDown ) )
-
-
-    //Changing selected mesh
-    else if (key == GLFW_KEY_SEMICOLON && action == GLFW_PRESS && g_selectedObject > 0)
-    {
-        g_selectedObject--;
-        std::cout << "Selected mesh: " << g_entityManager.GetEntities().at(::g_selectedObject)->GetComponent<cMeshRenderer>()->friendlyName << std::endl;
-    }
-    else if (key == GLFW_KEY_APOSTROPHE && action == GLFW_PRESS && g_selectedObject < g_entityManager.GetEntities().size() - 1)
-    {
-        g_selectedObject++;
-        std::cout << "Selected mesh: " << g_entityManager.GetEntities().at(::g_selectedObject)->GetComponent<cMeshRenderer>()->friendlyName << std::endl;
-    }
-
     return;
 }
 
 bool DistanceToCameraPredicate(cEntity* a, cEntity* b)
 {
-    if (glm::distance(a->GetComponent<cTransform>()->position, g_FlyCamera->getEye()) > glm::distance(b->GetComponent<cTransform>()->position, g_FlyCamera->getEye()))
+    if (glm::distance(a->GetComponent<cTransform>()->position, cameraEye) > glm::distance(b->GetComponent<cTransform>()->position, cameraEye))
     {
         return true;
     }
@@ -596,42 +419,49 @@ bool DistanceToCameraPredicate(cEntity* a, cEntity* b)
 // We call these every frame
 void ProcessAsyncMouse(GLFWwindow* window, float deltaTime)
 {
-
-    double x, y;
-    glfwGetCursorPos(window, &x, &y);
-
-    ::g_FlyCamera->setMouseXY(x, y);
-
-    const float MOUSE_SENSITIVITY = 4.0f;
-
-
-    // Mouse left (primary?) button pressed? 
-    // AND the mouse is inside the window...
-    if ((glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-        && ::g_MouseIsInsideWindow)
+    if (!io->WantCaptureMouse)
     {
-        // Mouse button is down so turn the camera
-        ::g_FlyCamera->Yaw_LeftRight(-::g_FlyCamera->getDeltaMouseX() * MOUSE_SENSITIVITY * deltaTime);
+        double x, y;
+        glfwGetCursorPos(window, &x, &y);
 
-        ::g_FlyCamera->Pitch_UpDown(::g_FlyCamera->getDeltaMouseY() * MOUSE_SENSITIVITY * deltaTime);
-
-    }
-
-    // Adjust the mouse speed
-    if (::g_MouseIsInsideWindow)
-    {
-        const float MOUSE_WHEEL_SENSITIVITY = 0.1f;
-
-        // Adjust the movement speed based on the wheel position
-        ::g_FlyCamera->movementSpeed -= (::g_FlyCamera->getMouseWheel() * MOUSE_WHEEL_SENSITIVITY);
-
-        // Clear the mouse wheel delta (or it will increase constantly)
-        ::g_FlyCamera->clearMouseWheelValue();
-
-
-        if (::g_FlyCamera->movementSpeed <= 0.0f)
+        if (firstMouse)
         {
-            ::g_FlyCamera->movementSpeed = 0.0f;
+            lastX = (float)x;
+            lastY = (float)y;
+
+            firstMouse = false;
+        }
+
+        double xDelta = x - lastX;
+        double yDelta = lastY - y;
+        lastX = (float)x;
+        lastY = (float)y;
+
+
+        if ((glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+            && g_MouseIsInsideWindow)
+        {
+            const double MOUSE_SENSITIVITY = .1f;
+
+            xDelta *= MOUSE_SENSITIVITY;
+            yDelta *= MOUSE_SENSITIVITY;
+
+            yaw += (float)xDelta;
+            pitch += (float)yDelta;
+
+            if (pitch > 89.0f)
+                pitch = 89.0f;
+            if (pitch < -89.0f)
+                pitch = -89.0f;
+
+            glm::vec3 direction;
+            direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+            direction.y = sin(glm::radians(pitch));
+            direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+            cameraDir = glm::normalize(direction);
+
+            cameraRight = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), cameraDir));
+            cameraUp = glm::cross(cameraDir, cameraRight);
         }
     }
     return;
@@ -644,29 +474,29 @@ void ProcessAsyncKeyboard(GLFWwindow* window, float deltaTime)
     {
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_S) != GLFW_PRESS)
         {
-            g_FlyCamera->MoveForward_Z(flyCameraSpeed * deltaTime);
+            cameraEye += cameraDir * flyCameraSpeed * deltaTime;
         }
         else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_W) != GLFW_PRESS)
         {
-            g_FlyCamera->MoveForward_Z(-flyCameraSpeed * deltaTime);
+            cameraEye -= cameraDir * flyCameraSpeed * deltaTime;
         }
 
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_D) != GLFW_PRESS)
         {
-            g_FlyCamera->MoveLeftRight_X(-flyCameraSpeed * deltaTime);
+            cameraEye += cameraRight * flyCameraSpeed * deltaTime;
         }
         else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_A) != GLFW_PRESS)
         {
-            g_FlyCamera->MoveLeftRight_X(flyCameraSpeed * deltaTime);
+            cameraEye -= cameraRight * flyCameraSpeed * deltaTime;
         }
 
         if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_E) != GLFW_PRESS)
         {
-            g_FlyCamera->MoveUpDown_Y(-flyCameraSpeed * deltaTime);
+            cameraEye -= glm::vec3(0.0f, 1.0f, 0.0f) * flyCameraSpeed * deltaTime;
         }
         else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_Q) != GLFW_PRESS)
         {
-            g_FlyCamera->MoveUpDown_Y(flyCameraSpeed * deltaTime);
+            cameraEye += glm::vec3(0.0f, 1.0f, 0.0f) * flyCameraSpeed * deltaTime;
         }
     }
 }
@@ -674,8 +504,6 @@ void ProcessAsyncKeyboard(GLFWwindow* window, float deltaTime)
 int main(void)
 {
     GLFWwindow* window;
-
-    g_FlyCamera = new cFlyCamera();
 //    GLuint vertex_buffer = 0;     // ** NOW in VAO Manager **
 
 //    GLuint vertex_shader;     // Now in the "Shader Manager"
@@ -698,7 +526,7 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
-    window = glfwCreateWindow(1200, 640, "Ethan's Engine", NULL, NULL);
+    window = glfwCreateWindow(1600, 900, "Ethan's Engine", NULL, NULL);
 
     if (!window)
     {
@@ -709,8 +537,6 @@ int main(void)
     glfwSetKeyCallback(window, key_callback);	// was “key_callback”
     // These are new:
     glfwSetCursorEnterCallback(window, GLFW_cursor_enter_callback);
-    glfwSetScrollCallback(window, GLFW_scroll_callback);
-
     glfwMakeContextCurrent(window);
 // Tiny change from the original documentation code
     gladLoadGLLoader( (GLADloadproc) glfwGetProcAddress);
@@ -754,6 +580,7 @@ int main(void)
     GLint matProjection_Location = glGetUniformLocation(program, "matProjection");
     
     //OUTSIDE LIGHTS
+    gTheLights.theLights[0].name = "Outside light";
     gTheLights.theLights[0].position = glm::vec4(-4.5f, 6.0f, -1.5f, 1.0f);
     gTheLights.theLights[0].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
     gTheLights.theLights[0].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100000.0f);
@@ -763,6 +590,7 @@ int main(void)
     gTheLights.TurnOnLight(0);  // Or this!
     gTheLights.SetUpUniformLocations(program, 0);
 
+    gTheLights.theLights[1].name = "Outside light";
     gTheLights.theLights[1].position = glm::vec4(3.25f, 5.5f, 8.5f, 1.0f);
     gTheLights.theLights[1].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
     gTheLights.theLights[1].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100000.0f);
@@ -772,6 +600,7 @@ int main(void)
     gTheLights.TurnOnLight(1);  // Or this!
     gTheLights.SetUpUniformLocations(program, 1);
 
+    gTheLights.theLights[2].name = "Outside light";
     gTheLights.theLights[2].position = glm::vec4(-2.5f, 5.5f, -8.5f, 1.0f);
     gTheLights.theLights[2].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
     gTheLights.theLights[2].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100000.0f);
@@ -781,6 +610,7 @@ int main(void)
     gTheLights.TurnOnLight(2);  // Or this!
     gTheLights.SetUpUniformLocations(program, 2);
 
+    gTheLights.theLights[3].name = "Outside light";
     gTheLights.theLights[3].position = glm::vec4(6.5f, 5.5f, -8.5f, 1.0f);
     gTheLights.theLights[3].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
     gTheLights.theLights[3].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100000.0f);
@@ -790,6 +620,7 @@ int main(void)
     gTheLights.TurnOnLight(3);  // Or this!
     gTheLights.SetUpUniformLocations(program, 3);
 
+    gTheLights.theLights[6].name = "Outside light";
     gTheLights.theLights[6].position = glm::vec4(10.5f, 5.5f, -0.25f, 1.0f);
     gTheLights.theLights[6].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
     gTheLights.theLights[6].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100000.0f);
@@ -799,6 +630,7 @@ int main(void)
     gTheLights.TurnOnLight(6);  // Or this!
     gTheLights.SetUpUniformLocations(program, 6);
 
+    gTheLights.theLights[7].name = "Outside light";
     gTheLights.theLights[7].position = glm::vec4(-10.5f, 6.5f, 4.0f, 1.0f);
     gTheLights.theLights[7].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
     gTheLights.theLights[7].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100000.0f);
@@ -808,6 +640,7 @@ int main(void)
     gTheLights.TurnOnLight(7);  // Or this!
     gTheLights.SetUpUniformLocations(program, 7);
 
+    gTheLights.theLights[9].name = "Outside light";
     gTheLights.theLights[9].position = glm::vec4(4.25f, 6.0f, 26.5f, 1.0f);
     gTheLights.theLights[9].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
     gTheLights.theLights[9].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100000.0f);
@@ -819,6 +652,7 @@ int main(void)
 
 
     //INSIDE LIGHTS
+    gTheLights.theLights[4].name = "Inside light";
     gTheLights.theLights[4].position = glm::vec4(1.5f, 7.5f, -0.25f, 1.0f);
     gTheLights.theLights[4].diffuse = glm::vec4(0.76f, 0.9f, 1.0f, 1.0f);
     gTheLights.theLights[4].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100000.0f);
@@ -830,6 +664,7 @@ int main(void)
     gTheLights.TurnOnLight(4);  // Or this!
     gTheLights.SetUpUniformLocations(program, 4);
 
+    gTheLights.theLights[5].name = "Inside light";
     gTheLights.theLights[5].position = glm::vec4(1.5f, 7.5f, 3.5f, 1.0f);
     gTheLights.theLights[5].diffuse = glm::vec4(0.76f, 0.9f, 1.0f, 1.0f);
     gTheLights.theLights[5].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100000.0f);
@@ -842,6 +677,8 @@ int main(void)
     gTheLights.SetUpUniformLocations(program, 5);
 
     //SUN
+
+    gTheLights.theLights[8].name = "Sun light";
     gTheLights.theLights[8].position = glm::vec4(0.f, 0.f, 0.f, 1.0f);
     gTheLights.theLights[8].diffuse = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     gTheLights.theLights[8].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100000.0f);
@@ -901,7 +738,7 @@ int main(void)
         {
             std::cout << "Loaded scene into VAO manager" << std::endl << std::endl;
 
-            g_FlyCamera->setEye(sceneLoader->GetCameraStartingPosition());
+            cameraEye = sceneLoader->GetCameraStartingPosition();
         }
         else
         {
@@ -981,6 +818,8 @@ int main(void)
     uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxReflections", glGetUniformLocation(program, "bUseSkyboxReflections")));
     uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxRefraction", glGetUniformLocation(program, "bUseSkyboxRefraction")));
 
+    uniformLocations.insert(std::pair<std::string, GLint>("gamma", glGetUniformLocation(program, "gamma")));
+
     /*sModelDrawInfo debugSphere;
     if (!gVAOManager.LoadModelIntoVAO("ISO_Shphere_flat_3div_xyz_n_rgba_uv.ply", debugSphere, program))
     {
@@ -1006,7 +845,7 @@ int main(void)
     int screenPixelDensity = 2000;
 
     g_fbo = new cFBO();
-    if (!g_fbo->init((int)screenPixelDensity * ratio, screenPixelDensity, errorString))
+    if (!g_fbo->init((int)(screenPixelDensity * ratio), screenPixelDensity, errorString))
     {
         std::cout << "Error in FBO" << std::endl;
     }
@@ -1018,16 +857,31 @@ int main(void)
     const GLint RENDER_PASS_1_LIGHTING = 1;
     const GLint RENDER_PASS_2_EFFECTS = 2;
 
+    //GUI StUFF
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& getIo = ImGui::GetIO();
+    //(void)io;
+    io = &getIo;
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 420");
+
+    ImGui::GetStyle().WindowRounding = 5.0f;
+
+    io->Fonts->AddFontFromFileTTF("assets/fonts/Roboto-Medium.ttf", 15);
+
     while (!glfwWindowShouldClose(window))
     {
         glUniform1ui(uniformLocations["passNumber"], RENDER_PASS_0_G_BUFFER);
+        glUniform1f(uniformLocations["gamma"], gamma);
 
         float currentTime = (float)glfwGetTime();
         float deltaTime = currentTime - previousTime;
         deltaTime = (deltaTime > MAX_DELTA_TIME ? MAX_DELTA_TIME : deltaTime);
         previousTime = currentTime;
 
-        glm::mat4 matModel;    // used to be "m"; Sometimes it's called "world"
+        //glm::mat4 matModel;    // used to be "m"; Sometimes it's called "world"
         glm::mat4 p;
         glm::mat4 v;
 
@@ -1038,7 +892,7 @@ int main(void)
         glViewport(0, 0, g_fbo->width, g_fbo->height);
         ratio = g_fbo->width / (float)g_fbo->height;
 
-        glUniform2f(uniformLocations["screenWidthHeight"], g_fbo->width, g_fbo->height);
+        glUniform2f(uniformLocations["screenWidthHeight"], (GLfloat)g_fbo->width, (GLfloat)g_fbo->height);
 
         // Turn on the depth buffer
         glEnable(GL_DEPTH);         // Turns on the depth buffer
@@ -1072,11 +926,9 @@ int main(void)
         glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
 
-        glm::vec3 cameraEye = g_FlyCamera->getEye();
-
         v = glm::lookAt(cameraEye,     // "eye"
-            g_FlyCamera->getAtInWorldSpace(),  // "at"
-            g_FlyCamera->getUpVector());
+            cameraEye + cameraDir,  // "at"
+            cameraUp);
 
         glUniform4f(uniformLocations["eyeLocation"], cameraEye.x, cameraEye.y, cameraEye.z, 1.0f);
 
@@ -1110,28 +962,28 @@ int main(void)
         Draw(opaqueMeshes, transparentMeshes, uniformLocations, deltaTime);
        
 
-       glm::vec3 fullscreenPos = glm::vec3(0.f, 0.f, -1.f);
-       
-       cMeshRenderer* fullscreenMesh = new cMeshRenderer();
-       fullscreenMesh->meshName = "fullscreenquad.ply";
-       fullscreenMesh->friendlyName = "Fullscreen Quad";
-       
-       fullscreenMesh->bDontLight = true;
-       fullscreenMesh->bUseWholeObjectDiffuseColour = true;
-       fullscreenMesh->wholeObjectDiffuseRGBA = glm::vec4(1.0f);
-       
-       
-       cEntity* fullscreenEntity = g_entityManager.CreateEntity(false);
-       fullscreenEntity->AddComponent<cMeshRenderer>(fullscreenMesh);
-       
-       cTransform* fullscreenTransform = fullscreenEntity->GetComponent<cTransform>();
-       fullscreenTransform->scale = glm::vec3(10.0f);
-       fullscreenTransform->Rotate(glm::vec3(0.0f, glm::radians(180.0f), 0.0f));
+        glm::vec3 fullscreenPos = glm::vec3(0.f, 0.f, -1.f);
+        
+        cMeshRenderer* fullscreenMesh = new cMeshRenderer();
+        fullscreenMesh->meshName = "fullscreenquad.ply";
+        fullscreenMesh->friendlyName = "Fullscreen Quad";
+        
+        fullscreenMesh->bDontLight = true;
+        fullscreenMesh->bUseWholeObjectDiffuseColour = true;
+        fullscreenMesh->wholeObjectDiffuseRGBA = glm::vec4(1.0f);
+        
+        
+        cEntity* fullscreenEntity = g_entityManager.CreateEntity(false);
+        fullscreenEntity->AddComponent<cMeshRenderer>(fullscreenMesh);
+        
+        cTransform* fullscreenTransform = fullscreenEntity->GetComponent<cTransform>();
+        fullscreenTransform->scale = glm::vec3(10.0f);
+        fullscreenTransform->Rotate(glm::vec3(0.0f, glm::radians(180.0f), 0.0f));
        
        
         v = glm::lookAt(fullscreenPos,     // "eye"
             fullscreenPos + glm::vec3(0.f, 0.f, 1.0f) ,  // "at"
-            g_FlyCamera->getUpVector());
+            cameraUp);
         glUniformMatrix4fv(matView_Location, 1, GL_FALSE, glm::value_ptr(v));
         
         p = glm::ortho(0.0f, 1.0f / (float)width, 0.0f, 1.0f / (float)height, 0.01f, 1000.0f);
@@ -1240,8 +1092,13 @@ int main(void)
 
         fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
         DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, uniformLocations, fullscreenPos);
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
+        //END OF FINAL PASS
+
+        if(showDebugGui)
+            DrawGUI();
+
+        //glEnable(GL_CULL_FACE);
+        //glCullFace(GL_BACK);
 
         g_entityManager.DeleteEntity(fullscreenEntity);
         // "Present" what we've drawn.
@@ -1251,25 +1108,29 @@ int main(void)
         ProcessAsyncMouse(window, (float)deltaTime);
         ProcessAsyncKeyboard(window, (float)deltaTime);
 
-        g_FlyCamera->Update(deltaTime);   
+        //g_FlyCamera->Update(deltaTime);   
 
         //Flicker lights
-        gTheLights.theLights[0].atten.x = (rand() % 200 + 100) / 1000.0f;
-        gTheLights.theLights[1].atten.x = (rand() % 200 + 100) / 1000.0f;
-        gTheLights.theLights[2].atten.x = (rand() % 200 + 100) / 1000.0f;
-        gTheLights.theLights[3].atten.x = (rand() % 200 + 100) / 1000.0f;
-        gTheLights.theLights[6].atten.x = (rand() % 200 + 100) / 1000.0f;
-        gTheLights.theLights[7].atten.x = (rand() % 200 + 100) / 1000.0f;
+        //gTheLights.theLights[0].atten.x = (rand() % 200 + 100) / 1000.0f;
+        //gTheLights.theLights[1].atten.x = (rand() % 200 + 100) / 1000.0f;
+        //gTheLights.theLights[2].atten.x = (rand() % 200 + 100) / 1000.0f;
+        //gTheLights.theLights[3].atten.x = (rand() % 200 + 100) / 1000.0f;
+        //gTheLights.theLights[6].atten.x = (rand() % 200 + 100) / 1000.0f;
+        //gTheLights.theLights[7].atten.x = (rand() % 200 + 100) / 1000.0f;
 
     }
 
-    delete g_FlyCamera;
     g_entityManager.DeleteEntity(g_DebugSphere);
 
     if (!g_fbo->shutdown())
     {
         std::cout << "Error shutting down fbo" << std::endl;
     }
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+
+    ImGui::DestroyContext();
 
     delete g_fbo;
 
@@ -1291,10 +1152,10 @@ void Draw(std::vector<cEntity*> opaqueMeshes, std::vector<cEntity*> transparentM
 
         if (curEntity->GetComponent<cMeshRenderer>()->friendlyName == "Sky")
         {
-            curEntity->GetComponent<cTransform>()->position = g_FlyCamera->getEye();
+            curEntity->GetComponent<cTransform>()->position = cameraEye;
         }
 
-        DrawObject(curEntity, matModel, program, &gVAOManager, g_textureManager, uniformLocations, g_FlyCamera->getEye());
+        DrawObject(curEntity, matModel, program, &gVAOManager, g_textureManager, uniformLocations, cameraEye);
     }//for (unsigned int index
 
     //glEnable(GL_BLEND);
@@ -1315,7 +1176,7 @@ void Draw(std::vector<cEntity*> opaqueMeshes, std::vector<cEntity*> transparentM
             curMesh->normalOffset.y += (float)deltaTime / 100.0f;
         }
 
-        DrawObject(curEntity, matModel, program, &gVAOManager, g_textureManager, uniformLocations, g_FlyCamera->getEye());
+        DrawObject(curEntity, matModel, program, &gVAOManager, g_textureManager, uniformLocations, cameraEye);
     }//for (unsigned int index
 
 
@@ -1337,7 +1198,7 @@ void Draw(std::vector<cEntity*> opaqueMeshes, std::vector<cEntity*> transparentM
         debugSphereMesh->objectDebugColourRGBA = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
         glm::mat4 matModelDS = glm::mat4(1.0f);
-        DrawObject(g_DebugSphere, matModelDS, program, &gVAOManager, g_textureManager, uniformLocations, g_FlyCamera->getEye());
+        DrawObject(g_DebugSphere, matModelDS, program, &gVAOManager, g_textureManager, uniformLocations, cameraEye);
     }
     else
     {
@@ -1345,3 +1206,137 @@ void Draw(std::vector<cEntity*> opaqueMeshes, std::vector<cEntity*> transparentM
     }
 }
 
+void DrawGUI()
+{
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    // PP
+    {
+        ImGui::Begin("Post-Processing");
+        ImGui::Text("Gamma Slider");
+        ImGui::SliderFloat("Gamma", &gamma, 0.0f, 5.0f);
+        ImGui::End();
+    }
+
+    //Entites
+    {
+        ImGui::Begin("Entities");
+
+        ImGui::BeginChild("left entity pane", ImVec2(150, 0), true);
+        std::vector<cEntity*> entities = g_entityManager.GetEntities();
+        for (size_t i = 0; i < entities.size(); i++)
+        {
+            if (ImGui::Selectable(std::string(entities[i]->name + ": " + std::to_string(i)).c_str(), selectedEntityDebug == i))
+                selectedEntityDebug = i;
+        }
+        ImGui::EndChild();
+
+        ImGui::SameLine();
+
+        cEntity* curEntity = entities[selectedEntityDebug];
+        ImGui::BeginChild("entity view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
+        ImGui::Text(std::string(curEntity->name + ": %d").c_str(), selectedEntityDebug);
+        ImGui::Separator();
+        if (ImGui::BeginTabBar("##Tabs", ImGuiTabBarFlags_None))
+        {
+            if (ImGui::BeginTabItem("Transform"))
+            {
+                cTransform* curTransform = curEntity->GetComponent<cTransform>();
+                ImGui::Text("Position");
+                ImGui::DragFloat("pos x", &curTransform->position.x);
+                ImGui::DragFloat("pos y", &curTransform->position.y);
+                ImGui::DragFloat("pos z", &curTransform->position.z);
+
+                glm::vec3 angleRotation = curTransform->GetEulerRotation();
+                ImGui::Text("Rotation");
+                ImGui::DragFloat("rot x", &angleRotation.x);
+                ImGui::DragFloat("rot y", &angleRotation.y);
+                ImGui::DragFloat("rot z", &angleRotation.z);
+                curTransform->SetRotation(angleRotation);
+
+                ImGui::Text("Scale");
+                ImGui::DragFloat("scale x", &curTransform->scale.x);
+                ImGui::DragFloat("scale y", &curTransform->scale.y);
+                ImGui::DragFloat("scale z", &curTransform->scale.z);
+
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("Details"))
+            {
+                cMeshRenderer* renderer = curEntity->GetComponent<cMeshRenderer>();
+
+                ImGui::Text(std::string("Mesh Name: " + renderer->meshName).c_str());
+                ImGui::Text(std::string("Friendly Name: " + renderer->friendlyName).c_str());
+
+                ImGui::EndTabItem();
+            }
+            ImGui::EndTabBar();
+        }
+        ImGui::EndChild();
+
+        ImGui::End();
+    }
+
+    //Lights
+    {
+        ImGui::Begin("Lights");
+
+        ImGui::BeginChild("left light pane", ImVec2(150, 0), true);
+        for (size_t i = 0; i < gTheLights.NUMBER_OF_LIGHTS; i++)
+        {
+            if (ImGui::Selectable(std::string(gTheLights.theLights[i].name + ": " + std::to_string(i)).c_str(), selectedLightDebug == i))
+                selectedLightDebug = i;
+        }
+        ImGui::EndChild();
+
+        ImGui::SameLine();
+
+        sLight* curLight = &gTheLights.theLights[selectedLightDebug];
+        ImGui::BeginChild("light view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
+        ImGui::Text(std::string(curLight->name + ": %d").c_str(), selectedLightDebug);
+        ImGui::Separator();
+        if (ImGui::BeginTabBar("##Tabs", ImGuiTabBarFlags_None))
+        {
+            if (ImGui::BeginTabItem("Transform"))
+            {
+                ImGui::Text("Position");
+                ImGui::DragFloat("pos x", &curLight->position.x);
+                ImGui::DragFloat("pos y", &curLight->position.y);
+                ImGui::DragFloat("pos z", &curLight->position.z);
+
+                ImGui::EndTabItem();
+            }
+
+            if (ImGui::BeginTabItem("Lighting"))
+            {
+                ImGui::Checkbox("On", &curLight->on);
+
+                float colors[3] = { curLight->diffuse.x, curLight->diffuse.y, curLight->diffuse.z };
+                ImGui::ColorEdit3("Diffuse", colors);
+                curLight->diffuse.x = colors[0];
+                curLight->diffuse.y = colors[1];
+                curLight->diffuse.z = colors[2];
+
+                ImGui::Text("Attenuation");
+                ImGui::SliderFloat("pos x", &curLight->atten.x, 0.0f, 3.0f);
+                ImGui::SliderFloat("pos y", &curLight->atten.y, 0.0f, 3.0f);
+                ImGui::SliderFloat("pos z", &curLight->atten.z, 0.0f, 3.0f);
+                ImGui::SliderFloat("distance cutoff", &curLight->atten.w, 0.0f, 10000.0f);
+
+                ImGui::EndTabItem();
+            }
+        }
+        ImGui::EndChild();
+
+        ImGui::End();
+    }
+
+    //ImGui::ShowDemoWindow();
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    ImGui::EndFrame();
+}

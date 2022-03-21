@@ -33,9 +33,8 @@ sLight::sLight()
 	this->param1.z = 0.0f;
 	this->param1.w = 1.0f;	// not used, so set to 1.0f
 
-	// x = 0 for off, 1 for on
-	this->param2 = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);	
-
+	// x = 0 for off, 1 for on		
+	this->on = false;
 	// Here's the uniform locations of the light values in the shader
 	// Settting these to -1 which is the "not found" or unknown uniform location
 	this->position_uniform_location = -1;
@@ -53,7 +52,7 @@ void cLightManager::TurnOnLight(unsigned int lightNumber)
 {
 	if (lightNumber < cLightManager::NUMBER_OF_LIGHTS)
 	{
-		this->theLights[lightNumber].param2.x = 1.0f;
+		this->theLights[lightNumber].on = true;
 	}
 	return;
 }
@@ -62,7 +61,7 @@ void cLightManager::TurnOffLight(unsigned int lightNumber)
 {
 	if (lightNumber < cLightManager::NUMBER_OF_LIGHTS)
 	{
-		this->theLights[lightNumber].param2.x = 0.0f;
+		this->theLights[lightNumber].on = false;
 	}
 	return;
 }
@@ -160,11 +159,14 @@ void cLightManager::CopyLightInfoToShader(void)
 			this->theLights[i].param1.z,
 			this->theLights[i].param1.w);
 
+		glm::vec4 secondParams = glm::vec4(0.0f);
+		secondParams.x = (this->theLights[i].on) ? 1.0f : 0.0f;
+
 		glUniform4f(this->theLights[i].param2_uniform_location,
-			this->theLights[i].param2.x,
-			this->theLights[i].param2.y,
-			this->theLights[i].param2.z,
-			this->theLights[i].param2.w);
+			secondParams.x,
+			secondParams.y,
+			secondParams.z,
+			secondParams.w);
 	}
 
 	return;

@@ -166,6 +166,13 @@
     <ClCompile Include="DrawObjectFunction.cpp" />
     <ClCompile Include="FlyCamera\cFlyCamera.cpp" />
     <ClCompile Include="glad.c" />
+    <ClCompile Include="include\imgui\imgui.cpp" />
+    <ClCompile Include="include\imgui\imgui_demo.cpp" />
+    <ClCompile Include="include\imgui\imgui_draw.cpp" />
+    <ClCompile Include="include\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="include\imgui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="include\imgui\imgui_tables.cpp" />
+    <ClCompile Include="include\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Physics\cForceGenerator.cpp" />
     <ClCompile Include="Physics\cForceRegistry.cpp" />
     <ClCompile Include="Physics\cParticle.cpp" />

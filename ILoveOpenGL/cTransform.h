@@ -15,10 +15,10 @@ public:
 	cTransform() : position(glm::vec3(0.f)), rotation(glm::vec3(0.0f)), scale(1.0f){}
 
 	void SetRotation(glm::quat q);
-	void SetRotation(glm::vec3 v);
+	void SetRotation(glm::vec3 v, bool degrees = false);
 
 	glm::quat GetQuatRotation();
-	glm::vec3 GetEulerRotation();
+	glm::vec3 GetEulerRotation(bool degrees = false);
 
 	void Rotate(glm::quat q);
 	void Rotate(glm::vec3 v);
