@@ -13,7 +13,7 @@ layout (location = 1)out vec4 pixelMatColor;
 layout (location = 2)out vec4 pixelNormal;
 layout (location = 3)out vec4 pixelWorldPos;
 layout (location = 4)out vec4 pixelSpecular;
-layout (location = 5)out vec4 pixelFirstPass;
+layout (location = 5)out vec4 pixelBrightColour;
 
 // The "whole object" colour (diffuse and specular)
 uniform vec4 wholeObjectDiffuseColour;	// Whole object diffuse colour
@@ -94,7 +94,10 @@ uniform vec4 textureRatios;
 
 uniform vec2 screenWidthHeight;
 
-uniform float gamma;
+//x = gamma;
+//y = exposure;
+//z use exposure based tonemapping > 0.5f
+uniform vec4 postprocessingVariables;
 
 uniform samplerCube skyBox; // GL_TEXTURE_CUBE_MAP
 
@@ -109,7 +112,7 @@ void main()
 
 	vec4 normals = fNormal;
 	vec4 vertexDiffuseColour = fVertexColour;
-	pixelFirstPass = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	//pixelFirstPass = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 	
 
 	if(passNumber == RENDER_PASS_2_EFFECTS_PASS)
@@ -136,8 +139,26 @@ void main()
 		
 		}
 
-		//Gamma adjustment
-		pixelColour.rgb = pow(finalColour, vec3(1.0/gamma));
+
+		//Tonemapping for HDR	
+		vec3 mapped = finalColour;
+		if(postprocessingVariables.z > 0.5f)
+		{
+			//Reinhard tone mapping
+			mapped = finalColour / (finalColour + vec3(1.0));
+		}
+		//postprocessingVariables.z == 0.0f = use exposure.
+		else
+		{   // exposure tone mapping                //Exposure
+			mapped = vec3(1.0) - exp(-finalColour * postprocessingVariables.y);
+		}
+		// gamma correction 
+		mapped = pow(mapped, vec3(1.0/postprocessingVariables.x));
+  
+		pixelColour.rgb = mapped;
+		pixelColour.a = 1.0f;
+
+		return;
 	}
 
 	if(passNumber == RENDER_PASS_1_LIGHT_PASS)
@@ -164,23 +185,15 @@ void main()
 			pixelColour.rgb = vertDif.rgb;
 			//pixelColour *= 0.001f;
 			//pixelColour += vec4(1.0f, 0.0f, 0.0f, 1.0f);
-			return;
 		}
 		else{
 
 			vec4 vertNormal = texture(texture_Normal, UVLookup).rgba;		
 			vec4 vertSpecular = texture(texture_Specular, UVLookup).rgba;
 
-			pixelColour = calcualteLightContrib( vertDif.rgb, vertNormal.xyz, vertWorldPos.xyz, vertSpecular.rgba );
-												
+			pixelColour = calcualteLightContrib( vertDif.rgb, vertNormal.xyz, vertWorldPos.xyz, vertSpecular.rgba );										
 			pixelColour.a = 1.0f;
-			//pixelColour.rg = UVLookup;
-			//pixelColour.rgb = vertSpecular.rgb;
-
-			//pixelColour.r = 1.0f;
-			return;
 		}
-
 		return;
 	}
 
@@ -195,7 +208,7 @@ void main()
 		vec4 skyBoxTexture = texture(skyBox, fVertPosition.xyz);
 		//pixelColour = skyBoxTexture;
 
-		pixelMatColor = pow(vec4(skyBoxTexture.rgb, 1.0f), vec4(gamma));	
+		pixelMatColor = pow(vec4(skyBoxTexture.rgb, 1.0f), vec4(postprocessingVariables.x));	
 		pixelWorldPos = vec4(fVertWorldLocation.xyz, 0.0f);
 
 		return;
@@ -264,7 +277,7 @@ void main()
 	// Used for drawing "debug" objects (usually wireframe)
 	if ( bDontLightObject )
 	{
-		pixelMatColor = pow(vec4(vertexDiffuseColour.rgb, 1.0f), vec4(gamma));
+		pixelMatColor = pow(vec4(vertexDiffuseColour.rgb, 1.0f), vec4(postprocessingVariables.x));
 		pixelMatColor.w = 0.0f;
 		//pixelColour = vertexDiffuseColour;
 		// Early exit from shader
@@ -282,7 +295,7 @@ void main()
 	//Most textures are already in linear space, because they are created by an artist wit their eyes
 	//and monitors are already corrected
 	//So using gamma correction again would correct them twice
-	pixelMatColor = pow(vec4(vertexDiffuseColour.rgb, 1.0f), vec4(gamma));
+	pixelMatColor = pow(vec4(vertexDiffuseColour.rgb, 1.0f), vec4(postprocessingVariables.x));
 
 	pixelNormal = vec4(normalize(normals.xyz), 1.0f);
 	pixelWorldPos = vec4(fVertWorldLocation.xyz, 1.0f);

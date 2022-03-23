@@ -23,6 +23,7 @@ struct sLight
 					// 1 = spot light
 					// 2 = directional light
 	bool on;
+	float power = 1.0f;
 
 	// Here's the uniform locations of the light values in the shader
 	int position_uniform_location;

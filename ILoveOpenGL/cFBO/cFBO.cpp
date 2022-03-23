@@ -22,7 +22,7 @@ bool cFBO::shutdown(void)
 	glDeleteTextures( 1, &(this->vertexWorldPos_3_ID) );
 	glDeleteTextures( 1, &(this->vertexSpecular_4_ID) );
 
-	glDeleteTextures( 1, &(this->firstPass_5_ID) );
+	glDeleteTextures( 1, &(this->brightColour_5_ID) );
 
 	glDeleteTextures( 1, &(this->depthTexture_ID) );
 
@@ -46,7 +46,7 @@ bool cFBO::init( int width, int height, std::string &error )
 	glGenTextures(1, &(this->colourTexture_0_ID ) );		//g_FBO_colourTexture
 	glBindTexture(GL_TEXTURE_2D, this->colourTexture_0_ID);
 
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB8,		// 8 bits per colour
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F,		// 8 bits per colour
 //	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F,		// 8 bits per colour
 				   this->width,				// g_FBO_SizeInPixes
 				   this->height);			// g_FBO_SizeInPixes
@@ -79,9 +79,9 @@ bool cFBO::init( int width, int height, std::string &error )
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glGenTextures(1, &(this->firstPass_5_ID));
-	glBindTexture(GL_TEXTURE_2D, this->firstPass_5_ID);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, this->width, this->height);
+	glGenTextures(1, &(this->brightColour_5_ID));
+	glBindTexture(GL_TEXTURE_2D, this->brightColour_5_ID);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB16F, this->width, this->height);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -126,7 +126,7 @@ bool cFBO::init( int width, int height, std::string &error )
 						 this->vertexSpecular_4_ID, 0);
 	glFramebufferTexture(GL_FRAMEBUFFER,
 						 GL_COLOR_ATTACHMENT5,
-						 this->firstPass_5_ID, 0);
+						 this->brightColour_5_ID, 0);
 
 //	glFramebufferTexture(GL_FRAMEBUFFER,
 //						 GL_DEPTH_ATTACHMENT,

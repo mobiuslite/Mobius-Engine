@@ -50,6 +50,14 @@ enum class Transform
     Scale
 };
 
+struct PostProcessingInfo
+{
+    float gamma = 1.25f;
+    float exposure = 1.0f;
+
+    bool useExposureToneMapping = false;
+};
+
 GLuint program;
 cFBO* g_fbo;
 
@@ -104,7 +112,8 @@ size_t selectedEntityDebug = 0;
 size_t selectedLightDebug = 0;
 
 float fov = 70.0f;
-float gamma = 1.7f;
+
+PostProcessingInfo postProcessing;
 
 bool g_MouseIsInsideWindow = false;
 
@@ -113,7 +122,7 @@ void extern DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cV
     cBasicTextureManager textureManager, std::map<std::string, GLint> uniformLocations, glm::vec3 eyeLocation);
 
 void Draw(std::vector<cEntity*> opaqueMeshes, std::vector<cEntity*> transparentMeshes, std::map<std::string, int> uniformLocations, float deltaTime);
-void DrawGUI();
+void DrawGUI(float dt);
 
 static void error_callback(int error, const char* description)
 {
@@ -167,14 +176,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         else if (key == GLFW_KEY_F4 && action == GLFW_PRESS)
         {
             debugShowNormals = !debugShowNormals;
-        }
-        else if (key == GLFW_KEY_N && action == GLFW_PRESS)
-        {
-            showTextureIndex++;
-            if (showTextureIndex > 4)
-            {
-                showTextureIndex = 0;
-            }
         }
         else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
         {
@@ -526,7 +527,7 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
-    window = glfwCreateWindow(1600, 900, "Ethan's Engine", NULL, NULL);
+    window = glfwCreateWindow(1800, 1000, "Ethan's Engine", NULL, NULL);
 
     if (!window)
     {
@@ -818,7 +819,7 @@ int main(void)
     uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxReflections", glGetUniformLocation(program, "bUseSkyboxReflections")));
     uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxRefraction", glGetUniformLocation(program, "bUseSkyboxRefraction")));
 
-    uniformLocations.insert(std::pair<std::string, GLint>("gamma", glGetUniformLocation(program, "gamma")));
+    uniformLocations.insert(std::pair<std::string, GLint>("postprocessingVariables", glGetUniformLocation(program, "postprocessingVariables")));
 
     /*sModelDrawInfo debugSphere;
     if (!gVAOManager.LoadModelIntoVAO("ISO_Shphere_flat_3div_xyz_n_rgba_uv.ply", debugSphere, program))
@@ -874,7 +875,9 @@ int main(void)
     while (!glfwWindowShouldClose(window))
     {
         glUniform1ui(uniformLocations["passNumber"], RENDER_PASS_0_G_BUFFER);
-        glUniform1f(uniformLocations["gamma"], gamma);
+
+        float useExposure = postProcessing.useExposureToneMapping ? 0.0f : 1.0f;
+        glUniform4f(uniformLocations["postprocessingVariables"], postProcessing.gamma, postProcessing.exposure, useExposure, 0.0f);
 
         float currentTime = (float)glfwGetTime();
         float deltaTime = currentTime - previousTime;
@@ -1068,6 +1071,9 @@ int main(void)
         case 4:
             textureId = g_fbo->vertexWorldPos_3_ID;
             break;
+        case 5:
+            textureId = g_fbo->brightColour_5_ID;
+            break;
         }
         
         if (textureId != 0)
@@ -1095,7 +1101,7 @@ int main(void)
         //END OF FINAL PASS
 
         if(showDebugGui)
-            DrawGUI();
+            DrawGUI(deltaTime);
 
         //glEnable(GL_CULL_FACE);
         //glCullFace(GL_BACK);
@@ -1206,7 +1212,7 @@ void Draw(std::vector<cEntity*> opaqueMeshes, std::vector<cEntity*> transparentM
     }
 }
 
-void DrawGUI()
+void DrawGUI(float dt)
 {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -1215,8 +1221,43 @@ void DrawGUI()
     // PP
     {
         ImGui::Begin("Post-Processing");
-        ImGui::Text("Gamma Slider");
-        ImGui::SliderFloat("Gamma", &gamma, 0.0f, 5.0f);
+        ImGui::BeginChild("Post-Processing");
+        ImGui::Separator();
+
+        if (ImGui::BeginTabBar("##Tabs", ImGuiTabBarFlags_None))
+        {
+            if (ImGui::BeginTabItem("Visual"))
+            {
+                ImGui::Text("Gamma Slider");
+                ImGui::SliderFloat("Gamma", &postProcessing.gamma, 0.0f, 5.0f);
+
+                ImGui::Checkbox("Use Exposure", &postProcessing.useExposureToneMapping);
+                if (postProcessing.useExposureToneMapping)
+                    ImGui::SliderFloat("Exposure", &postProcessing.exposure, 0.0f, 5.0f);
+
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("G-Buffer"))
+            {
+                if (ImGui::Selectable("Default"))
+                    showTextureIndex = 0;
+                if (ImGui::Selectable("Diffuse"))
+                    showTextureIndex = 1;
+                if (ImGui::Selectable("Normals"))
+                    showTextureIndex = 2;
+                if (ImGui::Selectable("Specular"))
+                    showTextureIndex = 3;
+                if (ImGui::Selectable("World Position"))
+                    showTextureIndex = 4;
+                if (ImGui::Selectable("Bright Colours"))
+                    showTextureIndex = 5;
+
+                ImGui::EndTabItem();
+            }
+            ImGui::EndTabBar();
+        }
+
+        ImGui::EndChild();
         ImGui::End();
     }
 
@@ -1320,16 +1361,27 @@ void DrawGUI()
                 curLight->diffuse.z = colors[2];
 
                 ImGui::Text("Attenuation");
-                ImGui::SliderFloat("pos x", &curLight->atten.x, 0.0f, 3.0f);
-                ImGui::SliderFloat("pos y", &curLight->atten.y, 0.0f, 3.0f);
-                ImGui::SliderFloat("pos z", &curLight->atten.z, 0.0f, 3.0f);
+                ImGui::DragFloat("atten x", &curLight->atten.x, 0.01f, 0.0f, 3.0f);
+                ImGui::DragFloat("atten y", &curLight->atten.y, 0.01f, 0.0f, 3.0f);
+                ImGui::DragFloat("atten z", &curLight->atten.z, .01f, 0.0f, 3.0f);
                 ImGui::SliderFloat("distance cutoff", &curLight->atten.w, 0.0f, 10000.0f);
+
+                ImGui::Text("Light Power");
+                ImGui::DragFloat("power", &curLight->power, 1.0f, 0.0f, 10000.0f);
 
                 ImGui::EndTabItem();
             }
         }
         ImGui::EndChild();
 
+        ImGui::End();
+    }
+
+    //Misc
+    {
+        ImGui::Begin("Misc");
+        ImGui::Text(std::string("Frame time: %f").c_str(), dt);
+        ImGui::Text("Mobius Engine by Ethan Robertson");
         ImGui::End();
     }
 

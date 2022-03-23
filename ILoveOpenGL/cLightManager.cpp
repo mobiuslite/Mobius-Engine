@@ -123,41 +123,43 @@ void cLightManager::CopyLightInfoToShader(void)
 {
 	for (int i = 0; i < this->NUMBER_OF_LIGHTS; i++)
 	{
+		sLight curLight = this->theLights[i];
+
 		glUniform4f(this->theLights[i].position_uniform_location,
-			this->theLights[i].position.x,
-			this->theLights[i].position.y,
-			this->theLights[i].position.z,
-			this->theLights[i].position.w);
+			curLight.position.x,
+			curLight.position.y,
+			curLight.position.z,
+			curLight.position.w);
 
 		glUniform4f(this->theLights[i].diffuse_uniform_location,
-			this->theLights[i].diffuse.x,
-			this->theLights[i].diffuse.y,
-			this->theLights[i].diffuse.z,
-			this->theLights[i].diffuse.w);
+			curLight.diffuse.x * curLight.power,
+			curLight.diffuse.y * curLight.power,
+			curLight.diffuse.z * curLight.power,
+			curLight.diffuse.w * curLight.power);
 
 		glUniform4f(this->theLights[i].specular_uniform_location,
-			this->theLights[i].specular.x,
-			this->theLights[i].specular.y,
-			this->theLights[i].specular.z,
-			this->theLights[i].specular.w);
+			curLight.specular.x,
+			curLight.specular.y,
+			curLight.specular.z,
+			curLight.specular.w);
 
 		glUniform4f(this->theLights[i].atten_uniform_location,
-			this->theLights[i].atten.x,
-			this->theLights[i].atten.y,
-			this->theLights[i].atten.z,
-			this->theLights[i].atten.w);
+			curLight.atten.x,
+			curLight.atten.y,
+			curLight.atten.z,
+			curLight.atten.w);
 
 		glUniform4f(this->theLights[i].direction_uniform_location,
-			this->theLights[i].direction.x,
-			this->theLights[i].direction.y,
-			this->theLights[i].direction.z,
-			this->theLights[i].direction.w);
+			curLight.direction.x,
+			curLight.direction.y,
+			curLight.direction.z,
+			curLight.direction.w);
 
 		glUniform4f(this->theLights[i].param1_uniform_location,
-			this->theLights[i].param1.x,
-			this->theLights[i].param1.y,
-			this->theLights[i].param1.z,
-			this->theLights[i].param1.w);
+			curLight.param1.x,
+			curLight.param1.y,
+			curLight.param1.z,
+			curLight.param1.w);
 
 		glm::vec4 secondParams = glm::vec4(0.0f);
 		secondParams.x = (this->theLights[i].on) ? 1.0f : 0.0f;
