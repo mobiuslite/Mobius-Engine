@@ -89,7 +89,7 @@ uniform vec2 normalOffset;
 
 uniform bool bUseSkybox;
 uniform bool bIsImposter;
-uniform bool bUseSpyglass;
+uniform bool bShowBloom;
 
 uniform bool bUseSkyboxReflections;
 
@@ -129,22 +129,12 @@ void main()
 		UVLookup.x = gl_FragCoord.x / screenWidthHeight.x;
 		UVLookup.y = gl_FragCoord.y / screenWidthHeight.y;
 //		
-		pixelColour.a = 1.0f;
 
-		if(bUseSpyglass){
-			vec3 spyglassTex = texture(texture_00, UVLookup).rgb;
-
-			if(spyglassTex.r + spyglassTex.g + spyglassTex.b < 0.01f){		
-				finalColour = texture(texLightpassColorBuf, UVLookup).rgb;	
-			}else{
-				finalColour = spyglassTex;
-			}		
-		}else{
-			
-			finalColour = texture(texLightpassColorBuf, UVLookup).rgb;
+		finalColour = texture(texLightpassColorBuf, UVLookup).rgb;
+		if (bShowBloom)
+		{
 			vec3 bloomColour = texture(bloomMapColorBuf, UVLookup).rgb;
 			finalColour += bloomColour;
-
 		}
 
 		//Tonemapping for HDR	

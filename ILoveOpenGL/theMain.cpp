@@ -837,7 +837,7 @@ int main(void)
    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("passNumber", glGetUniformLocation(program, "passNumber")));
    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("screenWidthHeight", glGetUniformLocation(program, "screenWidthHeight")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSpyglass", glGetUniformLocation(program, "bUseSpyglass")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bShowBloom", glGetUniformLocation(program, "bShowBloom")));
    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxReflections", glGetUniformLocation(program, "bUseSkyboxReflections")));
    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxRefraction", glGetUniformLocation(program, "bUseSkyboxRefraction")));
 
@@ -1184,6 +1184,8 @@ int main(void)
             glUniform1i(normalShader->uniformLocations["texLightpassColorBuf"], unit);
         }
 
+        //Only show bloom on the lit colour buffer
+        glUniform1f(normalShader->uniformLocations["bShowBloom"], (textureId == g_fbo->colourTexture_0_ID) ? (float)GL_TRUE : (float)GL_FALSE);
         //Upload bloom map
         if (pingPongFBO->pingpongBuffer[!horizontal] != 0)
         {
@@ -1193,17 +1195,7 @@ int main(void)
             glUniform1i(normalShader->uniformLocations["bloomMapColorBuf"], unit);
         }
 
-        //Set spyglass texture
-        GLint spyTextureId = g_textureManager.getTextureIDFromName("spyglass.bmp");
-        if (textureId != 0)
-        {
-            GLint unit = 13;
-            glActiveTexture(unit + GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, spyTextureId);
-            glUniform1i(normalShader->uniformLocations["texture_00"], unit);
-        }
-
-        //glUniform1f(uniformLocations["bUseSpyglass"], (bUseSpyglass) ? (float)GL_TRUE : (float)GL_FALSE);
+        
 
         fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
         DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, normalShader->uniformLocations, fullscreenPos);
