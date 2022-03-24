@@ -11,6 +11,7 @@ cMeshRenderer::cMeshRenderer()
 	this->bDontLight = false;
 
 	this->bIsDebugObject = false;
+	this->emmision = 1.0f;
 
 	// These are for colouring the ENTIRE object as one colour.
 	// Later, these will be replaced:

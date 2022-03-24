@@ -162,6 +162,9 @@
     <ClCompile Include="include\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="cPingPongFBOs.cpp">
+      <Filter>FBO</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cShaderManager.h">
@@ -254,12 +257,18 @@
     <ClInclude Include="cTextureViewer.h">
       <Filter>Components</Filter>
     </ClInclude>
+    <ClInclude Include="cPingPongFBOs.h">
+      <Filter>FBO</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\fragShader_01.glsl">
       <Filter>ShaderManager\Shaders</Filter>
     </None>
     <None Include="assets\shaders\vertShader_01.glsl">
+      <Filter>ShaderManager\Shaders</Filter>
+    </None>
+    <None Include="assets\shaders\pingpongShader.glsl">
       <Filter>ShaderManager\Shaders</Filter>
     </None>
   </ItemGroup>

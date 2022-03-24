@@ -42,6 +42,7 @@
 #include "cEntityManager.h"
 #include "cTransform.h"
 #include "cTextureViewer.h"
+#include "cPingPongFBOs.h"
 
 enum class Transform
 {
@@ -52,10 +53,14 @@ enum class Transform
 
 struct PostProcessingInfo
 {
-    float gamma = 1.25f;
+    float gamma = 1.85f;
     float exposure = 1.0f;
 
     bool useExposureToneMapping = false;
+
+    float bloomThreshhold = 1.0f;
+    float bloomSize = 1.0f;
+    unsigned int bloomIterationAmount = 12;
 };
 
 GLuint program;
@@ -114,6 +119,7 @@ size_t selectedLightDebug = 0;
 float fov = 70.0f;
 
 PostProcessingInfo postProcessing;
+cPingPongFBOs* pingPongFBO;
 
 bool g_MouseIsInsideWindow = false;
 
@@ -558,12 +564,28 @@ int main(void)
     cShaderManager::cShader fragShader;
     fragShader.fileName = "assets/shaders/fragShader_01.glsl";
 
+    cShaderManager::cShader pingPongFragShader;
+    pingPongFragShader.fileName = "assets/shaders/pingpongShader.glsl";
+
     if (gShaderManager.createProgramFromFile("Shader#1", vertShader, fragShader))
     {
         std::cout << "Shader compiled OK" << std::endl;
         // 
         // Set the "program" variable to the one the Shader Manager used...
         program = gShaderManager.getIDFromFriendlyName("Shader#1");
+    }
+    else
+    {
+        std::cout << "Error making shader program: " << std::endl;
+        std::cout << gShaderManager.getLastError() << std::endl;
+    }
+
+    if (gShaderManager.createProgramFromFile("PingPong", vertShader, pingPongFragShader))
+    {
+        std::cout << "Shader compiled OK" << std::endl;
+        // 
+        // Set the "program" variable to the one the Shader Manager used...
+       // program = gShaderManager.getIDFromFriendlyName("Shader#1");
     }
     else
     {
@@ -757,69 +779,89 @@ int main(void)
 
     g_entityManager.GetEntityByName("poolwater")->GetComponent<cMeshRenderer>()->bUseSkyboxReflection = true;
 
-    std::map<std::string, GLint> uniformLocations;
+    cShaderManager::cShaderProgram* normalShader = gShaderManager.pGetShaderProgramFromFriendlyName("Shader#1");
 
-    uniformLocations.insert(std::pair<std::string, GLint>("matModel", glGetUniformLocation(program, "matModel")));
-    uniformLocations.insert(std::pair<std::string, GLint>("matModelInverseTranspose", glGetUniformLocation(program, "matModelInverseTranspose")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("matModel", glGetUniformLocation(program, "matModel")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("matModelInverseTranspose", glGetUniformLocation(program, "matModelInverseTranspose")));
     // Copy the whole object colour information to the sahder               
 
             // This is used for wireframe or whole object colour. 
             // If bUseDebugColour is TRUE, then the fragment colour is "objectDebugColour".
-    uniformLocations.insert(std::pair<std::string, GLint>("bUseDebugColour", glGetUniformLocation(program, "bUseDebugColour")));
-    uniformLocations.insert(std::pair<std::string, GLint>("objectDebugColour", glGetUniformLocation(program, "objectDebugColour")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseDebugColour", glGetUniformLocation(program, "bUseDebugColour")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("objectDebugColour", glGetUniformLocation(program, "objectDebugColour")));
 
     // If true, then the lighting contribution is NOT used. 
     // This is useful for wireframe object
-    uniformLocations.insert(std::pair<std::string, GLint>("bDontLightObject", glGetUniformLocation(program, "bDontLightObject")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bDontLightObject", glGetUniformLocation(program, "bDontLightObject")));
 
     // The "whole object" colour (diffuse and specular)
-    uniformLocations.insert(std::pair<std::string, GLint>("wholeObjectDiffuseColour", glGetUniformLocation(program, "wholeObjectDiffuseColour")));
-    uniformLocations.insert(std::pair<std::string, GLint>("bUseWholeObjectDiffuseColour", glGetUniformLocation(program, "bUseWholeObjectDiffuseColour")));
-    uniformLocations.insert(std::pair<std::string, GLint>("wholeObjectSpecularColour", glGetUniformLocation(program, "wholeObjectSpecularColour")));
-    uniformLocations.insert(std::pair<std::string, GLint>("bUseSpecular", glGetUniformLocation(program, "bUseSpecular")));
-    uniformLocations.insert(std::pair<std::string, GLint>("eyeLocation", glGetUniformLocation(program, "eyeLocation")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("wholeObjectDiffuseColour", glGetUniformLocation(program, "wholeObjectDiffuseColour")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseWholeObjectDiffuseColour", glGetUniformLocation(program, "bUseWholeObjectDiffuseColour")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("wholeObjectSpecularColour", glGetUniformLocation(program, "wholeObjectSpecularColour")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSpecular", glGetUniformLocation(program, "bUseSpecular")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("eyeLocation", glGetUniformLocation(program, "eyeLocation")));
 
-    uniformLocations.insert(std::pair<std::string, GLint>("texture_00", glGetUniformLocation(program, "texture_00")));
-    uniformLocations.insert(std::pair<std::string, GLint>("texture_01", glGetUniformLocation(program, "texture_01")));
-    uniformLocations.insert(std::pair<std::string, GLint>("texture_02", glGetUniformLocation(program, "texture_02")));
-    uniformLocations.insert(std::pair<std::string, GLint>("texture_03", glGetUniformLocation(program, "texture_03")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_00", glGetUniformLocation(program, "texture_00")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_01", glGetUniformLocation(program, "texture_01")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_02", glGetUniformLocation(program, "texture_02")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_03", glGetUniformLocation(program, "texture_03")));
 
-    uniformLocations.insert(std::pair<std::string, GLint>("texLightpassColorBuf", glGetUniformLocation(program, "texLightpassColorBuf")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texLightpassColorBuf", glGetUniformLocation(program, "texLightpassColorBuf")));
 
-    uniformLocations.insert(std::pair<std::string, GLint>("texture_MatColor", glGetUniformLocation(program, "texture_MatColor")));
-    uniformLocations.insert(std::pair<std::string, GLint>("texture_Normal", glGetUniformLocation(program, "texture_Normal")));
-    uniformLocations.insert(std::pair<std::string, GLint>("texture_WorldPos", glGetUniformLocation(program, "texture_WorldPos")));
-    uniformLocations.insert(std::pair<std::string, GLint>("texture_Specular", glGetUniformLocation(program, "texture_Specular")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_MatColor", glGetUniformLocation(program, "texture_MatColor")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_Normal", glGetUniformLocation(program, "texture_Normal")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_WorldPos", glGetUniformLocation(program, "texture_WorldPos")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_Specular", glGetUniformLocation(program, "texture_Specular")));
 
-    uniformLocations.insert(std::pair<std::string, GLint>("textureRatios", glGetUniformLocation(program, "textureRatios")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("textureRatios", glGetUniformLocation(program, "textureRatios")));
 
-    uniformLocations.insert(std::pair<std::string, GLint>("bUseAlphaMask", glGetUniformLocation(program, "bUseAlphaMask")));
-    uniformLocations.insert(std::pair<std::string, GLint>("alphaMask", glGetUniformLocation(program, "alphaMask")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseAlphaMask", glGetUniformLocation(program, "bUseAlphaMask")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("alphaMask", glGetUniformLocation(program, "alphaMask")));
 
-    uniformLocations.insert(std::pair<std::string, GLint>("bUseNormalMap", glGetUniformLocation(program, "bUseNormalMap")));
-    uniformLocations.insert(std::pair<std::string, GLint>("normalMap", glGetUniformLocation(program, "normalMap")));
-    uniformLocations.insert(std::pair<std::string, GLint>("normalOffset", glGetUniformLocation(program, "normalOffset")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseNormalMap", glGetUniformLocation(program, "bUseNormalMap")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("normalMap", glGetUniformLocation(program, "normalMap")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("normalOffset", glGetUniformLocation(program, "normalOffset")));
 
-    uniformLocations.insert(std::pair<std::string, GLint>("bUseHeightMap", glGetUniformLocation(program, "bUseHeightMap")));
-    uniformLocations.insert(std::pair<std::string, GLint>("heightMap", glGetUniformLocation(program, "heightMap")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseHeightMap", glGetUniformLocation(program, "bUseHeightMap")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("heightMap", glGetUniformLocation(program, "heightMap")));
 
-    uniformLocations.insert(std::pair<std::string, GLint>("bUseSkybox", glGetUniformLocation(program, "bUseSkybox")));
-    uniformLocations.insert(std::pair<std::string, GLint>("skyBox", glGetUniformLocation(program, "skyBox")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkybox", glGetUniformLocation(program, "bUseSkybox")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("skyBox", glGetUniformLocation(program, "skyBox")));
 
-    uniformLocations.insert(std::pair<std::string, GLint>("bDebugMode", glGetUniformLocation(program, "bDebugMode")));
-    uniformLocations.insert(std::pair<std::string, GLint>("bDebugShowLighting", glGetUniformLocation(program, "bDebugShowLighting")));
-    uniformLocations.insert(std::pair<std::string, GLint>("bDebugShowNormals", glGetUniformLocation(program, "bDebugShowNormals")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bDebugMode", glGetUniformLocation(program, "bDebugMode")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bDebugShowLighting", glGetUniformLocation(program, "bDebugShowLighting")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bDebugShowNormals", glGetUniformLocation(program, "bDebugShowNormals")));
 
-    uniformLocations.insert(std::pair<std::string, GLint>("bIsImposter", glGetUniformLocation(program, "bIsImposter")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bIsImposter", glGetUniformLocation(program, "bIsImposter")));
 
-    uniformLocations.insert(std::pair<std::string, GLint>("passNumber", glGetUniformLocation(program, "passNumber")));
-    uniformLocations.insert(std::pair<std::string, GLint>("screenWidthHeight", glGetUniformLocation(program, "screenWidthHeight")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("passNumber", glGetUniformLocation(program, "passNumber")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("screenWidthHeight", glGetUniformLocation(program, "screenWidthHeight")));
 
-    uniformLocations.insert(std::pair<std::string, GLint>("bUseSpyglass", glGetUniformLocation(program, "bUseSpyglass")));
-    uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxReflections", glGetUniformLocation(program, "bUseSkyboxReflections")));
-    uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxRefraction", glGetUniformLocation(program, "bUseSkyboxRefraction")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSpyglass", glGetUniformLocation(program, "bUseSpyglass")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxReflections", glGetUniformLocation(program, "bUseSkyboxReflections")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxRefraction", glGetUniformLocation(program, "bUseSkyboxRefraction")));
 
-    uniformLocations.insert(std::pair<std::string, GLint>("postprocessingVariables", glGetUniformLocation(program, "postprocessingVariables")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("postprocessingVariables", glGetUniformLocation(program, "postprocessingVariables")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("emmisionPower", glGetUniformLocation(program, "emmisionPower")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bloomMapColorBuf", glGetUniformLocation(program, "bloomMapColorBuf")));
+
+   cShaderManager::cShaderProgram* pingPongShader = gShaderManager.pGetShaderProgramFromFriendlyName("PingPong");
+
+   //glUseProgram(pingPongShader->ID);
+   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("screenWidthHeight", glGetUniformLocation(pingPongShader->ID, "screenWidthHeight")));
+   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("bloomMap", glGetUniformLocation(pingPongShader->ID, "bloomMap")));
+   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("horizontal", glGetUniformLocation(pingPongShader->ID, "horizontal")));
+
+   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("matModel", glGetUniformLocation(pingPongShader->ID, "matModel")));
+   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("matModelInverseTranspose", glGetUniformLocation(pingPongShader->ID, "matModelInverseTranspose")));
+
+   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("matView", glGetUniformLocation(pingPongShader->ID, "matView")));
+   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("matProjection", glGetUniformLocation(pingPongShader->ID, "matProjection")));
+   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseHeightMap", glGetUniformLocation(pingPongShader->ID, "bUseHeightMap")));
+
+   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("bloomSize", glGetUniformLocation(pingPongShader->ID, "bloomSize")));
+
+   glUniform1f(pingPongShader->uniformLocations["bUseHeightMap"], (float)GL_FALSE);
 
     /*sModelDrawInfo debugSphere;
     if (!gVAOManager.LoadModelIntoVAO("ISO_Shphere_flat_3div_xyz_n_rgba_uv.ply", debugSphere, program))
@@ -851,12 +893,19 @@ int main(void)
         std::cout << "Error in FBO" << std::endl;
     }
 
+    float decreaseSize = 4.0f;
+
+    pingPongFBO = new cPingPongFBOs((screenPixelDensity * ratio) / decreaseSize, screenPixelDensity / decreaseSize);
+
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     const GLint RENDER_PASS_0_G_BUFFER = 0;
     const GLint RENDER_PASS_1_LIGHTING = 1;
     const GLint RENDER_PASS_2_EFFECTS = 2;
+
+    const GLint RENDER_PASS_BLUR_HORIZONTAL = 4;
+    const GLint RENDER_PASS_BLUR_VERTICAL = 5;
 
     //GUI StUFF
     IMGUI_CHECKVERSION();
@@ -874,10 +923,10 @@ int main(void)
 
     while (!glfwWindowShouldClose(window))
     {
-        glUniform1ui(uniformLocations["passNumber"], RENDER_PASS_0_G_BUFFER);
+        glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_0_G_BUFFER);
 
         float useExposure = postProcessing.useExposureToneMapping ? 0.0f : 1.0f;
-        glUniform4f(uniformLocations["postprocessingVariables"], postProcessing.gamma, postProcessing.exposure, useExposure, 0.0f);
+        glUniform4f(normalShader->uniformLocations["postprocessingVariables"], postProcessing.gamma, postProcessing.exposure, useExposure, postProcessing.bloomThreshhold);
 
         float currentTime = (float)glfwGetTime();
         float deltaTime = currentTime - previousTime;
@@ -888,14 +937,18 @@ int main(void)
         glm::mat4 p;
         glm::mat4 v;
 
+        pingPongFBO->ClearBuffers();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         g_fbo->clearBuffers(true, true);
 
         glBindFramebuffer(GL_FRAMEBUFFER, g_fbo->ID);
+        g_fbo->clearBuffers(true, true);
 
         glViewport(0, 0, g_fbo->width, g_fbo->height);
         ratio = g_fbo->width / (float)g_fbo->height;
 
-        glUniform2f(uniformLocations["screenWidthHeight"], (GLfloat)g_fbo->width, (GLfloat)g_fbo->height);
+        glUniform2f(normalShader->uniformLocations["screenWidthHeight"], (GLfloat)g_fbo->width, (GLfloat)g_fbo->height);
 
         // Turn on the depth buffer
         glEnable(GL_DEPTH);         // Turns on the depth buffer
@@ -904,8 +957,7 @@ int main(void)
    
        
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
 
         // *******************************************************
         // Screen is cleared and we are ready to draw the scene...
@@ -933,7 +985,7 @@ int main(void)
             cameraEye + cameraDir,  // "at"
             cameraUp);
 
-        glUniform4f(uniformLocations["eyeLocation"], cameraEye.x, cameraEye.y, cameraEye.z, 1.0f);
+        glUniform4f(normalShader->uniformLocations["eyeLocation"], cameraEye.x, cameraEye.y, cameraEye.z, 1.0f);
 
         glUniformMatrix4fv(matView_Location, 1, GL_FALSE, glm::value_ptr(v));
         glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
@@ -962,7 +1014,7 @@ int main(void)
         std::sort(transparentMeshes.begin(), transparentMeshes.end(), DistanceToCameraPredicate);
         
         
-        Draw(opaqueMeshes, transparentMeshes, uniformLocations, deltaTime);
+        Draw(opaqueMeshes, transparentMeshes, normalShader->uniformLocations, deltaTime);
        
 
         glm::vec3 fullscreenPos = glm::vec3(0.f, 0.f, -1.f);
@@ -992,7 +1044,7 @@ int main(void)
         p = glm::ortho(0.0f, 1.0f / (float)width, 0.0f, 1.0f / (float)height, 0.01f, 1000.0f);
         glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
         
-        glUniform1ui(uniformLocations["passNumber"], RENDER_PASS_1_LIGHTING);
+        glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_1_LIGHTING);
         
         //Uploading textures to gpu
         GLint textureMatId = g_fbo->vertexMatColour_1_ID;
@@ -1001,7 +1053,7 @@ int main(void)
             GLint unit = 7;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureMatId);
-            glUniform1i(uniformLocations["texture_MatColor"], unit);
+            glUniform1i(normalShader->uniformLocations["texture_MatColor"], unit);
         }
         
         GLint textureNormalId = g_fbo->vertexNormal_2_ID;
@@ -1010,7 +1062,7 @@ int main(void)
             GLint unit = 8;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureNormalId);
-            glUniform1i(uniformLocations["texture_Normal"], unit);
+            glUniform1i(normalShader->uniformLocations["texture_Normal"], unit);
         }
         
         GLint textureWorldId = g_fbo->vertexWorldPos_3_ID;
@@ -1019,7 +1071,7 @@ int main(void)
             GLint unit = 9;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureWorldId);
-            glUniform1i(uniformLocations["texture_WorldPos"], unit);
+            glUniform1i(normalShader->uniformLocations["texture_WorldPos"], unit);
         }
         
         GLint textureSpecularId = g_fbo->vertexSpecular_4_ID;
@@ -1028,13 +1080,60 @@ int main(void)
             GLint unit = 10;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureSpecularId);
-            glUniform1i(uniformLocations["texture_Specular"], unit);
+            glUniform1i(normalShader->uniformLocations["texture_Specular"], unit);
         }
-        g_fbo->clearColourBuffer(0);   
-        DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, uniformLocations, fullscreenPos);
+        g_fbo->clearColourBuffer(0);  
+        //g_fbo->clearColourBuffer(5);
+        //fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
+        DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, normalShader->uniformLocations, fullscreenPos);
+        //DONE 1ST PASS (Lighting)
         
-        //BEGINNING OF SECOND PASS
+        //TODO: Add bloom pass
         
+        bool horizontal = true;
+        bool first_iteration = true;
+
+        glUseProgram(pingPongShader->ID);
+        
+        glUniform2f(pingPongShader->uniformLocations["screenWidthHeight"], (GLfloat)pingPongFBO->width, (GLfloat)pingPongFBO->height);
+        glUniformMatrix4fv(pingPongShader->uniformLocations["matView"], 1, GL_FALSE, glm::value_ptr(v));
+        glUniformMatrix4fv(pingPongShader->uniformLocations["matProjection"], 1, GL_FALSE, glm::value_ptr(p));
+
+        glUniform1f(pingPongShader->uniformLocations["bloomSize"], postProcessing.bloomSize);
+        
+        for (unsigned int i = 0; i < postProcessing.bloomIterationAmount; i++)
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO->pingpongFBO[horizontal]);
+            glUniform1f(pingPongShader->uniformLocations["horizontal"], horizontal ? (float)GL_TRUE : (float)GL_FALSE);
+        
+            if (first_iteration)
+            {
+                //glBindTexture(GL_TEXTURE_2D, g_fbo->brightColour_5_ID);
+        
+                GLint unit = 20;
+                glActiveTexture(unit + GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, g_fbo->brightColour_5_ID);
+                glUniform1i(pingPongShader->uniformLocations["bloomMap"], unit);
+        
+                first_iteration = false;
+            }
+            else
+            {
+                //glBindTexture(GL_TEXTURE_2D, pingPongFBO->pingpongBuffer[!horizontal]);
+        
+                GLint unit = 21;
+                glActiveTexture(unit + GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, pingPongFBO->pingpongBuffer[!horizontal]);
+                glUniform1i(pingPongShader->uniformLocations["bloomMap"], unit);
+            }
+        
+            fullscreenEntity->GetComponent<cTransform>()->position.z -= .01f;
+            DrawObject(fullscreenEntity, glm::mat4(1.0f), pingPongShader->ID, &gVAOManager, g_textureManager, pingPongShader->uniformLocations, fullscreenPos);
+            horizontal = !horizontal;
+        }
+        glUseProgram(normalShader->ID);
+
+        //BEGINNING OF SECOND PASS (Effects Pass)
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1049,8 +1148,8 @@ int main(void)
         
         glViewport(0, 0, width, height);
         
-        glUniform2f(uniformLocations["screenWidthHeight"], width, height);
-        glUniform1ui(uniformLocations["passNumber"], RENDER_PASS_2_EFFECTS);
+        glUniform2f(normalShader->uniformLocations["screenWidthHeight"], width, height);
+        glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_2_EFFECTS);
         
         GLint textureId = 0;
         
@@ -1072,32 +1171,42 @@ int main(void)
             textureId = g_fbo->vertexWorldPos_3_ID;
             break;
         case 5:
-            textureId = g_fbo->brightColour_5_ID;
+            textureId = pingPongFBO->pingpongBuffer[!horizontal];
             break;
         }
         
+        //Upload colour buffer
         if (textureId != 0)
         {
             GLint unit = 11;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureId);
-            glUniform1i(uniformLocations["texLightpassColorBuf"], unit);
+            glUniform1i(normalShader->uniformLocations["texLightpassColorBuf"], unit);
+        }
+
+        //Upload bloom map
+        if (pingPongFBO->pingpongBuffer[!horizontal] != 0)
+        {
+            GLint unit = 12;
+            glActiveTexture(unit + GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, pingPongFBO->pingpongBuffer[!horizontal]);
+            glUniform1i(normalShader->uniformLocations["bloomMapColorBuf"], unit);
         }
 
         //Set spyglass texture
         GLint spyTextureId = g_textureManager.getTextureIDFromName("spyglass.bmp");
         if (textureId != 0)
         {
-            GLint unit = 12;
+            GLint unit = 13;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, spyTextureId);
-            glUniform1i(uniformLocations["texture_00"], unit);
+            glUniform1i(normalShader->uniformLocations["texture_00"], unit);
         }
 
         //glUniform1f(uniformLocations["bUseSpyglass"], (bUseSpyglass) ? (float)GL_TRUE : (float)GL_FALSE);
 
         fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
-        DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, uniformLocations, fullscreenPos);
+        DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, normalShader->uniformLocations, fullscreenPos);
         //END OF FINAL PASS
 
         if(showDebugGui)
@@ -1139,6 +1248,7 @@ int main(void)
     ImGui::DestroyContext();
 
     delete g_fbo;
+    delete pingPongFBO;
 
     glfwDestroyWindow(window);
 
@@ -1228,18 +1338,20 @@ void DrawGUI(float dt)
         {
             if (ImGui::BeginTabItem("Visual"))
             {
-                ImGui::Text("Gamma Slider");
                 ImGui::SliderFloat("Gamma", &postProcessing.gamma, 0.0f, 5.0f);
 
                 ImGui::Checkbox("Use Exposure", &postProcessing.useExposureToneMapping);
                 if (postProcessing.useExposureToneMapping)
                     ImGui::SliderFloat("Exposure", &postProcessing.exposure, 0.0f, 5.0f);
 
+                ImGui::DragFloat("Bloom Threshhold", &postProcessing.bloomThreshhold, 0.1f, 0.0f, 10000.0f);
+                ImGui::DragFloat("Bloom Size", &postProcessing.bloomSize, 0.1f, 0.0f, 10.0f);
+
                 ImGui::EndTabItem();
             }
             if (ImGui::BeginTabItem("G-Buffer"))
             {
-                if (ImGui::Selectable("Default"))
+                if (ImGui::Selectable("Lit"))
                     showTextureIndex = 0;
                 if (ImGui::Selectable("Diffuse"))
                     showTextureIndex = 1;
@@ -1286,21 +1398,28 @@ void DrawGUI(float dt)
             {
                 cTransform* curTransform = curEntity->GetComponent<cTransform>();
                 ImGui::Text("Position");
-                ImGui::DragFloat("pos x", &curTransform->position.x);
-                ImGui::DragFloat("pos y", &curTransform->position.y);
-                ImGui::DragFloat("pos z", &curTransform->position.z);
+                ImGui::DragFloat("pos x", &curTransform->position.x, 0.1f);
+                ImGui::DragFloat("pos y", &curTransform->position.y, 0.1f);
+                ImGui::DragFloat("pos z", &curTransform->position.z, 0.1f);
 
                 glm::vec3 angleRotation = curTransform->GetEulerRotation();
                 ImGui::Text("Rotation");
-                ImGui::DragFloat("rot x", &angleRotation.x);
-                ImGui::DragFloat("rot y", &angleRotation.y);
-                ImGui::DragFloat("rot z", &angleRotation.z);
+                ImGui::DragFloat("rot x", &angleRotation.x, 0.01f);
+                ImGui::DragFloat("rot y", &angleRotation.y, 0.01f);
+                ImGui::DragFloat("rot z", &angleRotation.z, 0.01f);
                 curTransform->SetRotation(angleRotation);
 
                 ImGui::Text("Scale");
-                ImGui::DragFloat("scale x", &curTransform->scale.x);
-                ImGui::DragFloat("scale y", &curTransform->scale.y);
-                ImGui::DragFloat("scale z", &curTransform->scale.z);
+                ImGui::DragFloat("scale x", &curTransform->scale.x, 0.1f);
+                ImGui::DragFloat("scale y", &curTransform->scale.y, 0.1f);
+                ImGui::DragFloat("scale z", &curTransform->scale.z, 0.1f);
+
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("Visuals"))
+            {
+                cMeshRenderer* renderer = curEntity->GetComponent<cMeshRenderer>();
+                ImGui::DragFloat("Emmision", &renderer->emmision, 0.1f, 1.0f, 10000.0f);
 
                 ImGui::EndTabItem();
             }
@@ -1371,6 +1490,8 @@ void DrawGUI(float dt)
 
                 ImGui::EndTabItem();
             }
+
+            ImGui::EndTabBar();
         }
         ImGui::EndChild();
 

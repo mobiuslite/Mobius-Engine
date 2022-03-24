@@ -148,7 +148,8 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
 void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManager* VAOManager,
     cBasicTextureManager textureManager, std::map<std::string, GLint> uniformLocations, glm::vec3 eyeLocation)
 {
-    SetUpTextures(curEntity, textureManager, uniformLocations);
+    if(uniformLocations.size() > 10)
+        SetUpTextures(curEntity, textureManager, uniformLocations);
 
     cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
     cTransform* curTransform = curEntity->GetComponent<cTransform>();
@@ -187,19 +188,19 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
     GLint matModelInverseTranspose_Location = uniformLocations["matModelInverseTranspose"];
     // Copy the whole object colour information to the sahder               
 
-            // This is used for wireframe or whole object colour. 
-            // If bUseDebugColour is TRUE, then the fragment colour is "objectDebugColour".
-    GLint bUseDebugColour_Location = uniformLocations["bUseDebugColour"];
-    GLint objectDebugColour_Location = uniformLocations["objectDebugColour"];
-
-    // If true, then the lighting contribution is NOT used. 
-    // This is useful for wireframe object
-    GLint bDontLightObject_Location = uniformLocations["bDontLightObject"];
-
-    // The "whole object" colour (diffuse and specular)
-    GLint wholeObjectDiffuseColour_Location = uniformLocations["wholeObjectDiffuseColour"];
-    GLint bUseWholeObjectDiffuseColour_Location = uniformLocations["bUseWholeObjectDiffuseColour"];
-    GLint wholeObjectSpecularColour_Location = uniformLocations["wholeObjectSpecularColour"];
+   //         // This is used for wireframe or whole object colour. 
+   //         // If bUseDebugColour is TRUE, then the fragment colour is "objectDebugColour".
+   // GLint bUseDebugColour_Location = uniformLocations["bUseDebugColour"];
+   // GLint objectDebugColour_Location = uniformLocations["objectDebugColour"];
+   //
+   // // If true, then the lighting contribution is NOT used. 
+   // // This is useful for wireframe object
+   // GLint bDontLightObject_Location = uniformLocations["bDontLightObject"];
+   //
+   // // The "whole object" colour (diffuse and specular)
+   // GLint wholeObjectDiffuseColour_Location = uniformLocations["wholeObjectDiffuseColour"];
+   // GLint bUseWholeObjectDiffuseColour_Location = uniformLocations["bUseWholeObjectDiffuseColour"];
+   // GLint wholeObjectSpecularColour_Location = uniformLocations["wholeObjectSpecularColour"];
 
     glUniformMatrix4fv(matModel_Location, 1, GL_FALSE, glm::value_ptr(matModel));
     // Inverse transpose of the model matrix
@@ -207,6 +208,23 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
     glm::mat4 matInvTransposeModel = glm::inverse(glm::transpose(matModel));
     glUniformMatrix4fv(matModelInverseTranspose_Location, 1, GL_FALSE, glm::value_ptr(matInvTransposeModel));
 
+
+    if (uniformLocations.size() < 10)
+    {
+        sModelDrawInfo modelInfo;
+        if (VAOManager->FindDrawInfoByModelName(curMesh->meshName, modelInfo))
+        {
+            glBindVertexArray(modelInfo.VAO_ID);
+
+            glDrawElements(GL_TRIANGLES,
+                modelInfo.numberOfIndices,
+                GL_UNSIGNED_INT,
+                (void*)0);
+
+            glBindVertexArray(0);
+        }
+        return;
+    }
 
     if (curMesh->bIsImposter)
     {
@@ -219,8 +237,8 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
 
     if (curMesh->bUseWholeObjectDiffuseColour)
     {
-        glUniform1f(bUseWholeObjectDiffuseColour_Location, (float)GL_TRUE);
-        glUniform4f(wholeObjectDiffuseColour_Location,
+        glUniform1f(uniformLocations["bUseWholeObjectDiffuseColour"], (float)GL_TRUE);
+        glUniform4f(uniformLocations["wholeObjectDiffuseColour"],
             curMesh->wholeObjectDiffuseRGBA.r,
             curMesh->wholeObjectDiffuseRGBA.g,
             curMesh->wholeObjectDiffuseRGBA.b,
@@ -228,22 +246,23 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
     }
     else
     {
-        glUniform1f(bUseWholeObjectDiffuseColour_Location, (float)GL_FALSE);
+        glUniform1f(uniformLocations["bUseWholeObjectDiffuseColour"], (float)GL_FALSE);
     }
 
-    glUniform4f(wholeObjectSpecularColour_Location,
+    glUniform4f(uniformLocations["wholeObjectSpecularColour"],
         curMesh->wholeObjectSpecularRGB.r,
         curMesh->wholeObjectSpecularRGB.g,
         curMesh->wholeObjectSpecularRGB.b,
         curMesh->wholeObjectShininess_SpecPower);
 
+    glUniform1f(uniformLocations["emmisionPower"], curMesh->emmision);
 
     // See if mesh is wanting the vertex colour override (HACK) to be used?
     if (curMesh->bUseObjectDebugColour)
     {
         // Override the colour...
-        glUniform1f(bUseDebugColour_Location, (float)GL_TRUE);
-        glUniform4f(objectDebugColour_Location,
+        glUniform1f(uniformLocations["bUseDebugColour"], (float)GL_TRUE);
+        glUniform4f(uniformLocations["objectDebugColour"],
             curMesh->objectDebugColourRGBA.r,
             curMesh->objectDebugColourRGBA.g,
             curMesh->objectDebugColourRGBA.b,
@@ -252,19 +271,19 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
     else
     {
         // DON'T override the colour
-        glUniform1f(bUseDebugColour_Location, (float)GL_FALSE);
+        glUniform1f(uniformLocations["bUseDebugColour"], (float)GL_FALSE);
     }
 
     // See if mesh is wanting the vertex colour override (HACK) to be used?
     if (curMesh->bDontLight)
     {
         // Override the colour...
-        glUniform1f(bDontLightObject_Location, (float)GL_TRUE);
+        glUniform1f(uniformLocations["bDontLightObject"], (float)GL_TRUE);
     }
     else
     {
         // DON'T override the colour
-        glUniform1f(bDontLightObject_Location, (float)GL_FALSE);
+        glUniform1f(uniformLocations["bDontLightObject"], (float)GL_FALSE);
     }
 
     if (curMesh->bUseSpecular)

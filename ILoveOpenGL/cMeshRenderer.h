@@ -61,6 +61,8 @@ public:
 	bool bUseSkyboxReflection;
 	bool bUseSkyboxRefraction;
 
+	float emmision;
+
 	bool bIsImposter = false;
 
 	std::vector<Texture> textures;

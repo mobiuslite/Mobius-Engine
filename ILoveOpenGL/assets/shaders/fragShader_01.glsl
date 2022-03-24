@@ -34,6 +34,8 @@ uniform bool bUseSpecular;
 // This is the camera eye location (update every frame)
 uniform vec4 eyeLocation;
 
+uniform float emmisionPower;
+
 uniform bool bDebugMode;
 uniform bool bDebugShowLighting;
 uniform bool bDebugShowNormals;
@@ -76,6 +78,7 @@ uniform sampler2D texture_WorldPos;
 uniform sampler2D texture_Specular;
 
 uniform sampler2D texLightpassColorBuf;
+uniform sampler2D bloomMapColorBuf;
 
 uniform bool bUseAlphaMask;
 uniform sampler2D alphaMask;
@@ -97,6 +100,7 @@ uniform vec2 screenWidthHeight;
 //x = gamma;
 //y = exposure;
 //z use exposure based tonemapping > 0.5f
+//w = bloom threshhold
 uniform vec4 postprocessingVariables;
 
 uniform samplerCube skyBox; // GL_TEXTURE_CUBE_MAP
@@ -104,11 +108,13 @@ uniform samplerCube skyBox; // GL_TEXTURE_CUBE_MAP
 vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal, 
                             vec3 vertexWorldPos, vec4 vertexSpecular );
 
+uniform float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
+
 void main()
 {
 	// This is the pixel colour on the screen.
 	// Just ONE pixel, though.
-	pixelColour = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	//pixelColour = vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 	vec4 normals = fNormal;
 	vec4 vertexDiffuseColour = fVertexColour;
@@ -136,9 +142,10 @@ void main()
 		}else{
 			
 			finalColour = texture(texLightpassColorBuf, UVLookup).rgb;
-		
-		}
+			vec3 bloomColour = texture(bloomMapColorBuf, UVLookup).rgb;
+			finalColour += bloomColour;
 
+		}
 
 		//Tonemapping for HDR	
 		vec3 mapped = finalColour;
@@ -162,9 +169,7 @@ void main()
 	}
 
 	if(passNumber == RENDER_PASS_1_LIGHT_PASS)
-	{
-		
-		
+	{	
 		vec2 UVLookup;
 		UVLookup.x = gl_FragCoord.x / screenWidthHeight.x;
 		UVLookup.y = gl_FragCoord.y / screenWidthHeight.y;
@@ -175,25 +180,28 @@ void main()
 		pixelWorldPos = texture(texture_WorldPos, UVLookup).rgba;
 		pixelSpecular = texture(texture_Specular, UVLookup).rgba;
 
-
-		vec4 vertDif = texture(texture_MatColor, UVLookup).rgba;
-		vec4 vertWorldPos = texture(texture_WorldPos, UVLookup).rgba;
-
 		//If not lit
-		if(vertWorldPos.w == 0.0f)
+		if(pixelWorldPos.w == 0.0f)
 		{
-			pixelColour.rgb = vertDif.rgb;
-			//pixelColour *= 0.001f;
-			//pixelColour += vec4(1.0f, 0.0f, 0.0f, 1.0f);
+			pixelColour.rgb = pixelMatColor.rgb;
 		}
-		else{
-
-			vec4 vertNormal = texture(texture_Normal, UVLookup).rgba;		
-			vec4 vertSpecular = texture(texture_Specular, UVLookup).rgba;
-
-			pixelColour = calcualteLightContrib( vertDif.rgb, vertNormal.xyz, vertWorldPos.xyz, vertSpecular.rgba );										
+		else
+		{
+			pixelColour = calcualteLightContrib( pixelMatColor.rgb, pixelNormal.xyz, pixelWorldPos.xyz, pixelSpecular.rgba );										
 			pixelColour.a = 1.0f;
 		}
+
+		//Get bright parts of screen for bloom
+		float brightness = dot(pixelColour.rgb, vec3(0.2126f, 0.7152, 0.0722f));
+		if(brightness > postprocessingVariables.w)
+		{
+			pixelBrightColour = vec4(pixelColour.rgb, 1.0f);
+		}
+		else
+		{
+			pixelBrightColour = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		}
+
 		return;
 	}
 
@@ -295,7 +303,7 @@ void main()
 	//Most textures are already in linear space, because they are created by an artist wit their eyes
 	//and monitors are already corrected
 	//So using gamma correction again would correct them twice
-	pixelMatColor = pow(vec4(vertexDiffuseColour.rgb, 1.0f), vec4(postprocessingVariables.x));
+	pixelMatColor = pow(vec4(vertexDiffuseColour.rgb * emmisionPower, 1.0f), vec4(postprocessingVariables.x));
 
 	pixelNormal = vec4(normalize(normals.xyz), 1.0f);
 	pixelWorldPos = vec4(fVertWorldLocation.xyz, 1.0f);
