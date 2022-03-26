@@ -52,6 +52,11 @@ cVAOManager::cVAOManager()
     this->shaderProgramID_ThreadedLoader = 0;
 }
 
+cVAOManager::~cVAOManager()
+{
+    delete m_pendingLoadingModel;
+}
+
 bool cVAOManager::LoadPendingModelIntoVAO(std::string fileName,
     sModelDrawInfo& drawInfo)
 {

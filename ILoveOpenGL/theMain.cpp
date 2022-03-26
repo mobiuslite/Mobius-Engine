@@ -1475,7 +1475,7 @@ void DrawGUI(float dt)
                 ImGui::DragFloat("atten x", &curLight->atten.x, 0.01f, 0.0f, 3.0f);
                 ImGui::DragFloat("atten y", &curLight->atten.y, 0.01f, 0.0f, 3.0f);
                 ImGui::DragFloat("atten z", &curLight->atten.z, .01f, 0.0f, 3.0f);
-                ImGui::SliderFloat("distance cutoff", &curLight->atten.w, 0.0f, 10000.0f);
+                ImGui::DragFloat("distance cutoff", &curLight->atten.w, 0.5f, 0.0f, 10000.0f);
 
                 ImGui::Text("Light Power");
                 ImGui::DragFloat("power", &curLight->power, 1.0f, 0.0f, 10000.0f);

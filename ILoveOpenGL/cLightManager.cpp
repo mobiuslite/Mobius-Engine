@@ -20,7 +20,7 @@ sLight::sLight()
 	this->specular = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
 	// x = constant, y = linear, z = quadratic, w = DistanceCutOff
-	this->atten = glm::vec4(0.0f, 0.1f, 0.01f, 100000.0f);
+	this->atten = glm::vec4(0.0f, 0.1f, 0.01f, 100.0f);
 
 	this->direction = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
 

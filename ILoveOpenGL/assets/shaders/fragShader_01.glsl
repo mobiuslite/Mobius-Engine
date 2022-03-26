@@ -367,6 +367,12 @@ vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal,
 		// Contribution for this light
 		vec3 vLightToVertex = theLights[index].position.xyz - vertexWorldPos.xyz;
 		float distanceToLight = length(vLightToVertex);	
+
+		if(distanceToLight > theLights[index].atten.w)
+		{
+			continue;
+		}
+
 		vec3 lightVector = normalize(vLightToVertex);
 		float dotProduct = dot(lightVector, vertexNormal.xyz);	 
 		

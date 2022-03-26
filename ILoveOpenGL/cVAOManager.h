@@ -52,7 +52,7 @@ class cVAOManager
 public:
 
 	cVAOManager();
-	~cVAOManager() { delete m_pendingLoadingModel; }
+	~cVAOManager();
 
 	bool LoadModelIntoVAO(std::string fileName, 
 						  sModelDrawInfo &drawInfo, 
