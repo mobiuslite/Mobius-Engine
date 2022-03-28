@@ -1,9 +1,11 @@
 #include "cPingPongFBOs.h";
 
-cPingPongFBOs::cPingPongFBOs(float width, float height)
+cPingPongFBOs::cPingPongFBOs(float width, float height, cShaderManager::cShaderProgram* program)
 {
     this->width = width;
     this->height = height;
+
+    this->program = program;
 
     glGenFramebuffers(2, pingpongFBO);
     glGenTextures(2, pingpongBuffer);
@@ -44,8 +46,16 @@ cPingPongFBOs::cPingPongFBOs(float width, float height)
         // Point back to default frame buffer
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
+}
 
-   
+cPingPongFBOs::~cPingPongFBOs()
+{
+    glDeleteTextures(1, &(this->pingpongBuffer[0]));
+    glDeleteTextures(1, &(this->pingpongBuffer[1]));
+
+    glDeleteFramebuffers(1, &(this->pingpongFBO[0]));
+    glDeleteFramebuffers(1, &(this->pingpongFBO[1]));
+
 }
 
 void cPingPongFBOs::ClearBuffers()
@@ -59,4 +69,29 @@ void cPingPongFBOs::ClearBuffers()
     glClearBufferfv(GL_COLOR, 0, rgbBlack);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void cPingPongFBOs::BlurBuffer(bool firstIteration, bool horizontal, GLuint firstMap)
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+    glUniform1f(program->uniformLocations["horizontal"], horizontal ? (float)GL_TRUE : (float)GL_FALSE);
+
+    if (firstIteration)
+    {
+        //glBindTexture(GL_TEXTURE_2D, g_fbo->brightColour_5_ID);
+
+        GLint unit = 20;
+        glActiveTexture(unit + GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, firstMap);
+        glUniform1i(program->uniformLocations["bloomMap"], unit);
+    }
+    else
+    {
+        //glBindTexture(GL_TEXTURE_2D, pingPongFBO->pingpongBuffer[!horizontal]);
+
+        GLint unit = 21;
+        glActiveTexture(unit + GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, pingpongBuffer[!horizontal]);
+        glUniform1i(program->uniformLocations["bloomMap"], unit);
+    }
 }

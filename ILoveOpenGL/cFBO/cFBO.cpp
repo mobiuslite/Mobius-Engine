@@ -85,6 +85,9 @@ bool cFBO::init( int width, int height, std::string &error )
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
 	// Create the depth buffer (texture)
 	glGenTextures(1, &( this->depthTexture_ID ));			//g_FBO_depthTexture
 	glBindTexture(GL_TEXTURE_2D, this->depthTexture_ID);

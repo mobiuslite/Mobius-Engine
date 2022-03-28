@@ -9,7 +9,7 @@
 #include "cTransform.h"
 #include "cTextureViewer.h"
 
-void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std::map<std::string, GLint> uniformLocations)
+void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std::map<std::string, GLint>* uniformLocations)
 {
     cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
     cTextureViewer* curTextureViewer = curEntity->GetComponent<cTextureViewer>();
@@ -25,12 +25,12 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
         ratioOne = 1.0f;
     }
 
-    glUniform4f(uniformLocations["textureRatios"],
+    glUniform4f(uniformLocations->at("textureRatios"),
         ratioOne, ratioTwo, ratioThree, ratioFour);
 
     if (curMesh->bUseAlphaMask)
     {
-        glUniform1f(uniformLocations["bUseAlphaMask"], (float)GL_TRUE);
+        glUniform1f(uniformLocations->at("bUseAlphaMask"), (float)GL_TRUE);
 
         GLint textureId = textureManager.getTextureIDFromName(curMesh->alphaMaskName);
         if (textureId != 0)
@@ -38,17 +38,17 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
             GLint unit = 1;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureId);
-            glUniform1i(uniformLocations["alphaMask"], unit);
+            glUniform1i(uniformLocations->at("alphaMask"), unit);
         }
     }
     else
     {
-        glUniform1f(uniformLocations["bUseAlphaMask"], (float)GL_FALSE);
+        glUniform1f(uniformLocations->at("bUseAlphaMask"), (float)GL_FALSE);
     }
 
     if (curMesh->bUseNormalMap)
     {
-        glUniform1f(uniformLocations["bUseNormalMap"], (float)GL_TRUE);
+        glUniform1f(uniformLocations->at("bUseNormalMap"), (float)GL_TRUE);
 
         GLint textureId = textureManager.getTextureIDFromName(curMesh->normalMapName);
         if (textureId != 0)
@@ -58,19 +58,19 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
             glBindTexture(GL_TEXTURE_2D, textureId);
             glTexParameteri(textureId, GL_TEXTURE_WRAP_S, GL_REPEAT);
             glTexParameteri(textureId, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glUniform1i(uniformLocations["normalMap"], unit);
+            glUniform1i(uniformLocations->at("normalMap"), unit);
 
-            glUniform2f(uniformLocations["normalOffset"], curMesh->normalOffset.x, curMesh->normalOffset.y);
+            glUniform2f(uniformLocations->at("normalOffset"), curMesh->normalOffset.x, curMesh->normalOffset.y);
         }
     }
     else
     {
-        glUniform1f(uniformLocations["bUseNormalMap"], (float)GL_FALSE);
+        glUniform1f(uniformLocations->at("bUseNormalMap"), (float)GL_FALSE);
     }
 
     if (curMesh->bUseHeightMap)
     {
-        glUniform1f(uniformLocations["bUseHeightMap"], (float)GL_TRUE);
+        glUniform1f(uniformLocations->at("bUseHeightMap"), (float)GL_TRUE);
 
         GLint textureId = textureManager.getTextureIDFromName(curMesh->heightMapName);
         if (textureId != 0)
@@ -80,17 +80,17 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
             glBindTexture(GL_TEXTURE_2D, textureId);
             glTexParameteri(textureId, GL_TEXTURE_WRAP_S, GL_REPEAT);
             glTexParameteri(textureId, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glUniform1i(uniformLocations["heightMap"], unit);
+            glUniform1i(uniformLocations->at("heightMap"), unit);
         }
     }
     else
     {
-        glUniform1f(uniformLocations["bUseHeightMap"], (float)GL_FALSE);
+        glUniform1f(uniformLocations->at("bUseHeightMap"), (float)GL_FALSE);
     }
 
     if (curMesh->bUseSkybox)
     {
-        glUniform1f(uniformLocations["bUseSkybox"], (float)GL_TRUE);
+        glUniform1f(uniformLocations->at("bUseSkybox"), (float)GL_TRUE);
 
         GLint textureId = textureManager.getTextureIDFromName(curMesh->textures[0].name);
         if (textureId != 0)
@@ -99,12 +99,12 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
             GLint unit = 4;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_CUBE_MAP, textureId);
-            glUniform1i(uniformLocations["skyBox"], unit);
+            glUniform1i(uniformLocations->at("skyBox"), unit);
         }
     }
     else
     {
-        glUniform1f(uniformLocations["bUseSkybox"], (float)GL_FALSE);
+        glUniform1f(uniformLocations->at("bUseSkybox"), (float)GL_FALSE);
 
         if (ratioOne > 0.0f)
         {
@@ -125,7 +125,7 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
                 GLint unit = 5;
                 glActiveTexture(unit + GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, textureId);
-                glUniform1i(uniformLocations["texture_00"], unit);
+                glUniform1i(uniformLocations->at("texture_00"), unit);
             }
         }
 
@@ -135,7 +135,7 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
             GLint unit = 6;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureId);
-            glUniform1i(uniformLocations["texture_01"], unit);
+            glUniform1i(uniformLocations->at("texture_01"), unit);
         }
 
         /*if (ratioFour > 0.0f)
@@ -146,9 +146,9 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
 }
 
 void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManager* VAOManager,
-    cBasicTextureManager textureManager, std::map<std::string, GLint> uniformLocations, glm::vec3 eyeLocation)
+    cBasicTextureManager textureManager, std::map<std::string, GLint>* uniformLocations, glm::vec3 eyeLocation)
 {
-    if(uniformLocations.size() > 10)
+    if(uniformLocations->size() > 10)
         SetUpTextures(curEntity, textureManager, uniformLocations);
 
     cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
@@ -184,8 +184,8 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
     matModel = matModel * matRotation;
     matModel = matModel * matScale;     // <-- mathematically, this is 1st
 
-    GLint matModel_Location = uniformLocations["matModel"];
-    GLint matModelInverseTranspose_Location = uniformLocations["matModelInverseTranspose"];
+    GLint matModel_Location = uniformLocations->at("matModel");
+    GLint matModelInverseTranspose_Location = uniformLocations->at("matModelInverseTranspose");
     // Copy the whole object colour information to the sahder               
 
    //         // This is used for wireframe or whole object colour. 
@@ -209,7 +209,7 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
     glUniformMatrix4fv(matModelInverseTranspose_Location, 1, GL_FALSE, glm::value_ptr(matInvTransposeModel));
 
 
-    if (uniformLocations.size() < 10)
+    if (uniformLocations->size() < 10)
     {
         sModelDrawInfo modelInfo;
         if (VAOManager->FindDrawInfoByModelName(curMesh->meshName, modelInfo))
@@ -228,17 +228,17 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
 
     if (curMesh->bIsImposter)
     {
-        glUniform1f(uniformLocations["bIsImposter"], (float)GL_TRUE);
+        glUniform1f(uniformLocations->at("bIsImposter"), (float)GL_TRUE);
     }
     else
     {
-        glUniform1f(uniformLocations["bIsImposter"], (float)GL_FALSE);
+        glUniform1f(uniformLocations->at("bIsImposter"), (float)GL_FALSE);
     }
 
     if (curMesh->bUseWholeObjectDiffuseColour)
     {
-        glUniform1f(uniformLocations["bUseWholeObjectDiffuseColour"], (float)GL_TRUE);
-        glUniform4f(uniformLocations["wholeObjectDiffuseColour"],
+        glUniform1f(uniformLocations->at("bUseWholeObjectDiffuseColour"), (float)GL_TRUE);
+        glUniform4f(uniformLocations->at("wholeObjectDiffuseColour"),
             curMesh->wholeObjectDiffuseRGBA.r,
             curMesh->wholeObjectDiffuseRGBA.g,
             curMesh->wholeObjectDiffuseRGBA.b,
@@ -246,23 +246,23 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
     }
     else
     {
-        glUniform1f(uniformLocations["bUseWholeObjectDiffuseColour"], (float)GL_FALSE);
+        glUniform1f(uniformLocations->at("bUseWholeObjectDiffuseColour"), (float)GL_FALSE);
     }
 
-    glUniform4f(uniformLocations["wholeObjectSpecularColour"],
+    glUniform4f(uniformLocations->at("wholeObjectSpecularColour"),
         curMesh->wholeObjectSpecularRGB.r,
         curMesh->wholeObjectSpecularRGB.g,
         curMesh->wholeObjectSpecularRGB.b,
         curMesh->wholeObjectShininess_SpecPower);
 
-    glUniform1f(uniformLocations["emmisionPower"], curMesh->emmision);
+    glUniform1f(uniformLocations->at("emmisionPower"), curMesh->emmision);
 
     // See if mesh is wanting the vertex colour override (HACK) to be used?
     if (curMesh->bUseObjectDebugColour)
     {
         // Override the colour...
-        glUniform1f(uniformLocations["bUseDebugColour"], (float)GL_TRUE);
-        glUniform4f(uniformLocations["objectDebugColour"],
+        glUniform1f(uniformLocations->at("bUseDebugColour"), (float)GL_TRUE);
+        glUniform4f(uniformLocations->at("objectDebugColour"),
             curMesh->objectDebugColourRGBA.r,
             curMesh->objectDebugColourRGBA.g,
             curMesh->objectDebugColourRGBA.b,
@@ -271,52 +271,52 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
     else
     {
         // DON'T override the colour
-        glUniform1f(uniformLocations["bUseDebugColour"], (float)GL_FALSE);
+        glUniform1f(uniformLocations->at("bUseDebugColour"), (float)GL_FALSE);
     }
 
     // See if mesh is wanting the vertex colour override (HACK) to be used?
     if (curMesh->bDontLight)
     {
         // Override the colour...
-        glUniform1f(uniformLocations["bDontLightObject"], (float)GL_TRUE);
+        glUniform1f(uniformLocations->at("bDontLightObject"), (float)GL_TRUE);
     }
     else
     {
         // DON'T override the colour
-        glUniform1f(uniformLocations["bDontLightObject"], (float)GL_FALSE);
+        glUniform1f(uniformLocations->at("bDontLightObject"), (float)GL_FALSE);
     }
 
     if (curMesh->bUseSpecular)
     {
         // Override the colour...
-        glUniform1f(uniformLocations["bUseSpecular"], (float)GL_TRUE);
+        glUniform1f(uniformLocations->at("bUseSpecular"), (float)GL_TRUE);
     }
     else
     {
         // DON'T override the colour
-        glUniform1f(uniformLocations["bUseSpecular"], (float)GL_FALSE);
+        glUniform1f(uniformLocations->at("bUseSpecular"), (float)GL_FALSE);
     }
 
     if (curMesh->bUseSkyboxReflection)
     {
         // Override the colour...
-        glUniform1f(uniformLocations["bUseSkyboxReflections"], (float)GL_TRUE);
+        glUniform1f(uniformLocations->at("bUseSkyboxReflections"), (float)GL_TRUE);
     }
     else
     {
         // DON'T override the colour
-        glUniform1f(uniformLocations["bUseSkyboxReflections"], (float)GL_FALSE);
+        glUniform1f(uniformLocations->at("bUseSkyboxReflections"), (float)GL_FALSE);
     }
 
     if (curMesh->bUseSkyboxRefraction)
     {
         // Override the colour...
-        glUniform1f(uniformLocations["bUseSkyboxRefraction"], (float)GL_TRUE);
+        glUniform1f(uniformLocations->at("bUseSkyboxRefraction"), (float)GL_TRUE);
     }
     else
     {
         // DON'T override the colour
-        glUniform1f(uniformLocations["bUseSkyboxRefraction"], (float)GL_FALSE);
+        glUniform1f(uniformLocations->at("bUseSkyboxRefraction"), (float)GL_FALSE);
     }
 
     // Wireframe

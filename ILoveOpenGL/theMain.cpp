@@ -60,7 +60,7 @@ struct PostProcessingInfo
 
     float bloomThreshhold = 1.0f;
     float bloomSize = 1.0f;
-    unsigned int bloomIterationAmount = 12;
+    unsigned int bloomIterationAmount = 15;
 };
 
 GLuint program;
@@ -125,10 +125,11 @@ bool g_MouseIsInsideWindow = false;
 
 //Method in DrawObjectFunction
 void extern DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManager* VAOManager,
-    cBasicTextureManager textureManager, std::map<std::string, GLint> uniformLocations, glm::vec3 eyeLocation);
+    cBasicTextureManager textureManager, std::map<std::string, GLint>* uniformLocations, glm::vec3 eyeLocation);
 
-void Draw(std::vector<cEntity*> opaqueMeshes, std::vector<cEntity*> transparentMeshes, std::map<std::string, int> uniformLocations, float deltaTime);
+void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparentMeshes, std::map<std::string, int>* uniformLocations, float deltaTime);
 void DrawGUI(float dt);
+void SetUpLights();
 
 static void error_callback(int error, const char* description)
 {
@@ -204,208 +205,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
             std::cout << "Cloned mesh!" << std::endl;
 
-        }
-        else if (key == GLFW_KEY_INSERT && action == GLFW_PRESS)
-        {
-
-            //ADDING NEW OR EXISTING MODELS.
-            std::string type;
-            std::string param;
-
-            std::cout << "What would you like do to? (add/del): ";
-
-            std::cin >> type;
-            std::cout << std::endl;
-
-            if (type == "add")
-            {
-                std::cout << "Add mesh from existing model? (y/n): ";
-                std::cin >> type;
-
-                //Add a new mesh from a model already loaded into the VAO
-                if (type == "y")
-                {
-                    std::cout << std::endl;
-                    std::cout << "Add a friendly name for the object: ";
-                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-                    std::string name;
-                    std::getline(std::cin, name);
-
-                    std::cout << std::endl;
-                    std::cout << "Select a model to create a mesh from (1-" << (*sceneLoader->GetModels()).size() << "): " << std::endl;
-
-                    //Prints out all models being used.
-                    int i = 1;
-                    for (sModel model : *sceneLoader->GetModels())
-                    {
-                        std::cout << "\t" << i << "." << model.fileName << std::endl;
-
-                        i++;
-                    }
-
-                    std::cout << std::endl;
-
-                    std::string selectionString;
-                    std::cin >> selectionString;
-                    int selection = -1;
-
-                    //Attempts to get the user's response
-                    try
-                    {
-
-                        selection = std::stoi(selectionString) - 1;
-                    }
-                    catch (const std::exception& e)
-                    {
-                        std::cout << "Please use numbers to select a model" << std::endl;
-                        std::cout << e.what() << std::endl;
-                    }
-
-
-                    //Creates a new mesh and adds it to the list of meshes if the response of good!
-                    cMeshRenderer* newMesh = new cMeshRenderer();
-                    cTransform newTransform;
-
-                    try
-                    {
-                        sModel selectedModel = (*sceneLoader->GetModels()).at(selection);
-
-                        newMesh->meshName = selectedModel.fileName;
-                        newTransform.scale = glm::vec3(selectedModel.defaultScale);
-                        newMesh->friendlyName = name;
-                    }
-                    catch (const std::exception& e)
-                    {
-                        std::cout << "Selection out of bound" << std::endl;
-                        std::cout << e.what() << std::endl;
-                    }
-
-                    //Adds the new mesh to the list of meshes to render
-                    if (newMesh->meshName != "")
-                    {
-                        cEntity* newEntity = g_entityManager.CreateEntity();
-                        newEntity->AddComponent<cMeshRenderer>(newMesh);
-                        *newEntity->GetComponent<cTransform>() = newTransform;
-
-                        g_selectedObject = (int)g_entityManager.GetEntities().size() - 1;
-
-                        std::cout << "Added new mesh from model: " << newMesh->meshName << std::endl;
-                    }
-
-                }
-                //If you want to import a new model
-                else if (type == "n")
-                {
-
-                    std::cout << std::endl;
-                    std::cout << "Enter the name of the file (e.g. bunny.ply | make sure it's in the \"assets\\models\" folder): ";
-                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-                    std::string fileName;
-                    std::getline(std::cin, fileName);
-
-                    sModel newModel;
-                    sModelDrawInfo modelDrawInfo;
-
-                    //Attempts to load the model into the vao
-                    if (gVAOManager.LoadModelIntoVAO(fileName, modelDrawInfo, program))
-                    {
-                        std::cout << "Loaded " << fileName << " into the VAO!" << std::endl;
-
-                        newModel.fileName = fileName;
-                        newModel.defaultScale = modelDrawInfo.defaultScale;
-
-                        (*sceneLoader->GetModels()).push_back(newModel);
-
-                        std::cout << std::endl;
-                        std::cout << "Add a friendly name for the object: ";
-
-                        std::string name;
-                        std::getline(std::cin, name);
-
-
-                        //Adds the new mesh to the screen.
-                        cMeshRenderer* newMesh = new cMeshRenderer();
-                        cTransform newTransform;
-
-                        newMesh->meshName = newModel.fileName;
-                        newTransform.scale = glm::vec3(newModel.defaultScale);
-                        newMesh->friendlyName = name;
-
-                        cEntity* newEntity = g_entityManager.CreateEntity();
-
-                        *newEntity->GetComponent<cTransform>() = newTransform;
-                        newEntity->AddComponent<cMeshRenderer>(newMesh);
-
-                        g_selectedObject = (int)g_entityManager.GetEntities().size() - 1;
-
-                        std::cout << "Added new mesh from model: " << newMesh->meshName << std::endl;
-                    }
-                    else
-                    {
-                        std::cout << "ERROR: Could not load " << fileName << " into the VAO" << std::endl;
-                    }
-
-                }
-            }
-
-            //Deleting a mesh from the scene
-            else if (type == "del")
-            {
-                std::vector<cEntity*> entities = g_entityManager.GetEntities();
-
-                std::cout << std::endl;
-                std::cout << "Select a mesh to delete (1-" << entities.size() << "): " << std::endl;
-
-                //Prints out all models being used.
-                int i = 1;
-                for (cEntity* model : entities)
-                {
-                    std::cout << "\t" << i << "." << model->GetComponent<cMeshRenderer>()->friendlyName << std::endl;
-
-                    i++;
-                }
-
-                std::cout << std::endl;
-
-                std::string selectionString;
-                std::cin >> selectionString;
-                int selection = -1;
-
-                //Attempts to get the user's response
-                try
-                {
-
-                    selection = std::stoi(selectionString) - 1;
-                }
-                catch (const std::exception& e)
-                {
-                    std::cout << "Please use numbers to select a mesh" << std::endl;
-                    std::cout << e.what() << std::endl;
-                }
-
-                try
-                {
-                    cEntity* selectedSceneEntity = entities.at(selection);
-                    cMeshRenderer selectedMesh = *selectedSceneEntity->GetComponent<cMeshRenderer>();
-
-                    g_entityManager.RemoveEntity(selection);
-
-                    std::cout << "Deleted mesh " << selectedMesh.friendlyName << std::endl;
-                    g_selectedObject = (int)g_entityManager.GetEntities().size() - 1;
-                }
-                catch (const std::exception& e)
-                {
-                    std::cout << "Selection out of bound" << std::endl;
-                    std::cout << e.what() << std::endl;
-                }
-
-            }
-            else
-            {
-                std::cout << "That is not a valid option" << std::endl << std::endl;
-            }
         }
     }
     return;
@@ -602,122 +401,7 @@ int main(void)
     GLint matView_Location = glGetUniformLocation(program, "matView");
     GLint matProjection_Location = glGetUniformLocation(program, "matProjection");
     
-    //OUTSIDE LIGHTS
-    gTheLights.theLights[0].name = "Outside light";
-    gTheLights.theLights[0].position = glm::vec4(-4.5f, 6.0f, -1.5f, 1.0f);
-    gTheLights.theLights[0].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
-    gTheLights.theLights[0].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100000.0f);
-    //gTheLights.theLights[0].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
-    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
-    gTheLights.theLights[0].param1.x = 0;
-    gTheLights.TurnOnLight(0);  // Or this!
-    gTheLights.SetUpUniformLocations(program, 0);
-
-    gTheLights.theLights[1].name = "Outside light";
-    gTheLights.theLights[1].position = glm::vec4(3.25f, 5.5f, 8.5f, 1.0f);
-    gTheLights.theLights[1].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
-    gTheLights.theLights[1].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100000.0f);
-    // gTheLights.theLights[1].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
-     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
-    gTheLights.theLights[1].param1.x = 0;
-    gTheLights.TurnOnLight(1);  // Or this!
-    gTheLights.SetUpUniformLocations(program, 1);
-
-    gTheLights.theLights[2].name = "Outside light";
-    gTheLights.theLights[2].position = glm::vec4(-2.5f, 5.5f, -8.5f, 1.0f);
-    gTheLights.theLights[2].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
-    gTheLights.theLights[2].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100000.0f);
-    //gTheLights.theLights[2].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
-    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
-    gTheLights.theLights[2].param1.x = 0;
-    gTheLights.TurnOnLight(2);  // Or this!
-    gTheLights.SetUpUniformLocations(program, 2);
-
-    gTheLights.theLights[3].name = "Outside light";
-    gTheLights.theLights[3].position = glm::vec4(6.5f, 5.5f, -8.5f, 1.0f);
-    gTheLights.theLights[3].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
-    gTheLights.theLights[3].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100000.0f);
-    //gTheLights.theLights[3].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
-    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
-    gTheLights.theLights[3].param1.x = 0;
-    gTheLights.TurnOnLight(3);  // Or this!
-    gTheLights.SetUpUniformLocations(program, 3);
-
-    gTheLights.theLights[6].name = "Outside light";
-    gTheLights.theLights[6].position = glm::vec4(10.5f, 5.5f, -0.25f, 1.0f);
-    gTheLights.theLights[6].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
-    gTheLights.theLights[6].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100000.0f);
-    //gTheLights.theLights[3].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
-    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
-    gTheLights.theLights[6].param1.x = 0;
-    gTheLights.TurnOnLight(6);  // Or this!
-    gTheLights.SetUpUniformLocations(program, 6);
-
-    gTheLights.theLights[7].name = "Outside light";
-    gTheLights.theLights[7].position = glm::vec4(-10.5f, 6.5f, 4.0f, 1.0f);
-    gTheLights.theLights[7].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
-    gTheLights.theLights[7].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100000.0f);
-    //gTheLights.theLights[3].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
-    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
-    gTheLights.theLights[7].param1.x = 0;
-    gTheLights.TurnOnLight(7);  // Or this!
-    gTheLights.SetUpUniformLocations(program, 7);
-
-    gTheLights.theLights[9].name = "Outside light";
-    gTheLights.theLights[9].position = glm::vec4(4.25f, 6.0f, 26.5f, 1.0f);
-    gTheLights.theLights[9].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
-    gTheLights.theLights[9].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100000.0f);
-    //gTheLights.theLights[0].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
-    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
-    gTheLights.theLights[9].param1.x = 0;
-    gTheLights.TurnOnLight(9);  // Or this!
-    gTheLights.SetUpUniformLocations(program, 9);
-
-
-    //INSIDE LIGHTS
-    gTheLights.theLights[4].name = "Inside light";
-    gTheLights.theLights[4].position = glm::vec4(1.5f, 7.5f, -0.25f, 1.0f);
-    gTheLights.theLights[4].diffuse = glm::vec4(0.76f, 0.9f, 1.0f, 1.0f);
-    gTheLights.theLights[4].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100000.0f);
-    gTheLights.theLights[4].direction = glm::vec4(0.0f, -1.0f, 0.0f, 1.0f);
-    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
-    gTheLights.theLights[4].param1.x = 1;
-    gTheLights.theLights[4].param1.y = 20.0f;
-    gTheLights.theLights[4].param1.z = 25.0f;
-    gTheLights.TurnOnLight(4);  // Or this!
-    gTheLights.SetUpUniformLocations(program, 4);
-
-    gTheLights.theLights[5].name = "Inside light";
-    gTheLights.theLights[5].position = glm::vec4(1.5f, 7.5f, 3.5f, 1.0f);
-    gTheLights.theLights[5].diffuse = glm::vec4(0.76f, 0.9f, 1.0f, 1.0f);
-    gTheLights.theLights[5].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100000.0f);
-    gTheLights.theLights[5].direction = glm::vec4(0.0f, -1.0f, 0.0f, 1.0f);
-    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
-    gTheLights.theLights[5].param1.x = 1;
-    gTheLights.theLights[5].param1.y = 20.0f;
-    gTheLights.theLights[5].param1.z = 25.0f;
-    gTheLights.TurnOnLight(5);  // Or this!
-    gTheLights.SetUpUniformLocations(program, 5);
-
-    //SUN
-
-    gTheLights.theLights[8].name = "Sun light";
-    gTheLights.theLights[8].position = glm::vec4(0.f, 0.f, 0.f, 1.0f);
-    gTheLights.theLights[8].diffuse = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    gTheLights.theLights[8].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100000.0f);
-    gTheLights.theLights[8].direction = glm::vec4(0.0f, -1.0f, -.2f, 1.0f);
-    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
-    gTheLights.theLights[8].param1.x = 2;
-    gTheLights.TurnOffLight(8);  // Or this!
-    gTheLights.SetUpUniformLocations(program, 8);
-
-    gTheLights.theLights[12].position = glm::vec4(0.f, 0.f, 0.f, 1.0f);
-    gTheLights.theLights[12].diffuse = glm::vec4(.5f, 0.5f, .5f, 1.0f);
-    gTheLights.theLights[12].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100000.0f);
-    gTheLights.theLights[12].direction = glm::vec4(0.0f, .9f, .4f, 1.0f);
-    gTheLights.theLights[12].param1.x = 2;
-    gTheLights.TurnOffLight(12);  // Or this!
-    gTheLights.SetUpUniformLocations(program, 12);
+    SetUpLights();
 
     sceneLoader = cSceneLoader::GetSceneLoaderInstance();
 
@@ -895,7 +579,7 @@ int main(void)
 
     float decreaseSize = 4.0f;
 
-    pingPongFBO = new cPingPongFBOs((screenPixelDensity * ratio) / decreaseSize, screenPixelDensity / decreaseSize);
+    pingPongFBO = new cPingPongFBOs((screenPixelDensity * ratio) / decreaseSize, screenPixelDensity / decreaseSize, pingPongShader);
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -939,9 +623,11 @@ int main(void)
 
         pingPongFBO->ClearBuffers();
 
+        //Clear normal buffers
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         g_fbo->clearBuffers(true, true);
 
+        //Clear fbo buffers
         glBindFramebuffer(GL_FRAMEBUFFER, g_fbo->ID);
         g_fbo->clearBuffers(true, true);
 
@@ -953,11 +639,6 @@ int main(void)
         // Turn on the depth buffer
         glEnable(GL_DEPTH);         // Turns on the depth buffer
         glEnable(GL_DEPTH_TEST);    // Check if the pixel is already closer
-
-   
-       
-
-        
 
         // *******************************************************
         // Screen is cleared and we are ready to draw the scene...
@@ -974,8 +655,6 @@ int main(void)
             ratio,
             0.1f,
             1000.0f);     
-
-        v = glm::mat4(1.0f);
 
         //glm::vec3 cameraEye = glm::vec3(0.0, 0.0, -4.0f);
         glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -1012,12 +691,10 @@ int main(void)
         }
         //Sort transparent objects.
         std::sort(transparentMeshes.begin(), transparentMeshes.end(), DistanceToCameraPredicate);
-        
-        
-        Draw(opaqueMeshes, transparentMeshes, normalShader->uniformLocations, deltaTime);
-       
+            
+        Draw(&opaqueMeshes, &transparentMeshes, &normalShader->uniformLocations, deltaTime);    
 
-        glm::vec3 fullscreenPos = glm::vec3(0.f, 0.f, -1.f);
+        glm::vec3 fullscreenPos = glm::vec3(0.f, 0.f, -10.f);
         
         cMeshRenderer* fullscreenMesh = new cMeshRenderer();
         fullscreenMesh->meshName = "fullscreenquad.ply";
@@ -1083,15 +760,13 @@ int main(void)
             glUniform1i(normalShader->uniformLocations["texture_Specular"], unit);
         }
         g_fbo->clearColourBuffer(0);  
-        //g_fbo->clearColourBuffer(5);
+
         //fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
-        DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, normalShader->uniformLocations, fullscreenPos);
+        DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, &normalShader->uniformLocations, fullscreenPos);
         //DONE 1ST PASS (Lighting)
         
-        //TODO: Add bloom pass
-        
         bool horizontal = true;
-        bool first_iteration = true;
+        bool firstIteration = true;
 
         glUseProgram(pingPongShader->ID);
         
@@ -1103,48 +778,27 @@ int main(void)
         
         for (unsigned int i = 0; i < postProcessing.bloomIterationAmount; i++)
         {
-            glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO->pingpongFBO[horizontal]);
-            glUniform1f(pingPongShader->uniformLocations["horizontal"], horizontal ? (float)GL_TRUE : (float)GL_FALSE);
-        
-            if (first_iteration)
+            if (firstIteration)
             {
-                //glBindTexture(GL_TEXTURE_2D, g_fbo->brightColour_5_ID);
-        
-                GLint unit = 20;
-                glActiveTexture(unit + GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, g_fbo->brightColour_5_ID);
-                glUniform1i(pingPongShader->uniformLocations["bloomMap"], unit);
-        
-                first_iteration = false;
+                pingPongFBO->BlurBuffer(true, horizontal, g_fbo->brightColour_5_ID);
+                firstIteration = false;
             }
             else
             {
-                //glBindTexture(GL_TEXTURE_2D, pingPongFBO->pingpongBuffer[!horizontal]);
-        
-                GLint unit = 21;
-                glActiveTexture(unit + GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, pingPongFBO->pingpongBuffer[!horizontal]);
-                glUniform1i(pingPongShader->uniformLocations["bloomMap"], unit);
+                pingPongFBO->BlurBuffer(false, horizontal);
             }
         
             fullscreenEntity->GetComponent<cTransform>()->position.z -= .01f;
-            DrawObject(fullscreenEntity, glm::mat4(1.0f), pingPongShader->ID, &gVAOManager, g_textureManager, pingPongShader->uniformLocations, fullscreenPos);
+            DrawObject(fullscreenEntity, glm::mat4(1.0f), pingPongShader->ID, &gVAOManager, g_textureManager, &pingPongShader->uniformLocations, fullscreenPos);
             horizontal = !horizontal;
         }
         glUseProgram(normalShader->ID);
 
         //BEGINNING OF SECOND PASS (Effects Pass)
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
+
         glfwGetFramebufferSize(window, &width, &height);
         ratio = width / (float)height;
-        
-        p = glm::perspective(glm::radians(usedFov),
-            ratio,
-            0.1f,
-            1000.0f);
         
         glViewport(0, 0, width, height);
         
@@ -1153,6 +807,7 @@ int main(void)
         
         GLint textureId = 0;
         
+        //Select which texture to show
         switch (showTextureIndex)
         {
         case 0:
@@ -1193,12 +848,10 @@ int main(void)
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, pingPongFBO->pingpongBuffer[!horizontal]);
             glUniform1i(normalShader->uniformLocations["bloomMapColorBuf"], unit);
-        }
-
-        
+        }  
 
         fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
-        DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, normalShader->uniformLocations, fullscreenPos);
+        DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, &normalShader->uniformLocations, fullscreenPos);
         //END OF FINAL PASS
 
         if(showDebugGui)
@@ -1214,17 +867,6 @@ int main(void)
 
         ProcessAsyncMouse(window, (float)deltaTime);
         ProcessAsyncKeyboard(window, (float)deltaTime);
-
-        //g_FlyCamera->Update(deltaTime);   
-
-        //Flicker lights
-        //gTheLights.theLights[0].atten.x = (rand() % 200 + 100) / 1000.0f;
-        //gTheLights.theLights[1].atten.x = (rand() % 200 + 100) / 1000.0f;
-        //gTheLights.theLights[2].atten.x = (rand() % 200 + 100) / 1000.0f;
-        //gTheLights.theLights[3].atten.x = (rand() % 200 + 100) / 1000.0f;
-        //gTheLights.theLights[6].atten.x = (rand() % 200 + 100) / 1000.0f;
-        //gTheLights.theLights[7].atten.x = (rand() % 200 + 100) / 1000.0f;
-
     }
 
     g_entityManager.DeleteEntity(g_DebugSphere);
@@ -1248,13 +890,13 @@ int main(void)
     exit(EXIT_SUCCESS);
 }
 
-void Draw(std::vector<cEntity*> opaqueMeshes, std::vector<cEntity*> transparentMeshes, std::map<std::string, int> uniformLocations, float deltaTime)
+void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparentMeshes, std::map<std::string, int>* uniformLocations, float deltaTime)
 {
 
     //Draw non transparent objects
-    for (unsigned int index = 0; index != opaqueMeshes.size(); index++)
+    for (unsigned int index = 0; index != opaqueMeshes->size(); index++)
     {
-        cEntity* curEntity = opaqueMeshes[index];
+        cEntity* curEntity = opaqueMeshes->at(index);
         glm::mat4 matModel = glm::mat4(1.0f);  // "Identity" ("do nothing", like x1)
         //mat4x4_identity(m);
 
@@ -1270,9 +912,9 @@ void Draw(std::vector<cEntity*> opaqueMeshes, std::vector<cEntity*> transparentM
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     //Draw transparent objects
-    for (unsigned int index = 0; index != transparentMeshes.size(); index++)
+    for (unsigned int index = 0; index != transparentMeshes->size(); index++)
     {
-        cEntity* curEntity = transparentMeshes[index];
+        cEntity* curEntity = transparentMeshes->at(index);
         cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
         glm::mat4 matModel = glm::mat4(1.0f);  // "Identity" ("do nothing", like x1)
         //mat4x4_identity(m);
@@ -1291,10 +933,10 @@ void Draw(std::vector<cEntity*> opaqueMeshes, std::vector<cEntity*> transparentM
     //Render debug sphere
     if (isDebugMode)
     {
-        glUniform1f(uniformLocations["bDebugMode"], (float)GL_TRUE);
+        glUniform1f(uniformLocations->at("bDebugMode"), (float)GL_TRUE);
 
-        glUniform1f(uniformLocations["bDebugShowLighting"], (float)debugShowLighting);
-        glUniform1f(uniformLocations["bDebugShowNormals"], (float)debugShowNormals);
+        glUniform1f(uniformLocations->at("bDebugShowLighting"), (float)debugShowLighting);
+        glUniform1f(uniformLocations->at("bDebugShowNormals"), (float)debugShowNormals);
 
         cMeshRenderer* debugSphereMesh = g_DebugSphere->GetComponent<cMeshRenderer>();
         cTransform* debugSphereTransform = g_DebugSphere->GetComponent<cTransform>();
@@ -1310,7 +952,7 @@ void Draw(std::vector<cEntity*> opaqueMeshes, std::vector<cEntity*> transparentM
     }
     else
     {
-        glUniform1f(uniformLocations["bDebugMode"], (float)GL_FALSE);
+        glUniform1f(uniformLocations->at("bDebugMode"), (float)GL_FALSE);
     }
 }
 
@@ -1504,4 +1146,124 @@ void DrawGUI(float dt)
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     ImGui::EndFrame();
+}
+
+void SetUpLights()
+{
+    //OUTSIDE LIGHTS
+    gTheLights.theLights[0].name = "Outside light";
+    gTheLights.theLights[0].position = glm::vec4(-4.5f, 6.0f, -1.5f, 1.0f);
+    gTheLights.theLights[0].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
+    gTheLights.theLights[0].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100.0f);
+    //gTheLights.theLights[0].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
+    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+    gTheLights.theLights[0].param1.x = 0;
+    gTheLights.TurnOnLight(0);  // Or this!
+    gTheLights.SetUpUniformLocations(program, 0);
+
+    gTheLights.theLights[1].name = "Outside light";
+    gTheLights.theLights[1].position = glm::vec4(3.25f, 5.5f, 8.5f, 1.0f);
+    gTheLights.theLights[1].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
+    gTheLights.theLights[1].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100.0f);
+    // gTheLights.theLights[1].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
+     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+    gTheLights.theLights[1].param1.x = 0;
+    gTheLights.TurnOnLight(1);  // Or this!
+    gTheLights.SetUpUniformLocations(program, 1);
+
+    gTheLights.theLights[2].name = "Outside light";
+    gTheLights.theLights[2].position = glm::vec4(-2.5f, 5.5f, -8.5f, 1.0f);
+    gTheLights.theLights[2].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
+    gTheLights.theLights[2].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100.0f);
+    //gTheLights.theLights[2].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
+    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+    gTheLights.theLights[2].param1.x = 0;
+    gTheLights.TurnOnLight(2);  // Or this!
+    gTheLights.SetUpUniformLocations(program, 2);
+
+    gTheLights.theLights[3].name = "Outside light";
+    gTheLights.theLights[3].position = glm::vec4(6.5f, 5.5f, -8.5f, 1.0f);
+    gTheLights.theLights[3].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
+    gTheLights.theLights[3].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100.0f);
+    //gTheLights.theLights[3].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
+    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+    gTheLights.theLights[3].param1.x = 0;
+    gTheLights.TurnOnLight(3);  // Or this!
+    gTheLights.SetUpUniformLocations(program, 3);
+
+    gTheLights.theLights[6].name = "Outside light";
+    gTheLights.theLights[6].position = glm::vec4(10.5f, 5.5f, -0.25f, 1.0f);
+    gTheLights.theLights[6].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
+    gTheLights.theLights[6].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100.0f);
+    //gTheLights.theLights[3].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
+    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+    gTheLights.theLights[6].param1.x = 0;
+    gTheLights.TurnOnLight(6);  // Or this!
+    gTheLights.SetUpUniformLocations(program, 6);
+
+    gTheLights.theLights[7].name = "Outside light";
+    gTheLights.theLights[7].position = glm::vec4(-10.5f, 6.5f, 4.0f, 1.0f);
+    gTheLights.theLights[7].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
+    gTheLights.theLights[7].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100.0f);
+    //gTheLights.theLights[3].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
+    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+    gTheLights.theLights[7].param1.x = 0;
+    gTheLights.TurnOnLight(7);  // Or this!
+    gTheLights.SetUpUniformLocations(program, 7);
+
+    gTheLights.theLights[9].name = "Outside light";
+    gTheLights.theLights[9].position = glm::vec4(4.25f, 6.0f, 26.5f, 1.0f);
+    gTheLights.theLights[9].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
+    gTheLights.theLights[9].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100.0f);
+    //gTheLights.theLights[0].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
+    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+    gTheLights.theLights[9].param1.x = 0;
+    gTheLights.TurnOnLight(9);  // Or this!
+    gTheLights.SetUpUniformLocations(program, 9);
+
+
+    //INSIDE LIGHTS
+    gTheLights.theLights[4].name = "Inside light";
+    gTheLights.theLights[4].position = glm::vec4(1.5f, 7.5f, -0.25f, 1.0f);
+    gTheLights.theLights[4].diffuse = glm::vec4(0.76f, 0.9f, 1.0f, 1.0f);
+    gTheLights.theLights[4].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100.0f);
+    gTheLights.theLights[4].direction = glm::vec4(0.0f, -1.0f, 0.0f, 1.0f);
+    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+    gTheLights.theLights[4].param1.x = 1;
+    gTheLights.theLights[4].param1.y = 20.0f;
+    gTheLights.theLights[4].param1.z = 25.0f;
+    gTheLights.TurnOnLight(4);  // Or this!
+    gTheLights.SetUpUniformLocations(program, 4);
+
+    gTheLights.theLights[5].name = "Inside light";
+    gTheLights.theLights[5].position = glm::vec4(1.5f, 7.5f, 3.5f, 1.0f);
+    gTheLights.theLights[5].diffuse = glm::vec4(0.76f, 0.9f, 1.0f, 1.0f);
+    gTheLights.theLights[5].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100.0f);
+    gTheLights.theLights[5].direction = glm::vec4(0.0f, -1.0f, 0.0f, 1.0f);
+    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+    gTheLights.theLights[5].param1.x = 1;
+    gTheLights.theLights[5].param1.y = 20.0f;
+    gTheLights.theLights[5].param1.z = 25.0f;
+    gTheLights.TurnOnLight(5);  // Or this!
+    gTheLights.SetUpUniformLocations(program, 5);
+
+    //SUN
+
+    gTheLights.theLights[8].name = "Sun light";
+    gTheLights.theLights[8].position = glm::vec4(0.f, 0.f, 0.f, 1.0f);
+    gTheLights.theLights[8].diffuse = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    gTheLights.theLights[8].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100.0f);
+    gTheLights.theLights[8].direction = glm::vec4(0.0f, -1.0f, -.2f, 1.0f);
+    //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+    gTheLights.theLights[8].param1.x = 2;
+    gTheLights.TurnOffLight(8);  // Or this!
+    gTheLights.SetUpUniformLocations(program, 8);
+
+    gTheLights.theLights[12].position = glm::vec4(0.f, 0.f, 0.f, 1.0f);
+    gTheLights.theLights[12].diffuse = glm::vec4(.5f, 0.5f, .5f, 1.0f);
+    gTheLights.theLights[12].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100.0f);
+    gTheLights.theLights[12].direction = glm::vec4(0.0f, .9f, .4f, 1.0f);
+    gTheLights.theLights[12].param1.x = 2;
+    gTheLights.TurnOffLight(12);  // Or this!
+    gTheLights.SetUpUniformLocations(program, 12);
 }
