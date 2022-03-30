@@ -8,6 +8,9 @@
 #include "cBasicTextureManager/cBasicTextureManager.h"
 #include "cTransform.h"
 #include "cTextureViewer.h"
+#include "RenderType.h"
+#include "cShaderManager.h"
+#include "cTreeRenderer.h"
 
 void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std::map<std::string, GLint>* uniformLocations)
 {
@@ -27,6 +30,7 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
 
     glUniform4f(uniformLocations->at("textureRatios"),
         ratioOne, ratioTwo, ratioThree, ratioFour);
+    glUniform4f(uniformLocations->at("tilingAndOffset"), curMesh->tiling.x, curMesh->tiling.y, curMesh->offset.x, curMesh->offset.y);
 
     if (curMesh->bUseAlphaMask)
     {
@@ -145,11 +149,11 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
     }
 }
 
-void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManager* VAOManager,
-    cBasicTextureManager textureManager, std::map<std::string, GLint>* uniformLocations, glm::vec3 eyeLocation)
+void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderProgram* shader, cVAOManager* VAOManager,
+    cBasicTextureManager textureManager,  glm::vec3 eyeLocation)
 {
-    if(uniformLocations->size() > 10)
-        SetUpTextures(curEntity, textureManager, uniformLocations);
+    if(shader->type == RenderType::Normal)
+        SetUpTextures(curEntity, textureManager, &shader->uniformLocations);
 
     cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
     cTransform* curTransform = curEntity->GetComponent<cTransform>();
@@ -184,32 +188,17 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
     matModel = matModel * matRotation;
     matModel = matModel * matScale;     // <-- mathematically, this is 1st
 
-    GLint matModel_Location = uniformLocations->at("matModel");
-    GLint matModelInverseTranspose_Location = uniformLocations->at("matModelInverseTranspose");
-    // Copy the whole object colour information to the sahder               
-
-   //         // This is used for wireframe or whole object colour. 
-   //         // If bUseDebugColour is TRUE, then the fragment colour is "objectDebugColour".
-   // GLint bUseDebugColour_Location = uniformLocations["bUseDebugColour"];
-   // GLint objectDebugColour_Location = uniformLocations["objectDebugColour"];
-   //
-   // // If true, then the lighting contribution is NOT used. 
-   // // This is useful for wireframe object
-   // GLint bDontLightObject_Location = uniformLocations["bDontLightObject"];
-   //
-   // // The "whole object" colour (diffuse and specular)
-   // GLint wholeObjectDiffuseColour_Location = uniformLocations["wholeObjectDiffuseColour"];
-   // GLint bUseWholeObjectDiffuseColour_Location = uniformLocations["bUseWholeObjectDiffuseColour"];
-   // GLint wholeObjectSpecularColour_Location = uniformLocations["wholeObjectSpecularColour"];
-
+    GLint matModel_Location = shader->uniformLocations["matModel"];
     glUniformMatrix4fv(matModel_Location, 1, GL_FALSE, glm::value_ptr(matModel));
-    // Inverse transpose of the model matrix
-    // (Used to calculate the normal location in vertex space, using only rotation)
-    glm::mat4 matInvTransposeModel = glm::inverse(glm::transpose(matModel));
-    glUniformMatrix4fv(matModelInverseTranspose_Location, 1, GL_FALSE, glm::value_ptr(matInvTransposeModel));
 
+    if (shader->type != RenderType::Shadow)
+    {
+        GLint matModelInverseTranspose_Location = shader->uniformLocations["matModelInverseTranspose"];
+        glm::mat4 matInvTransposeModel = glm::inverse(glm::transpose(matModel));
+        glUniformMatrix4fv(matModelInverseTranspose_Location, 1, GL_FALSE, glm::value_ptr(matInvTransposeModel));
+    }
 
-    if (uniformLocations->size() < 10)
+    if (shader->type == RenderType::PingPong || shader->type == RenderType::Shadow)
     {
         sModelDrawInfo modelInfo;
         if (VAOManager->FindDrawInfoByModelName(curMesh->meshName, modelInfo))
@@ -228,17 +217,17 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
 
     if (curMesh->bIsImposter)
     {
-        glUniform1f(uniformLocations->at("bIsImposter"), (float)GL_TRUE);
+        glUniform1f(shader->uniformLocations["bIsImposter"], (float)GL_TRUE);
     }
     else
     {
-        glUniform1f(uniformLocations->at("bIsImposter"), (float)GL_FALSE);
+        glUniform1f(shader->uniformLocations["bIsImposter"], (float)GL_FALSE);
     }
 
     if (curMesh->bUseWholeObjectDiffuseColour)
     {
-        glUniform1f(uniformLocations->at("bUseWholeObjectDiffuseColour"), (float)GL_TRUE);
-        glUniform4f(uniformLocations->at("wholeObjectDiffuseColour"),
+        glUniform1f(shader->uniformLocations["bUseWholeObjectDiffuseColour"], (float)GL_TRUE);
+        glUniform4f(shader->uniformLocations["wholeObjectDiffuseColour"],
             curMesh->wholeObjectDiffuseRGBA.r,
             curMesh->wholeObjectDiffuseRGBA.g,
             curMesh->wholeObjectDiffuseRGBA.b,
@@ -246,23 +235,23 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
     }
     else
     {
-        glUniform1f(uniformLocations->at("bUseWholeObjectDiffuseColour"), (float)GL_FALSE);
+        glUniform1f(shader->uniformLocations["bUseWholeObjectDiffuseColour"], (float)GL_FALSE);
     }
 
-    glUniform4f(uniformLocations->at("wholeObjectSpecularColour"),
+    glUniform4f(shader->uniformLocations["wholeObjectSpecularColour"],
         curMesh->wholeObjectSpecularRGB.r,
         curMesh->wholeObjectSpecularRGB.g,
         curMesh->wholeObjectSpecularRGB.b,
         curMesh->wholeObjectShininess_SpecPower);
 
-    glUniform1f(uniformLocations->at("emmisionPower"), curMesh->emmision);
+    glUniform1f(shader->uniformLocations["emmisionPower"], curMesh->emmision);
 
     // See if mesh is wanting the vertex colour override (HACK) to be used?
     if (curMesh->bUseObjectDebugColour)
     {
         // Override the colour...
-        glUniform1f(uniformLocations->at("bUseDebugColour"), (float)GL_TRUE);
-        glUniform4f(uniformLocations->at("objectDebugColour"),
+        glUniform1f(shader->uniformLocations["bUseDebugColour"], (float)GL_TRUE);
+        glUniform4f(shader->uniformLocations["objectDebugColour"],
             curMesh->objectDebugColourRGBA.r,
             curMesh->objectDebugColourRGBA.g,
             curMesh->objectDebugColourRGBA.b,
@@ -271,52 +260,52 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
     else
     {
         // DON'T override the colour
-        glUniform1f(uniformLocations->at("bUseDebugColour"), (float)GL_FALSE);
+        glUniform1f(shader->uniformLocations["bUseDebugColour"], (float)GL_FALSE);
     }
 
     // See if mesh is wanting the vertex colour override (HACK) to be used?
     if (curMesh->bDontLight)
     {
         // Override the colour...
-        glUniform1f(uniformLocations->at("bDontLightObject"), (float)GL_TRUE);
+        glUniform1f(shader->uniformLocations["bDontLightObject"], (float)GL_TRUE);
     }
     else
     {
         // DON'T override the colour
-        glUniform1f(uniformLocations->at("bDontLightObject"), (float)GL_FALSE);
+        glUniform1f(shader->uniformLocations["bDontLightObject"], (float)GL_FALSE);
     }
 
     if (curMesh->bUseSpecular)
     {
         // Override the colour...
-        glUniform1f(uniformLocations->at("bUseSpecular"), (float)GL_TRUE);
+        glUniform1f(shader->uniformLocations["bUseSpecular"], (float)GL_TRUE);
     }
     else
     {
         // DON'T override the colour
-        glUniform1f(uniformLocations->at("bUseSpecular"), (float)GL_FALSE);
+        glUniform1f(shader->uniformLocations["bUseSpecular"], (float)GL_FALSE);
     }
 
     if (curMesh->bUseSkyboxReflection)
     {
         // Override the colour...
-        glUniform1f(uniformLocations->at("bUseSkyboxReflections"), (float)GL_TRUE);
+        glUniform1f(shader->uniformLocations["bUseSkyboxReflections"], (float)GL_TRUE);
     }
     else
     {
         // DON'T override the colour
-        glUniform1f(uniformLocations->at("bUseSkyboxReflections"), (float)GL_FALSE);
+        glUniform1f(shader->uniformLocations["bUseSkyboxReflections"], (float)GL_FALSE);
     }
 
     if (curMesh->bUseSkyboxRefraction)
     {
         // Override the colour...
-        glUniform1f(uniformLocations->at("bUseSkyboxRefraction"), (float)GL_TRUE);
+        glUniform1f(shader->uniformLocations["bUseSkyboxRefraction"], (float)GL_TRUE);
     }
     else
     {
         // DON'T override the colour
-        glUniform1f(uniformLocations->at("bUseSkyboxRefraction"), (float)GL_FALSE);
+        glUniform1f(shader->uniformLocations["bUseSkyboxRefraction"], (float)GL_FALSE);
     }
 
     // Wireframe
@@ -338,17 +327,40 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManag
     {
         glBindVertexArray(modelInfo.VAO_ID);
 
-        glDrawElements(GL_TRIANGLES,
-            modelInfo.numberOfIndices,
-            GL_UNSIGNED_INT,
-            (void*)0);
+        cTreeRenderer* treeRenderer = curEntity->GetComponent<cTreeRenderer>();
+
+       
+
+        if (treeRenderer == nullptr)
+        {
+            glUniform1f(shader->uniformLocations["bUseInstancedRendering"], (float)GL_FALSE);
+
+            glDrawElements(GL_TRIANGLES,
+                modelInfo.numberOfIndices,
+                GL_UNSIGNED_INT,
+                (void*)0);
+        }
+        else
+        {
+            if (!treeRenderer->GetUniformSetupComplete())
+            {
+                treeRenderer->SetupUniformLocations(shader->ID);
+            }
+
+            glUniform1f(shader->uniformLocations["bUseInstancedRendering"], (float)GL_TRUE);
+
+            glDrawElementsInstanced(GL_TRIANGLES,
+                modelInfo.numberOfIndices,
+                GL_UNSIGNED_INT,
+                (void*)0, (GLsizei)treeRenderer->GetTreeCount());
+        }
 
         glBindVertexArray(0);
     }
 
     for (std::vector<cEntity*>::iterator childrenIt = curEntity->children.begin(); childrenIt != curEntity->children.end(); childrenIt++)
     {
-        DrawObject(*childrenIt, matModel, program, VAOManager, textureManager, uniformLocations, eyeLocation);
+        DrawObject(*childrenIt, matModel, shader, VAOManager, textureManager, eyeLocation);
     }
 
 }

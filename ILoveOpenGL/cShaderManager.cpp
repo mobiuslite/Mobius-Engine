@@ -278,7 +278,7 @@ bool cShaderManager::m_compileShaderFromSource( cShaderManager::cShader &shader,
 bool cShaderManager::createProgramFromFile( 
 	        std::string friendlyName,
 			cShader &vertexShad, 
-			cShader &fragShader )
+			cShader &fragShader, RenderType type )
 {
 	std::string errorText = "";
 
@@ -316,7 +316,7 @@ bool cShaderManager::createProgramFromFile(
 	}//if ( this->m_compileShaderFromSource(...
 
 
-	cShaderProgram curProgram;
+	cShaderProgram curProgram = cShaderProgram(type);
     curProgram.ID = glCreateProgram();
 
     glAttachShader(curProgram.ID, vertexShad.ID);

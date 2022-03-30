@@ -161,8 +161,10 @@
     <ClCompile Include="cPingPongFBOs.cpp" />
     <ClCompile Include="cShader.cpp" />
     <ClCompile Include="cShaderManager.cpp" />
+    <ClCompile Include="cShadowDepthFBO.cpp" />
     <ClCompile Include="cTextureViewer.cpp" />
     <ClCompile Include="cTransform.cpp" />
+    <ClCompile Include="cTreeRenderer.cpp" />
     <ClCompile Include="cVAOManager.cpp" />
     <ClCompile Include="DrawObjectFunction.cpp" />
     <ClCompile Include="FlyCamera\cFlyCamera.cpp" />
@@ -204,15 +206,18 @@
     <ClInclude Include="cShaderManager.h" />
     <ClInclude Include="cTextureViewer.h" />
     <ClInclude Include="cTransform.h" />
+    <ClInclude Include="cTreeRenderer.h" />
     <ClInclude Include="cVAOManager.h" />
     <ClInclude Include="FlyCamera\cFlyCamera.h" />
     <ClInclude Include="FlyCamera\iCamera.h" />
     <ClInclude Include="GLCommon.h" />
+    <ClInclude Include="cShadowDepthFBO.h" />
     <ClInclude Include="Physics\cForceGenerator.h" />
     <ClInclude Include="Physics\cForceRegistry.h" />
     <ClInclude Include="Physics\cParticle.h" />
     <ClInclude Include="Physics\cWorld.h" />
     <ClInclude Include="Physics\iForceGenerator.h" />
+    <ClInclude Include="RenderType.h" />
     <ClInclude Include="SceneLoader\cSceneLoader.h" />
     <ClInclude Include="SceneLoader\sModel.h" />
     <ClInclude Include="sVertex_types.h" />
@@ -220,6 +225,8 @@
   <ItemGroup>
     <None Include="assets\shaders\fragShader_01.glsl" />
     <None Include="assets\shaders\pingpongShader.glsl" />
+    <None Include="assets\shaders\shadowFrag.glsl" />
+    <None Include="assets\shaders\shadowVert.glsl" />
     <None Include="assets\shaders\vertShader_01.glsl" />
   </ItemGroup>
   <ItemGroup>

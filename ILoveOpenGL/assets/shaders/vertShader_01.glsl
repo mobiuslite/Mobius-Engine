@@ -8,7 +8,10 @@ uniform mat4 matProjection;
 uniform mat4 matModelInverseTranspose;// For normal calculation
 
 uniform bool bUseHeightMap;
+uniform bool bUseInstancedRendering;
 uniform sampler2D heightMap;
+
+uniform vec4 offsets[10];
 
 //uniform bool bUseVertexColour;		// Will default to GL_FALSE, which is zero (0)
 //uniform vec3 vertexColourOverride;
@@ -43,7 +46,13 @@ void main()
 		vertPosition.y += heightSample;		
 	}
 
-    gl_Position = MVP * vertPosition; 		// Used to be: vec4(vPosition, 1.0f);	// Used to be vPos
+	vec4 pos = MVP * vertPosition;
+	if (bUseInstancedRendering) 
+	{
+		pos += offsets[gl_InstanceID];
+	}
+
+	gl_Position = pos;		// Used to be: vec4(vPosition, 1.0f);	// Used to be vPos
 	
 	// The location of the vertex in "world" space (not screen space)
 	fVertWorldLocation = matModel * vertPosition;

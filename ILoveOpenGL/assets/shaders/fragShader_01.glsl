@@ -36,6 +36,9 @@ uniform vec4 eyeLocation;
 
 uniform float emmisionPower;
 
+//tiling xy, offset zw
+uniform vec4 tilingAndOffset;
+
 uniform bool bDebugMode;
 uniform bool bDebugShowLighting;
 uniform bool bDebugShowNormals;
@@ -64,7 +67,7 @@ const int SPOT_LIGHT_TYPE = 1;
 const int DIRECTIONAL_LIGHT_TYPE = 2;
 
 
-const int NUMBEROFLIGHTS = 15;
+const int NUMBEROFLIGHTS = 10;
 uniform sLight theLights[NUMBEROFLIGHTS];  	// 80 uniforms
 
 uniform sampler2D texture_00;
@@ -242,7 +245,7 @@ void main()
 	//ST = UV
 	if(textureRatios.x >  0.0f)
 	{
-		vec3 textureColour = (texture(texture_00, fUVx2.xy).rgb * textureRatios.x) + (texture(texture_01, fUVx2.xy).rgb * textureRatios.y);
+		vec3 textureColour = (texture(texture_00, vec2(fUVx2.x * tilingAndOffset.x, fUVx2.y * tilingAndOffset.y)).rgb * textureRatios.x) + (texture(texture_01, fUVx2.xy).rgb * textureRatios.y);
 
 		vertexDiffuseColour = vec4(textureColour, 1.0f);
 

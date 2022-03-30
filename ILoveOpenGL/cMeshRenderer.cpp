@@ -13,6 +13,9 @@ cMeshRenderer::cMeshRenderer()
 	this->bIsDebugObject = false;
 	this->emmision = 1.0f;
 
+	this->tiling = glm::vec2(1.0f);
+	this->offset = glm::vec2(0.0f);
+
 	// These are for colouring the ENTIRE object as one colour.
 	// Later, these will be replaced:
 	// * The diffuse will be replaced by textures

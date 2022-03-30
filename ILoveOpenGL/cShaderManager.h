@@ -6,6 +6,7 @@
 #include <map>
 
 #include "GLCommon.h"
+#include "RenderType.h"
 
 class cShaderManager
 {
@@ -32,10 +33,12 @@ public:
 
 	class cShaderProgram {
 	public:
-		cShaderProgram() : ID(0) {};
+		cShaderProgram(RenderType type = RenderType::Normal) : ID(0), type(type) {};
 		~cShaderProgram() {};
 		unsigned int ID;	// ID from OpenGL (calls it a "name")
 		std::string friendlyName;	// We give it this name
+
+		RenderType type;
 
 		std::map<std::string, GLint> uniformLocations;
 	};
@@ -47,7 +50,7 @@ public:
 	bool useShaderProgram( std::string friendlyName );
 	bool createProgramFromFile( std::string friendlyName, 
 		                        cShader &vertexShad, 
-					            cShader &fragShader );
+					            cShader &fragShader, RenderType type);
 	void setBasePath( std::string basepath );
 	unsigned int getIDFromFriendlyName( std::string friendlyName );
 

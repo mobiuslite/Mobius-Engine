@@ -66,6 +66,9 @@ public:
 	bool bIsImposter = false;
 
 	std::vector<Texture> textures;
+	glm::vec2 tiling;
+	glm::vec2 offset;
+
 	std::string alphaMaskName;
 	std::string normalMapName;
 	std::string heightMapName;

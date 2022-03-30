@@ -81,6 +81,7 @@
 					<Texture Ratio="0.000000"/>
 					<Texture Ratio="0.000000"/>
 				</Textures>
+        <TreeRenderer Amount="10" Offset="5"/>
 			</Misc>
 		</Mesh>
 		<Mesh FriendlyName="minecraftTree2" MeshName="tree2.ply">

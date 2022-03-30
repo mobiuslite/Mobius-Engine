@@ -7,6 +7,7 @@
 #include "../cMeshRenderer.h"
 #include "../cTransform.h"
 #include "../cTextureViewer.h"
+#include "../cTreeRenderer.h"
 
 cSceneLoader::cSceneLoader()
 {
@@ -55,6 +56,8 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 	rapidxml::xml_node<>* descNode = sceneNode->first_node("Description");
 	for (rapidxml::xml_node<>* meshNode = descNode->first_node(); meshNode != NULL; meshNode = meshNode->next_sibling())
 	{
+		cEntity* newEntity = entityManager->CreateEntity();
+
 		cMeshRenderer* newMesh = new cMeshRenderer();
 		cTransform newTransform;
 
@@ -188,11 +191,19 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 					}
 				}
 			}
+
+			xml_node<>* treeNode = miscNode->first_node("TreeRenderer");
+			if (treeNode != nullptr)
+			{
+				unsigned int amount = std::stoi(treeNode->first_attribute("Amount")->value());
+				float offset = std::stof(treeNode->first_attribute("Offset")->value());
+
+				cTreeRenderer* treeRenderer = new cTreeRenderer(amount, offset);
+				newEntity->AddComponent<cTreeRenderer>(treeRenderer);
+			}
 		}
 
-		newMesh->bIsSceneObject = true;
-		
-		cEntity* newEntity = entityManager->CreateEntity();
+		newMesh->bIsSceneObject = true;	
 		newEntity->name = newMesh->friendlyName;
 		newEntity->AddComponent<cMeshRenderer>(newMesh);
 		*newEntity->GetComponent<cTransform>() = newTransform;

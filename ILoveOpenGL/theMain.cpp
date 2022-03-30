@@ -43,13 +43,9 @@
 #include "cTransform.h"
 #include "cTextureViewer.h"
 #include "cPingPongFBOs.h"
+#include "cShadowDepthFBO.h"
 
-enum class Transform
-{
-    Translate,
-    Rotate,
-    Scale
-};
+#include "RenderType.h"
 
 struct PostProcessingInfo
 {
@@ -98,8 +94,6 @@ cEntity* g_DebugSphere = NULL;
 unsigned int g_selectedObject = 0;
 unsigned int g_selectedLight = 0;
 
-Transform transformType = Transform::Translate;
-
 cSceneLoader* sceneLoader;
 std::string sceneName = "project2";
 
@@ -120,14 +114,15 @@ float fov = 70.0f;
 
 PostProcessingInfo postProcessing;
 cPingPongFBOs* pingPongFBO;
+cShadowDepthFBO* shadowFBO;
 
 bool g_MouseIsInsideWindow = false;
 
 //Method in DrawObjectFunction
-void extern DrawObject(cEntity* curEntity, glm::mat4 matModel, GLint program, cVAOManager* VAOManager,
-    cBasicTextureManager textureManager, std::map<std::string, GLint>* uniformLocations, glm::vec3 eyeLocation);
+void extern DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderProgram* shader, cVAOManager* VAOManager,
+    cBasicTextureManager textureManager, glm::vec3 eyeLocation);
 
-void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparentMeshes, std::map<std::string, int>* uniformLocations, float deltaTime);
+void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparentMeshes, cShaderManager::cShaderProgram* program, float deltaTime);
 void DrawGUI(float dt);
 void SetUpLights();
 
@@ -359,14 +354,20 @@ int main(void)
 
     cShaderManager::cShader vertShader;
     vertShader.fileName = "assets/shaders/vertShader_01.glsl";
-        
+
+    cShaderManager::cShader shadowVertShader;
+    shadowVertShader.fileName = "assets/shaders/shadowVert.glsl";
+
     cShaderManager::cShader fragShader;
     fragShader.fileName = "assets/shaders/fragShader_01.glsl";
+
+    cShaderManager::cShader shadowFragShader;
+    shadowFragShader.fileName = "assets/shaders/shadowFrag.glsl";
 
     cShaderManager::cShader pingPongFragShader;
     pingPongFragShader.fileName = "assets/shaders/pingpongShader.glsl";
 
-    if (gShaderManager.createProgramFromFile("Shader#1", vertShader, fragShader))
+    if (gShaderManager.createProgramFromFile("Shader#1", vertShader, fragShader, RenderType::Normal))
     {
         std::cout << "Shader compiled OK" << std::endl;
         // 
@@ -379,7 +380,20 @@ int main(void)
         std::cout << gShaderManager.getLastError() << std::endl;
     }
 
-    if (gShaderManager.createProgramFromFile("PingPong", vertShader, pingPongFragShader))
+    if (gShaderManager.createProgramFromFile("PingPong", vertShader, pingPongFragShader, RenderType::PingPong))
+    {
+        std::cout << "Shader compiled OK" << std::endl;
+        // 
+        // Set the "program" variable to the one the Shader Manager used...
+       // program = gShaderManager.getIDFromFriendlyName("Shader#1");
+    }
+    else
+    {
+        std::cout << "Error making shader program: " << std::endl;
+        std::cout << gShaderManager.getLastError() << std::endl;
+    }
+
+    if (gShaderManager.createProgramFromFile("Shadow", shadowVertShader, shadowFragShader, RenderType::Shadow))
     {
         std::cout << "Shader compiled OK" << std::endl;
         // 
@@ -529,6 +543,11 @@ int main(void)
    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("emmisionPower", glGetUniformLocation(program, "emmisionPower")));
    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bloomMapColorBuf", glGetUniformLocation(program, "bloomMapColorBuf")));
 
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("tilingAndOffset", glGetUniformLocation(program, "tilingAndOffset")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseInstancedRendering", glGetUniformLocation(program, "bUseInstancedRendering")));
+
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseInstancedRendering", glGetUniformLocation(program, "bUseInstancedRendering")));
+
    cShaderManager::cShaderProgram* pingPongShader = gShaderManager.pGetShaderProgramFromFriendlyName("PingPong");
 
    //glUseProgram(pingPongShader->ID);
@@ -545,7 +564,10 @@ int main(void)
 
    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("bloomSize", glGetUniformLocation(pingPongShader->ID, "bloomSize")));
 
-   glUniform1f(pingPongShader->uniformLocations["bUseHeightMap"], (float)GL_FALSE);
+   cShaderManager::cShaderProgram* shadowShader = gShaderManager.pGetShaderProgramFromFriendlyName("Shadow");
+
+   shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("lightSpaceMatrix", glGetUniformLocation(shadowShader->ID, "lightSpaceMatrix")));
+   shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("matModel", glGetUniformLocation(shadowShader->ID, "matModel")));
 
     /*sModelDrawInfo debugSphere;
     if (!gVAOManager.LoadModelIntoVAO("ISO_Shphere_flat_3div_xyz_n_rgba_uv.ply", debugSphere, program))
@@ -580,6 +602,7 @@ int main(void)
     float decreaseSize = 4.0f;
 
     pingPongFBO = new cPingPongFBOs((screenPixelDensity * ratio) / decreaseSize, screenPixelDensity / decreaseSize, pingPongShader);
+    shadowFBO = new cShadowDepthFBO();
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -622,6 +645,7 @@ int main(void)
         glm::mat4 v;
 
         pingPongFBO->ClearBuffers();
+        shadowFBO->ClearShadowBuffer();
 
         //Clear normal buffers
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -631,11 +655,6 @@ int main(void)
         glBindFramebuffer(GL_FRAMEBUFFER, g_fbo->ID);
         g_fbo->clearBuffers(true, true);
 
-        glViewport(0, 0, g_fbo->width, g_fbo->height);
-        ratio = g_fbo->width / (float)g_fbo->height;
-
-        glUniform2f(normalShader->uniformLocations["screenWidthHeight"], (GLfloat)g_fbo->width, (GLfloat)g_fbo->height);
-
         // Turn on the depth buffer
         glEnable(GL_DEPTH);         // Turns on the depth buffer
         glEnable(GL_DEPTH_TEST);    // Check if the pixel is already closer
@@ -644,32 +663,7 @@ int main(void)
         // Screen is cleared and we are ready to draw the scene...
         // *******************************************************
 
-        // Copy the light information into the shader to draw the scene
-        gTheLights.CopyLightInfoToShader();
-
-        // Place the "debug sphere" at the same location as the selected light (again)
-        // HACK: Debug sphere is 5th item added
-        float usedFov = fov;
-
-        p = glm::perspective(glm::radians(usedFov),
-            ratio,
-            0.1f,
-            1000.0f);     
-
-        //glm::vec3 cameraEye = glm::vec3(0.0, 0.0, -4.0f);
-        glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
-        glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
-
-        v = glm::lookAt(cameraEye,     // "eye"
-            cameraEye + cameraDir,  // "at"
-            cameraUp);
-
-        glUniform4f(normalShader->uniformLocations["eyeLocation"], cameraEye.x, cameraEye.y, cameraEye.z, 1.0f);
-
-        glUniformMatrix4fv(matView_Location, 1, GL_FALSE, glm::value_ptr(v));
-        glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
-
-        //Sort based on transparency
+                //Sort based on transparency
         std::vector<cEntity*> transparentMeshes;
         std::vector<cEntity*> opaqueMeshes;
 
@@ -691,8 +685,65 @@ int main(void)
         }
         //Sort transparent objects.
         std::sort(transparentMeshes.begin(), transparentMeshes.end(), DistanceToCameraPredicate);
-            
-        Draw(&opaqueMeshes, &transparentMeshes, &normalShader->uniformLocations, deltaTime);    
+        // Copy the light information into the shader to draw the scene
+        gTheLights.CopyLightInfoToShader();
+
+        //Draw shadow depth map
+        glUseProgram(shadowShader->ID);
+        glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO->depthFBO_ID);
+
+        float near_plane = 1.0f, far_plane = 100.5f;
+        glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+
+        glm::vec4 sunPos = gTheLights.theLights[8].position;
+        glm::vec3 sunPosVec3 = glm::vec3(sunPos.x, sunPos.y, sunPos.z);
+       //glm::vec4 sunDir = gTheLights.theLights[8].direction;
+       //glm::vec3 sunDirVec3 = glm::vec3(sunDir.x, sunDir.y, sunDir.z);
+
+        //glm::vec3 sunLookAtDir = sunPosVec3 + sunDirVec3;
+                                                    //look at center of scene
+        glm::mat4 lightView = glm::lookAt(sunPosVec3, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+        glm::mat4 lightSpaceMat = lightProjection * lightView;
+
+        glUniformMatrix4fv(shadowShader->uniformLocations.at("lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(lightSpaceMat));
+        glViewport(0, 0, shadowFBO->SHADOW_WIDTH, shadowFBO->SHADOW_HEIGHT);
+        
+        Draw(&opaqueMeshes, &transparentMeshes, shadowShader, deltaTime);
+
+
+        //RENDER SCENE
+
+        //Draw scene
+        glUseProgram(normalShader->ID);
+        glBindFramebuffer(GL_FRAMEBUFFER, g_fbo->ID);
+        glViewport(0, 0, g_fbo->width, g_fbo->height);
+        ratio = g_fbo->width / (float)g_fbo->height;
+
+        float usedFov = fov;
+
+        p = glm::perspective(glm::radians(usedFov),
+            ratio,
+            0.1f,
+            1000.0f);     
+        glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
+
+        //glm::vec3 cameraEye = glm::vec3(0.0, 0.0, -4.0f);
+        glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
+        glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
+
+        v = glm::lookAt(cameraEye,     // "eye"
+            cameraEye + cameraDir,  // "at"
+            cameraUp);
+        glUniformMatrix4fv(matView_Location, 1, GL_FALSE, glm::value_ptr(v));     
+
+        glUniform2f(normalShader->uniformLocations["screenWidthHeight"], (GLfloat)g_fbo->width, (GLfloat)g_fbo->height);
+        glUniform4f(normalShader->uniformLocations["eyeLocation"], cameraEye.x, cameraEye.y, cameraEye.z, 1.0f);
+          
+        //Draw scene
+        Draw(&opaqueMeshes, &transparentMeshes, normalShader, deltaTime);    
+        //End of zeroth pass
+
 
         glm::vec3 fullscreenPos = glm::vec3(0.f, 0.f, -10.f);
         
@@ -703,7 +754,6 @@ int main(void)
         fullscreenMesh->bDontLight = true;
         fullscreenMesh->bUseWholeObjectDiffuseColour = true;
         fullscreenMesh->wholeObjectDiffuseRGBA = glm::vec4(1.0f);
-        
         
         cEntity* fullscreenEntity = g_entityManager.CreateEntity(false);
         fullscreenEntity->AddComponent<cMeshRenderer>(fullscreenMesh);
@@ -762,7 +812,7 @@ int main(void)
         g_fbo->clearColourBuffer(0);  
 
         //fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
-        DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, &normalShader->uniformLocations, fullscreenPos);
+        DrawObject(fullscreenEntity, glm::mat4(1.0f), normalShader, &gVAOManager, g_textureManager, fullscreenPos);
         //DONE 1ST PASS (Lighting)
         
         bool horizontal = true;
@@ -789,7 +839,7 @@ int main(void)
             }
         
             fullscreenEntity->GetComponent<cTransform>()->position.z -= .01f;
-            DrawObject(fullscreenEntity, glm::mat4(1.0f), pingPongShader->ID, &gVAOManager, g_textureManager, &pingPongShader->uniformLocations, fullscreenPos);
+            DrawObject(fullscreenEntity, glm::mat4(1.0f), pingPongShader, &gVAOManager, g_textureManager, fullscreenPos);
             horizontal = !horizontal;
         }
         glUseProgram(normalShader->ID);
@@ -823,7 +873,7 @@ int main(void)
             textureId = g_fbo->vertexSpecular_4_ID;
             break;
         case 4:
-            textureId = g_fbo->vertexWorldPos_3_ID;
+            textureId = shadowFBO->depthMap;
             break;
         case 5:
             textureId = pingPongFBO->pingpongBuffer[!horizontal];
@@ -851,7 +901,7 @@ int main(void)
         }  
 
         fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
-        DrawObject(fullscreenEntity, glm::mat4(1.0f), program, &gVAOManager, g_textureManager, &normalShader->uniformLocations, fullscreenPos);
+        DrawObject(fullscreenEntity, glm::mat4(1.0f), normalShader, &gVAOManager, g_textureManager, fullscreenPos);
         //END OF FINAL PASS
 
         if(showDebugGui)
@@ -883,6 +933,7 @@ int main(void)
 
     delete g_fbo;
     delete pingPongFBO;
+    delete shadowFBO;
 
     glfwDestroyWindow(window);
 
@@ -890,7 +941,7 @@ int main(void)
     exit(EXIT_SUCCESS);
 }
 
-void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparentMeshes, std::map<std::string, int>* uniformLocations, float deltaTime)
+void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparentMeshes, cShaderManager::cShaderProgram* program, float deltaTime)
 {
 
     //Draw non transparent objects
@@ -905,7 +956,7 @@ void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparen
             curEntity->GetComponent<cTransform>()->position = cameraEye;
         }
 
-        DrawObject(curEntity, matModel, program, &gVAOManager, g_textureManager, uniformLocations, cameraEye);
+        DrawObject(curEntity, matModel, program, &gVAOManager, g_textureManager, cameraEye);
     }//for (unsigned int index
 
     //glEnable(GL_BLEND);
@@ -926,17 +977,17 @@ void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparen
             curMesh->normalOffset.y += (float)deltaTime / 100.0f;
         }
 
-        DrawObject(curEntity, matModel, program, &gVAOManager, g_textureManager, uniformLocations, cameraEye);
+        DrawObject(curEntity, matModel, program, &gVAOManager, g_textureManager, cameraEye);
     }//for (unsigned int index
 
 
     //Render debug sphere
     if (isDebugMode)
     {
-        glUniform1f(uniformLocations->at("bDebugMode"), (float)GL_TRUE);
+        glUniform1f(program->uniformLocations["bDebugMode"], (float)GL_TRUE);
 
-        glUniform1f(uniformLocations->at("bDebugShowLighting"), (float)debugShowLighting);
-        glUniform1f(uniformLocations->at("bDebugShowNormals"), (float)debugShowNormals);
+        glUniform1f(program->uniformLocations["bDebugShowLighting"], (float)debugShowLighting);
+        glUniform1f(program->uniformLocations["bDebugShowNormals"], (float)debugShowNormals);
 
         cMeshRenderer* debugSphereMesh = g_DebugSphere->GetComponent<cMeshRenderer>();
         cTransform* debugSphereTransform = g_DebugSphere->GetComponent<cTransform>();
@@ -948,11 +999,11 @@ void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparen
         debugSphereMesh->objectDebugColourRGBA = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
         glm::mat4 matModelDS = glm::mat4(1.0f);
-        DrawObject(g_DebugSphere, matModelDS, program, &gVAOManager, g_textureManager, uniformLocations, cameraEye);
+        DrawObject(g_DebugSphere, matModelDS, program, &gVAOManager, g_textureManager, cameraEye);
     }
     else
     {
-        glUniform1f(uniformLocations->at("bDebugMode"), (float)GL_FALSE);
+        glUniform1f(program->uniformLocations["bDebugMode"], (float)GL_FALSE);
     }
 }
 
@@ -1055,6 +1106,14 @@ void DrawGUI(float dt)
                 cMeshRenderer* renderer = curEntity->GetComponent<cMeshRenderer>();
                 ImGui::DragFloat("Emmision", &renderer->emmision, 0.1f, 1.0f, 10000.0f);
 
+                float** tiling = new float* [2];
+                tiling[0] = &renderer->tiling.x;
+                tiling[1] = &renderer->tiling.y;
+
+                ImGui::DragFloat2("Tiling",*tiling, 0.1f, 0.0f, 10000.0f);
+
+                delete[] tiling;
+
                 ImGui::EndTabItem();
             }
             if (ImGui::BeginTabItem("Details"))
@@ -1136,6 +1195,10 @@ void DrawGUI(float dt)
     {
         ImGui::Begin("Misc");
         ImGui::Text(std::string("Frame time: %f").c_str(), dt);
+
+        std::string camPos = "x: " + std::to_string(cameraEye.x) + " y: " + std::to_string(cameraEye.y) + " z: " + std::to_string(cameraEye.z);
+        ImGui::Text(camPos.c_str());
+        
         ImGui::Text("Mobius Engine by Ethan Robertson");
         ImGui::End();
     }
@@ -1250,7 +1313,7 @@ void SetUpLights()
     //SUN
 
     gTheLights.theLights[8].name = "Sun light";
-    gTheLights.theLights[8].position = glm::vec4(0.f, 0.f, 0.f, 1.0f);
+    gTheLights.theLights[8].position = glm::vec4(20.f, 30.f, 0.f, 1.0f);
     gTheLights.theLights[8].diffuse = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     gTheLights.theLights[8].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100.0f);
     gTheLights.theLights[8].direction = glm::vec4(0.0f, -1.0f, -.2f, 1.0f);
