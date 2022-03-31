@@ -63,7 +63,7 @@ bool cFBO::init( int width, int height, std::string &error )
 
 	glGenTextures(1, &(this->vertexNormal_2_ID));
 	glBindTexture(GL_TEXTURE_2D, this->vertexNormal_2_ID);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, this->width, this->height);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, this->width, this->height);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -73,9 +73,16 @@ bool cFBO::init( int width, int height, std::string &error )
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+	glGenTextures(1, &(this->vertexLightSpacePos_7_ID));
+	glBindTexture(GL_TEXTURE_2D, this->vertexLightSpacePos_7_ID);
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->width, this->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, this->width, this->height);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
 	glGenTextures(1, &(this->vertexSpecular_4_ID));
 	glBindTexture(GL_TEXTURE_2D, this->vertexSpecular_4_ID);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, this->width, this->height);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB16F, this->width, this->height);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -87,6 +94,12 @@ bool cFBO::init( int width, int height, std::string &error )
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glGenTextures(1, &(this->dirShadow_6_ID));
+	glBindTexture(GL_TEXTURE_2D, this->dirShadow_6_ID);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB16F, this->width, this->height);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Create the depth buffer (texture)
 	glGenTextures(1, &( this->depthTexture_ID ));			//g_FBO_depthTexture
@@ -131,6 +144,14 @@ bool cFBO::init( int width, int height, std::string &error )
 						 GL_COLOR_ATTACHMENT5,
 						 this->brightColour_5_ID, 0);
 
+	glFramebufferTexture(GL_FRAMEBUFFER,
+						 GL_COLOR_ATTACHMENT6,
+						 this->dirShadow_6_ID, 0);
+
+	glFramebufferTexture(GL_FRAMEBUFFER,
+		GL_COLOR_ATTACHMENT7,
+		this->vertexLightSpacePos_7_ID, 0);
+
 //	glFramebufferTexture(GL_FRAMEBUFFER,
 //						 GL_DEPTH_ATTACHMENT,
 //						 this->depthTexture_ID, 0);
@@ -145,9 +166,11 @@ bool cFBO::init( int width, int height, std::string &error )
 		GL_COLOR_ATTACHMENT2,
 		GL_COLOR_ATTACHMENT3,
 		GL_COLOR_ATTACHMENT4,
-		GL_COLOR_ATTACHMENT5
+		GL_COLOR_ATTACHMENT5,
+		GL_COLOR_ATTACHMENT6,
+		GL_COLOR_ATTACHMENT7
 	};
-	glDrawBuffers(6, draw_bufers);		// There are 4 outputs now
+	glDrawBuffers(8, draw_bufers);		// There are 4 outputs now
 
 	// ***************************************************************
 
@@ -222,6 +245,9 @@ void cFBO::clearBuffers(bool bClearColour, bool bClearDepth)
 	glClearBufferfv(GL_COLOR, 3, &zero);
 	glClearBufferfv(GL_COLOR, 4, rgbBlack);
 	glClearBufferfv(GL_COLOR, 5, rgbBlack);
+
+	glClearBufferfv(GL_COLOR, 6, rgbBlack);
+	glClearBufferfv(GL_COLOR, 7, rgbBlack);
 	// If buffer is GL_STENCIL, drawbuffer must be zero, and value points to a 
 	//  single value to clear the stencil buffer to. Masking is performed in the 
 	//  same fashion as for glClearStencil. Only the *iv forms of these commands 

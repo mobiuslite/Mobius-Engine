@@ -7,6 +7,8 @@ in vec4 fNormal;
 in vec4 fUVx2;
 in vec4 fVertPosition;
 in mat3 TBN;
+in vec4 fLightSpacePos;
+
 // Replaces gl_FragColor
 layout (location = 0)out vec4 pixelColour;
 layout (location = 1)out vec4 pixelMatColor;
@@ -14,6 +16,8 @@ layout (location = 2)out vec4 pixelNormal;
 layout (location = 3)out vec4 pixelWorldPos;
 layout (location = 4)out vec4 pixelSpecular;
 layout (location = 5)out vec4 pixelBrightColour;
+layout (location = 6)out vec4 pixelShadowColour;
+layout (location = 7)out vec4 pixelLightSpacePos;
 
 // The "whole object" colour (diffuse and specular)
 uniform vec4 wholeObjectDiffuseColour;	// Whole object diffuse colour
@@ -78,10 +82,12 @@ uniform sampler2D texture_03;
 uniform sampler2D texture_MatColor;
 uniform sampler2D texture_Normal;
 uniform sampler2D texture_WorldPos;
+uniform sampler2D texture_LightSpacePos;
 uniform sampler2D texture_Specular;
 
 uniform sampler2D texLightpassColorBuf;
 uniform sampler2D bloomMapColorBuf;
+uniform sampler2D shadowMapColorBuf;
 
 uniform bool bUseAlphaMask;
 uniform sampler2D alphaMask;
@@ -105,13 +111,34 @@ uniform vec2 screenWidthHeight;
 //z use exposure based tonemapping > 0.5f
 //w = bloom threshhold
 uniform vec4 postprocessingVariables;
+uniform float ambientPower;
 
 uniform samplerCube skyBox; // GL_TEXTURE_CUBE_MAP
 
 vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal, 
-                            vec3 vertexWorldPos, vec4 vertexSpecular );
+                            vec3 vertexWorldPos, vec4 vertexSpecular, vec4 lightSpacePos);
 
-uniform float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
+float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
+{
+	// perform perspective divide
+	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+	// transform to [0,1] range
+	projCoords = projCoords * 0.5 + 0.5;
+	// get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+	float closestDepth = texture(shadowMapColorBuf, projCoords.xy).r;
+	// get depth of current fragment from light's perspective
+	float currentDepth = projCoords.z;
+	// check whether current frag pos is in shadow
+
+	//float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+	float bias = 0.005f;
+	float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+
+	if (currentDepth > 1.0)
+		shadow = 0.0;
+
+	return shadow;
+}
 
 void main()
 {
@@ -122,8 +149,6 @@ void main()
 	vec4 normals = fNormal;
 	vec4 vertexDiffuseColour = fVertexColour;
 	//pixelFirstPass = vec4(1.0f, 0.0f, 0.0f, 1.0f);
-	
-
 	if(passNumber == RENDER_PASS_2_EFFECTS_PASS)
 	{
 		vec3 finalColour = vec3(0.0f, 0.0f, 0.0f);
@@ -171,7 +196,13 @@ void main()
 		pixelMatColor = texture(texture_MatColor, UVLookup).rgba;
 		pixelNormal = texture(texture_Normal, UVLookup).rgba;
 		pixelWorldPos = texture(texture_WorldPos, UVLookup).rgba;
+		pixelLightSpacePos = texture(texture_LightSpacePos, UVLookup).rgba;
 		pixelSpecular = texture(texture_Specular, UVLookup).rgba;
+
+		float depthValue = texture(shadowMapColorBuf, UVLookup).r;
+		pixelShadowColour = vec4(vec3(depthValue), 1.0);
+
+		
 
 		//If not lit
 		if(pixelWorldPos.w == 0.0f)
@@ -180,7 +211,7 @@ void main()
 		}
 		else
 		{
-			pixelColour = calcualteLightContrib( pixelMatColor.rgb, pixelNormal.xyz, pixelWorldPos.xyz, pixelSpecular.rgba );										
+			pixelColour = calcualteLightContrib( pixelMatColor.rgb, pixelNormal.xyz, pixelWorldPos.xyz, pixelSpecular.rgba, pixelLightSpacePos);										
 			pixelColour.a = 1.0f;
 		}
 
@@ -210,6 +241,7 @@ void main()
 		//pixelColour = skyBoxTexture;
 
 		pixelMatColor = pow(vec4(skyBoxTexture.rgb, 1.0f), vec4(postprocessingVariables.x));	
+		pixelMatColor *= emmisionPower;
 		pixelWorldPos = vec4(fVertWorldLocation.xyz, 0.0f);
 
 		return;
@@ -300,6 +332,7 @@ void main()
 
 	pixelNormal = vec4(normalize(normals.xyz), 1.0f);
 	pixelWorldPos = vec4(fVertWorldLocation.xyz, 1.0f);
+	pixelLightSpacePos = fLightSpacePos;
 
 	if(bUseSpecular){
 		//pixelSpecular = wholeObjectSpecularColour.rgba;
@@ -317,7 +350,7 @@ void main()
 
 // Calculates the colour of the vertex based on the lighting and vertex information:
 vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal, 
-                            vec3 vertexWorldPos, vec4 vertexSpecular )
+                            vec3 vertexWorldPos, vec4 vertexSpecular, vec4 lightSpacePos)
 {
 	vec3 norm = normalize(vertexNormal);
 	
@@ -353,15 +386,43 @@ vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal,
 
 			dotProduct = max( 0.0f, dotProduct );		// 0 to 1
 		
-			lightContrib *= dotProduct;		
-			
-			finalObjectColour.rgb += (vertexMaterialColour.rgb * theLights[index].diffuse.rgb * lightContrib); 
-									 //+ (materialSpecular.rgb * lightSpecularContrib.rgb);
-			// NOTE: There isn't any attenuation, like with sunlight.
-			// (This is part of the reason directional lights are fast to calculate)
 
+			vec3 ambient = ambientPower * lightContrib;
 
-			//return finalObjectColour;		
+			lightContrib *= dotProduct;				
+			vec3 diffuse = theLights[index].diffuse.rgb * lightContrib; 
+
+			vec3 lightVector = normalize(theLights[index].direction.xyz);
+
+			vec3 eyeVector = normalize(eyeLocation.xyz - vertexWorldPos.xyz);
+			vec3 halfwayVec = normalize(lightVector + eyeVector);
+			float objectSpecularPower = vertexSpecular.a * 1000.0f;
+
+			vec3 lightSpecularContrib = vec3(0.0f);
+			if (dotProduct > 0.0f && vertexSpecular.w > 0.0f)
+			{
+				lightSpecularContrib = pow(clamp(dot(norm.xyz, halfwayVec), 0.0f, 1.0f), objectSpecularPower)
+					* theLights[index].specular.rgb;
+			}
+
+			vec3 specular = vertexSpecular.rgb * lightSpecularContrib.rgb;
+
+			float shadow = ShadowCalculation(lightSpacePos, norm, lightVector);
+
+			//if (shadow > 0.5f)
+			//{
+			//	finalObjectColour += vec4(0.0f, 1.0f, 0.0f, 1.0f);
+			//}
+			//else
+			//{
+			//	finalObjectColour += vec4(0.0f, 0.0f, 1.0f, 1.0f);
+			//}
+
+			//finalObjectColour += vec4((shadow * (diffuse + specular) + ambient) * vertexMaterialColour.rgb, 1.0f);
+			finalObjectColour += vec4((ambient + (1.0 - shadow) * (diffuse + specular)) * vertexMaterialColour.rgb, 1.0f);
+			//finalObjectColour += vec4(vec3(shadow), 1.0f);
+
+			continue;
 		}
 		
 		// Assume it's a point light 

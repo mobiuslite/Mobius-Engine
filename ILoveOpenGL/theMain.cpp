@@ -57,6 +57,8 @@ struct PostProcessingInfo
     float bloomThreshhold = 1.0f;
     float bloomSize = 1.0f;
     unsigned int bloomIterationAmount = 15;
+
+    float ambientPower = 0.15f;
 };
 
 GLuint program;
@@ -78,6 +80,7 @@ float yaw = 90.0f;
 float pitch = 0.0f;
 
 float flyCameraSpeed = 5.0f;
+float speedMultiple = 3.0f;
 
 cVAOManager     gVAOManager;
 cShaderManager  gShaderManager;
@@ -270,34 +273,40 @@ void ProcessAsyncMouse(GLFWwindow* window, float deltaTime)
 
 void ProcessAsyncKeyboard(GLFWwindow* window, float deltaTime)
 {
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE && glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_RELEASE
+    if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_RELEASE
         && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE)
     {
+        float speed = flyCameraSpeed;
+        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_REPEAT || glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        {
+            speed *= 3.0f;
+        }
+
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_S) != GLFW_PRESS)
         {
-            cameraEye += cameraDir * flyCameraSpeed * deltaTime;
+            cameraEye += cameraDir * speed * deltaTime;
         }
         else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_W) != GLFW_PRESS)
         {
-            cameraEye -= cameraDir * flyCameraSpeed * deltaTime;
+            cameraEye -= cameraDir * speed * deltaTime;
         }
 
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_D) != GLFW_PRESS)
         {
-            cameraEye += cameraRight * flyCameraSpeed * deltaTime;
+            cameraEye += cameraRight * speed * deltaTime;
         }
         else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_A) != GLFW_PRESS)
         {
-            cameraEye -= cameraRight * flyCameraSpeed * deltaTime;
+            cameraEye -= cameraRight * speed * deltaTime;
         }
 
         if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_E) != GLFW_PRESS)
         {
-            cameraEye -= glm::vec3(0.0f, 1.0f, 0.0f) * flyCameraSpeed * deltaTime;
+            cameraEye -= glm::vec3(0.0f, 1.0f, 0.0f) * speed * deltaTime;
         }
         else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_Q) != GLFW_PRESS)
         {
-            cameraEye += glm::vec3(0.0f, 1.0f, 0.0f) * flyCameraSpeed * deltaTime;
+            cameraEye += glm::vec3(0.0f, 1.0f, 0.0f) * speed * deltaTime;
         }
     }
 }
@@ -393,7 +402,7 @@ int main(void)
         std::cout << gShaderManager.getLastError() << std::endl;
     }
 
-    if (gShaderManager.createProgramFromFile("Shadow", shadowVertShader, shadowFragShader, RenderType::Shadow))
+    if (gShaderManager.createProgramFromFile("Shadow", vertShader, shadowFragShader, RenderType::Shadow))
     {
         std::cout << "Shader compiled OK" << std::endl;
         // 
@@ -423,13 +432,26 @@ int main(void)
     g_textureManager.SetBasePath("assets/textures");
 
     std::string errorString;
+    //if (!g_textureManager.CreateCubeTextureFromBMPFiles("NightSky",
+    //    "SpaceBox_right1_posX.bmp",
+    //    "SpaceBox_left2_negX.bmp",
+    //    "SpaceBox_top3_posY.bmp",
+    //    "SpaceBox_bottom4_negY.bmp",
+    //    "SpaceBox_front5_posZ.bmp",
+    //    "SpaceBox_back6_negZ.bmp",
+    //    //Is seamless
+    //    true, errorString))
+    //{
+    //    std::cout << errorString << std::endl;
+    //}
+
     if (!g_textureManager.CreateCubeTextureFromBMPFiles("NightSky",
-        "SpaceBox_right1_posX.bmp",
-        "SpaceBox_left2_negX.bmp",
-        "SpaceBox_top3_posY.bmp",
-        "SpaceBox_bottom4_negY.bmp",
-        "SpaceBox_front5_posZ.bmp",
-        "SpaceBox_back6_negZ.bmp",
+        "TropicalSunnyDayRight2048.bmp",
+        "TropicalSunnyDayLeft2048.bmp",
+        "TropicalSunnyDayUp2048.bmp",
+        "TropicalSunnyDayDown2048.bmp",
+        "TropicalSunnyDayFront2048.bmp",
+        "TropicalSunnyDayBack2048.bmp",
         //Is seamless
         true, errorString))
     {
@@ -510,6 +532,7 @@ int main(void)
    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_Normal", glGetUniformLocation(program, "texture_Normal")));
    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_WorldPos", glGetUniformLocation(program, "texture_WorldPos")));
    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_Specular", glGetUniformLocation(program, "texture_Specular")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_LightSpacePos", glGetUniformLocation(program, "texture_LightSpacePos")));
 
    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("textureRatios", glGetUniformLocation(program, "textureRatios")));
 
@@ -542,11 +565,13 @@ int main(void)
    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("postprocessingVariables", glGetUniformLocation(program, "postprocessingVariables")));
    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("emmisionPower", glGetUniformLocation(program, "emmisionPower")));
    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bloomMapColorBuf", glGetUniformLocation(program, "bloomMapColorBuf")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("ambientPower", glGetUniformLocation(program, "ambientPower")));
 
    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("tilingAndOffset", glGetUniformLocation(program, "tilingAndOffset")));
    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseInstancedRendering", glGetUniformLocation(program, "bUseInstancedRendering")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseInstancedRendering", glGetUniformLocation(program, "bUseInstancedRendering")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("shadowMapColorBuf", glGetUniformLocation(program, "shadowMapColorBuf")));
+   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("lightSpaceMatrix", glGetUniformLocation(program, "lightSpaceMatrix")));
 
    cShaderManager::cShaderProgram* pingPongShader = gShaderManager.pGetShaderProgramFromFriendlyName("PingPong");
 
@@ -566,8 +591,12 @@ int main(void)
 
    cShaderManager::cShaderProgram* shadowShader = gShaderManager.pGetShaderProgramFromFriendlyName("Shadow");
 
-   shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("lightSpaceMatrix", glGetUniformLocation(shadowShader->ID, "lightSpaceMatrix")));
    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("matModel", glGetUniformLocation(shadowShader->ID, "matModel")));
+   shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("matModelInverseTranspose", glGetUniformLocation(shadowShader->ID, "matModelInverseTranspose")));
+
+   shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("matView", glGetUniformLocation(shadowShader->ID, "matView")));
+   shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("matProjection", glGetUniformLocation(shadowShader->ID, "matProjection")));
+   shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseHeightMap", glGetUniformLocation(shadowShader->ID, "bUseHeightMap")));
 
     /*sModelDrawInfo debugSphere;
     if (!gVAOManager.LoadModelIntoVAO("ISO_Shphere_flat_3div_xyz_n_rgba_uv.ply", debugSphere, program))
@@ -610,6 +639,7 @@ int main(void)
     const GLint RENDER_PASS_0_G_BUFFER = 0;
     const GLint RENDER_PASS_1_LIGHTING = 1;
     const GLint RENDER_PASS_2_EFFECTS = 2;
+    const GLint RENDER_PASS_SHADOW = 3;
 
     const GLint RENDER_PASS_BLUR_HORIZONTAL = 4;
     const GLint RENDER_PASS_BLUR_VERTICAL = 5;
@@ -630,10 +660,9 @@ int main(void)
 
     while (!glfwWindowShouldClose(window))
     {
-        glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_0_G_BUFFER);
-
         float useExposure = postProcessing.useExposureToneMapping ? 0.0f : 1.0f;
         glUniform4f(normalShader->uniformLocations["postprocessingVariables"], postProcessing.gamma, postProcessing.exposure, useExposure, postProcessing.bloomThreshhold);
+        glUniform1f(normalShader->uniformLocations["ambientPower"], postProcessing.ambientPower);
 
         float currentTime = (float)glfwGetTime();
         float deltaTime = currentTime - previousTime;
@@ -688,39 +717,59 @@ int main(void)
         // Copy the light information into the shader to draw the scene
         gTheLights.CopyLightInfoToShader();
 
-        //Draw shadow depth map
+        //glEnable(GL_CULL_FACE);
+        //glCullFace(GL_FRONT);
+
+        //RENDER SHADOW
         glUseProgram(shadowShader->ID);
         glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO->depthFBO_ID);
+        glViewport(0, 0, shadowFBO->SHADOW_WIDTH, shadowFBO->SHADOW_HEIGHT);
 
-        float near_plane = 1.0f, far_plane = 100.5f;
-        glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+        //glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_SHADOW);
+        float near_plane = .1f, far_plane = 70.5f;
+        float shadowOrthoBounds = 40.0f;
+        p = glm::ortho(-shadowOrthoBounds, shadowOrthoBounds, -shadowOrthoBounds, shadowOrthoBounds, near_plane, far_plane);
+
 
         glm::vec4 sunPos = gTheLights.theLights[8].position;
         glm::vec3 sunPosVec3 = glm::vec3(sunPos.x, sunPos.y, sunPos.z);
-       //glm::vec4 sunDir = gTheLights.theLights[8].direction;
-       //glm::vec3 sunDirVec3 = glm::vec3(sunDir.x, sunDir.y, sunDir.z);
+        glm::vec4 sunDir = gTheLights.theLights[8].direction;
+        glm::vec3 sunDirVec3 = glm::vec3(sunDir.x, sunDir.y, sunDir.z);
 
-        //glm::vec3 sunLookAtDir = sunPosVec3 + sunDirVec3;
-                                                    //look at center of scene
-        glm::mat4 lightView = glm::lookAt(sunPosVec3, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::vec3 sunLookAtDir = sunPosVec3 + sunDirVec3;
+                                    //look at center of scene
+        v = glm::lookAt(sunPosVec3, sunLookAtDir, glm::vec3(0.0f, 1.0f, 0.0f));
 
-        glm::mat4 lightSpaceMat = lightProjection * lightView;
+        glm::mat4 lightSpaceMat = p * v;
+        //glm::mat4 lightSpaceMat = v * p;
 
-        glUniformMatrix4fv(shadowShader->uniformLocations.at("lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(lightSpaceMat));
-        glViewport(0, 0, shadowFBO->SHADOW_WIDTH, shadowFBO->SHADOW_HEIGHT);
-        
+        glUniformMatrix4fv(shadowShader->uniformLocations["matView"], 1, GL_FALSE, glm::value_ptr(v));
+        glUniformMatrix4fv(shadowShader->uniformLocations["matProjection"], 1, GL_FALSE, glm::value_ptr(p));
+        glUniform1f(shadowShader->uniformLocations["bUseInstancedRendering"], (float)GL_FALSE);
+        glUniform1f(shadowShader->uniformLocations["bUseHeightMap"], (float)GL_FALSE);
+
         Draw(&opaqueMeshes, &transparentMeshes, shadowShader, deltaTime);
 
 
-        //RENDER SCENE
 
-        //Draw scene
+        //Render normal scene
+        //glCullFace(GL_BACK);
+
         glUseProgram(normalShader->ID);
         glBindFramebuffer(GL_FRAMEBUFFER, g_fbo->ID);
         glViewport(0, 0, g_fbo->width, g_fbo->height);
-        ratio = g_fbo->width / (float)g_fbo->height;
 
+        glUniform2f(normalShader->uniformLocations["screenWidthHeight"], (GLfloat)g_fbo->width, (GLfloat)g_fbo->height);
+        glUniform4f(normalShader->uniformLocations["eyeLocation"], cameraEye.x, cameraEye.y, cameraEye.z, 1.0f);
+
+        glUniformMatrix4fv(normalShader->uniformLocations["lightSpaceMatrix"], 1, GL_FALSE, glm::value_ptr(lightSpaceMat));
+
+        //RENDER SCENE
+        glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_0_G_BUFFER);
+        //Draw scene
         float usedFov = fov;
+
+        ratio = g_fbo->width / (float)g_fbo->height;
 
         p = glm::perspective(glm::radians(usedFov),
             ratio,
@@ -736,15 +785,14 @@ int main(void)
             cameraEye + cameraDir,  // "at"
             cameraUp);
         glUniformMatrix4fv(matView_Location, 1, GL_FALSE, glm::value_ptr(v));     
-
-        glUniform2f(normalShader->uniformLocations["screenWidthHeight"], (GLfloat)g_fbo->width, (GLfloat)g_fbo->height);
-        glUniform4f(normalShader->uniformLocations["eyeLocation"], cameraEye.x, cameraEye.y, cameraEye.z, 1.0f);
-          
         //Draw scene
         Draw(&opaqueMeshes, &transparentMeshes, normalShader, deltaTime);    
         //End of zeroth pass
 
 
+
+        //Lighting Pass
+        glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_1_LIGHTING);
         glm::vec3 fullscreenPos = glm::vec3(0.f, 0.f, -10.f);
         
         cMeshRenderer* fullscreenMesh = new cMeshRenderer();
@@ -770,8 +818,6 @@ int main(void)
         
         p = glm::ortho(0.0f, 1.0f / (float)width, 0.0f, 1.0f / (float)height, 0.01f, 1000.0f);
         glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
-        
-        glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_1_LIGHTING);
         
         //Uploading textures to gpu
         GLint textureMatId = g_fbo->vertexMatColour_1_ID;
@@ -809,6 +855,26 @@ int main(void)
             glBindTexture(GL_TEXTURE_2D, textureSpecularId);
             glUniform1i(normalShader->uniformLocations["texture_Specular"], unit);
         }
+
+        GLint textureShadowId = shadowFBO->depthMap;
+        if (textureShadowId != 0)
+        {
+            GLint unit = 25;
+            glActiveTexture(unit + GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textureShadowId);
+            glUniform1i(normalShader->uniformLocations["shadowMapColorBuf"], unit);
+        }
+
+        GLint textureLightSpace = g_fbo->vertexLightSpacePos_7_ID;
+        if (textureLightSpace != 0)
+        {
+            GLint unit = 26;
+            glActiveTexture(unit + GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textureLightSpace);
+            glUniform1i(normalShader->uniformLocations["texture_LightSpacePos"], unit);
+        }
+
+
         g_fbo->clearColourBuffer(0);  
 
         //fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
@@ -873,10 +939,17 @@ int main(void)
             textureId = g_fbo->vertexSpecular_4_ID;
             break;
         case 4:
-            textureId = shadowFBO->depthMap;
+            textureId = g_fbo->vertexWorldPos_3_ID;
             break;
         case 5:
             textureId = pingPongFBO->pingpongBuffer[!horizontal];
+            break;
+        case 6:
+            //This is the fbo object so that we can see the buffer later (it gets written to in the light pass)
+            textureId = g_fbo->dirShadow_6_ID;
+            break;
+        case 7:
+            textureId = g_fbo->vertexLightSpacePos_7_ID;
             break;
         }
         
@@ -1032,6 +1105,8 @@ void DrawGUI(float dt)
                 ImGui::DragFloat("Bloom Threshhold", &postProcessing.bloomThreshhold, 0.1f, 0.0f, 10000.0f);
                 ImGui::DragFloat("Bloom Size", &postProcessing.bloomSize, 0.1f, 0.0f, 10.0f);
 
+                ImGui::DragFloat("Ambient Power", &postProcessing.ambientPower, 0.01f, 0.0f, 1.0f);
+
                 ImGui::EndTabItem();
             }
             if (ImGui::BeginTabItem("G-Buffer"))
@@ -1046,8 +1121,13 @@ void DrawGUI(float dt)
                     showTextureIndex = 3;
                 if (ImGui::Selectable("World Position"))
                     showTextureIndex = 4;
+                if (ImGui::Selectable("Light Space Position"))
+                    showTextureIndex = 7;
                 if (ImGui::Selectable("Bright Colours"))
                     showTextureIndex = 5;
+                if (ImGui::Selectable("Shadow Map"))
+                    showTextureIndex = 6;
+                
 
                 ImGui::EndTabItem();
             }
@@ -1313,13 +1393,13 @@ void SetUpLights()
     //SUN
 
     gTheLights.theLights[8].name = "Sun light";
-    gTheLights.theLights[8].position = glm::vec4(20.f, 30.f, 0.f, 1.0f);
+    gTheLights.theLights[8].position = glm::vec4(-2.f, 30.f, 17.f, 1.0f);
     gTheLights.theLights[8].diffuse = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     gTheLights.theLights[8].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100.0f);
-    gTheLights.theLights[8].direction = glm::vec4(0.0f, -1.0f, -.2f, 1.0f);
+    gTheLights.theLights[8].direction = glm::normalize(glm::vec4(0.2f, -.8f, -.4f, 1.0f));
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[8].param1.x = 2;
-    gTheLights.TurnOffLight(8);  // Or this!
+    gTheLights.TurnOnLight(8);  // Or this!
     gTheLights.SetUpUniformLocations(program, 8);
 
     gTheLights.theLights[12].position = glm::vec4(0.f, 0.f, 0.f, 1.0f);

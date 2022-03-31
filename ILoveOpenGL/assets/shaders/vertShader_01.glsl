@@ -11,6 +11,8 @@ uniform bool bUseHeightMap;
 uniform bool bUseInstancedRendering;
 uniform sampler2D heightMap;
 
+uniform mat4 lightSpaceMatrix;
+
 uniform vec4 offsets[10];
 
 //uniform bool bUseVertexColour;		// Will default to GL_FALSE, which is zero (0)
@@ -30,6 +32,7 @@ out vec4 fNormal;
 out vec4 fUVx2;
 out vec4 fVertPosition;
 out mat3 TBN;
+out vec4 fLightSpacePos;
 
 void main()
 {
@@ -56,6 +59,10 @@ void main()
 	
 	// The location of the vertex in "world" space (not screen space)
 	fVertWorldLocation = matModel * vertPosition;
+	fVertWorldLocation.w = 1.0f;
+
+	fLightSpacePos = lightSpaceMatrix * fVertWorldLocation;
+
 	fVertPosition = vertPosition;
 	// Copy the vertex colour to the fragment shader
 	// (if you want the colours from the original file used)
