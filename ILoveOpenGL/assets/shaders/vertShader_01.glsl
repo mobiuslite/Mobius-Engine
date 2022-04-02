@@ -9,21 +9,28 @@ uniform mat4 matModelInverseTranspose;// For normal calculation
 
 uniform bool bUseHeightMap;
 uniform bool bUseInstancedRendering;
+
+uniform bool bUseWind;
+uniform float windTime;
+uniform float windSize;
+
 uniform sampler2D heightMap;
+uniform sampler2D windMap;
 
+uniform vec3 windDirection;
+uniform float windStrength;
 uniform mat4 lightSpaceMatrix;
-
-uniform vec4 offsets[10];
 
 //uniform bool bUseVertexColour;		// Will default to GL_FALSE, which is zero (0)
 //uniform vec3 vertexColourOverride;
 
-in vec4 vColour;
-in vec4 vPosition;
-in vec4 vNormal;				// Vertex normal X,Y,Z (W ignored)
-in vec4 vUVx2;					// 2 x Texture coords (vec4) UV0, UV1
-in vec4 vTangent;				// For bump mapping X,Y,Z (W ignored)
-in vec4 vBiNormal;				// For bump mapping X,Y,Z (W ignored)
+layout(location = 0) in vec4 vColour;
+layout(location = 1) in vec4 vPosition;
+layout(location = 2) in vec4 vNormal;				// Vertex normal X,Y,Z (W ignored)
+layout(location = 3) in vec4 vUVx2;					// 2 x Texture coords (vec4) UV0, UV1
+layout(location = 4) in vec4 vTangent;				// For bump mapping X,Y,Z (W ignored)
+layout(location = 5) in vec4 vBiNormal;				// For bump mapping X,Y,Z (W ignored)
+layout(location = 6) in vec4 vInstancedOffset;
 
 
 out vec4 fVertexColour;			// used to be "out vec3 color"
@@ -45,21 +52,36 @@ void main()
 
 	if (bUseHeightMap)
 	{
-		float heightSample = texture(heightMap, vUVx2.xy ).r;		
-		vertPosition.y += heightSample;		
+		float heightSample = texture(heightMap, vUVx2.xy).r;
+		vertPosition.y += heightSample;
 	}
 
-	vec4 pos = MVP * vertPosition;
-	if (bUseInstancedRendering) 
+	if (bUseInstancedRendering)
 	{
-		pos += offsets[gl_InstanceID];
+		vertPosition += vInstancedOffset;
 	}
 
+	fVertWorldLocation = matModel * vertPosition;
+	fVertWorldLocation.w = 1.0f;
+
+	
+	if (bUseWind)
+	{
+		float windSample = texture(windMap, (fVertWorldLocation.xz + vec2(windTime)) * windSize).r;
+		//Makes 0-1 range into -1 - 1 range
+		windSample = windSample * 2.0f - 1.0f;
+		windSample *= vUVx2.y * windStrength;
+
+		vertPosition += vec4(normalize(windDirection) * windSample, 1.0f);
+	}
+
+	vertPosition.w = 1.0f;
+	vec4 pos = MVP * vertPosition;
+	
 	gl_Position = pos;		// Used to be: vec4(vPosition, 1.0f);	// Used to be vPos
 	
 	// The location of the vertex in "world" space (not screen space)
-	fVertWorldLocation = matModel * vertPosition;
-	fVertWorldLocation.w = 1.0f;
+	
 
 	fLightSpacePos = lightSpaceMatrix * fVertWorldLocation;
 

@@ -46,19 +46,28 @@
 #include "cShadowDepthFBO.h"
 
 #include "RenderType.h"
+#include "cInstancedRenderer.h"
 
 struct PostProcessingInfo
 {
     float gamma = 1.85f;
-    float exposure = 1.0f;
+    float exposure = 0.631f;
+    float shadowBias = 0.00045f;
 
-    bool useExposureToneMapping = false;
+    bool useExposureToneMapping = true;
 
-    float bloomThreshhold = 1.0f;
+    float bloomThreshhold = 5.0f;
     float bloomSize = 1.0f;
     unsigned int bloomIterationAmount = 15;
 
-    float ambientPower = 0.15f;
+    float ambientPower = 0.1f;
+};
+
+struct WindInfo
+{
+    float strength = 0.5f;
+    float size = 0.065f;
+    glm::vec3 windDir = glm::vec3(1.0f, 0.1f, 1.0f);
 };
 
 GLuint program;
@@ -116,8 +125,12 @@ size_t selectedLightDebug = 0;
 float fov = 70.0f;
 
 PostProcessingInfo postProcessing;
+WindInfo windInfo;
+
 cPingPongFBOs* pingPongFBO;
 cShadowDepthFBO* shadowFBO;
+
+int instancedRenderOffsetAmount = 10;
 
 bool g_MouseIsInsideWindow = false;
 
@@ -458,6 +471,11 @@ int main(void)
         std::cout << errorString << std::endl;
     }
 
+    if (!g_textureManager.Create2DTextureFromBMPFile("noise.bmp", true))
+    {
+        std::cout << "Issue loading wind noise" << std::endl;
+    }
+
    //g_textureManager.Create2DTextureFromBMPFile("smoke.bmp", true);
    //g_textureManager.Create2DTextureFromBMPFile("spyglass.bmp", true);
 
@@ -515,94 +533,133 @@ int main(void)
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bDontLightObject", glGetUniformLocation(program, "bDontLightObject")));
 
     // The "whole object" colour (diffuse and specular)
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("wholeObjectDiffuseColour", glGetUniformLocation(program, "wholeObjectDiffuseColour")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseWholeObjectDiffuseColour", glGetUniformLocation(program, "bUseWholeObjectDiffuseColour")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("wholeObjectSpecularColour", glGetUniformLocation(program, "wholeObjectSpecularColour")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSpecular", glGetUniformLocation(program, "bUseSpecular")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("eyeLocation", glGetUniformLocation(program, "eyeLocation")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("wholeObjectDiffuseColour", glGetUniformLocation(program, "wholeObjectDiffuseColour")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseWholeObjectDiffuseColour", glGetUniformLocation(program, "bUseWholeObjectDiffuseColour")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("wholeObjectSpecularColour", glGetUniformLocation(program, "wholeObjectSpecularColour")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSpecular", glGetUniformLocation(program, "bUseSpecular")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("eyeLocation", glGetUniformLocation(program, "eyeLocation")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_00", glGetUniformLocation(program, "texture_00")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_01", glGetUniformLocation(program, "texture_01")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_02", glGetUniformLocation(program, "texture_02")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_03", glGetUniformLocation(program, "texture_03")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_00", glGetUniformLocation(program, "texture_00")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_01", glGetUniformLocation(program, "texture_01")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_02", glGetUniformLocation(program, "texture_02")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_03", glGetUniformLocation(program, "texture_03")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texLightpassColorBuf", glGetUniformLocation(program, "texLightpassColorBuf")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texLightpassColorBuf", glGetUniformLocation(program, "texLightpassColorBuf")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_MatColor", glGetUniformLocation(program, "texture_MatColor")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_Normal", glGetUniformLocation(program, "texture_Normal")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_WorldPos", glGetUniformLocation(program, "texture_WorldPos")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_Specular", glGetUniformLocation(program, "texture_Specular")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_LightSpacePos", glGetUniformLocation(program, "texture_LightSpacePos")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_MatColor", glGetUniformLocation(program, "texture_MatColor")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_Normal", glGetUniformLocation(program, "texture_Normal")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_WorldPos", glGetUniformLocation(program, "texture_WorldPos")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_Specular", glGetUniformLocation(program, "texture_Specular")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_LightSpacePos", glGetUniformLocation(program, "texture_LightSpacePos")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("textureRatios", glGetUniformLocation(program, "textureRatios")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("textureRatios", glGetUniformLocation(program, "textureRatios")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseAlphaMask", glGetUniformLocation(program, "bUseAlphaMask")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("alphaMask", glGetUniformLocation(program, "alphaMask")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseAlphaMask", glGetUniformLocation(program, "bUseAlphaMask")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("alphaMask", glGetUniformLocation(program, "alphaMask")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseNormalMap", glGetUniformLocation(program, "bUseNormalMap")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("normalMap", glGetUniformLocation(program, "normalMap")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("normalOffset", glGetUniformLocation(program, "normalOffset")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseNormalMap", glGetUniformLocation(program, "bUseNormalMap")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("normalMap", glGetUniformLocation(program, "normalMap")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("normalOffset", glGetUniformLocation(program, "normalOffset")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseHeightMap", glGetUniformLocation(program, "bUseHeightMap")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("heightMap", glGetUniformLocation(program, "heightMap")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseHeightMap", glGetUniformLocation(program, "bUseHeightMap")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("heightMap", glGetUniformLocation(program, "heightMap")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkybox", glGetUniformLocation(program, "bUseSkybox")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("skyBox", glGetUniformLocation(program, "skyBox")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkybox", glGetUniformLocation(program, "bUseSkybox")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("skyBox", glGetUniformLocation(program, "skyBox")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bDebugMode", glGetUniformLocation(program, "bDebugMode")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bDebugShowLighting", glGetUniformLocation(program, "bDebugShowLighting")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bDebugShowNormals", glGetUniformLocation(program, "bDebugShowNormals")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bDebugMode", glGetUniformLocation(program, "bDebugMode")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bDebugShowLighting", glGetUniformLocation(program, "bDebugShowLighting")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bDebugShowNormals", glGetUniformLocation(program, "bDebugShowNormals")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bIsImposter", glGetUniformLocation(program, "bIsImposter")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bIsImposter", glGetUniformLocation(program, "bIsImposter")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("passNumber", glGetUniformLocation(program, "passNumber")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("screenWidthHeight", glGetUniformLocation(program, "screenWidthHeight")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("passNumber", glGetUniformLocation(program, "passNumber")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("screenWidthHeight", glGetUniformLocation(program, "screenWidthHeight")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bShowBloom", glGetUniformLocation(program, "bShowBloom")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxReflections", glGetUniformLocation(program, "bUseSkyboxReflections")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxRefraction", glGetUniformLocation(program, "bUseSkyboxRefraction")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bShowBloom", glGetUniformLocation(program, "bShowBloom")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxReflections", glGetUniformLocation(program, "bUseSkyboxReflections")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxRefraction", glGetUniformLocation(program, "bUseSkyboxRefraction")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("postprocessingVariables", glGetUniformLocation(program, "postprocessingVariables")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("emmisionPower", glGetUniformLocation(program, "emmisionPower")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bloomMapColorBuf", glGetUniformLocation(program, "bloomMapColorBuf")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("ambientPower", glGetUniformLocation(program, "ambientPower")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("postprocessingVariables", glGetUniformLocation(program, "postprocessingVariables")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("emmisionPower", glGetUniformLocation(program, "emmisionPower")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bloomMapColorBuf", glGetUniformLocation(program, "bloomMapColorBuf")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("ambientPower", glGetUniformLocation(program, "ambientPower")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("tilingAndOffset", glGetUniformLocation(program, "tilingAndOffset")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseInstancedRendering", glGetUniformLocation(program, "bUseInstancedRendering")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("tilingAndOffset", glGetUniformLocation(program, "tilingAndOffset")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseInstancedRendering", glGetUniformLocation(program, "bUseInstancedRendering")));
 
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("shadowMapColorBuf", glGetUniformLocation(program, "shadowMapColorBuf")));
-   normalShader->uniformLocations.insert(std::pair<std::string, GLint>("lightSpaceMatrix", glGetUniformLocation(program, "lightSpaceMatrix")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("shadowMapColorBuf", glGetUniformLocation(program, "shadowMapColorBuf")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("shadowBias", glGetUniformLocation(program, "shadowBias")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("lightSpaceMatrix", glGetUniformLocation(program, "lightSpaceMatrix")));
 
-   cShaderManager::cShaderProgram* pingPongShader = gShaderManager.pGetShaderProgramFromFriendlyName("PingPong");
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseWind", glGetUniformLocation(program, "bUseWind")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("windMap", glGetUniformLocation(program, "windMap")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("windDirection", glGetUniformLocation(program, "windDirection")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("windTime", glGetUniformLocation(program, "windTime")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("windStrength", glGetUniformLocation(program, "windStrength")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("windSize", glGetUniformLocation(program, "windSize")));
 
-   //glUseProgram(pingPongShader->ID);
-   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("screenWidthHeight", glGetUniformLocation(pingPongShader->ID, "screenWidthHeight")));
-   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("bloomMap", glGetUniformLocation(pingPongShader->ID, "bloomMap")));
-   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("horizontal", glGetUniformLocation(pingPongShader->ID, "horizontal")));
+    cShaderManager::cShaderProgram* pingPongShader = gShaderManager.pGetShaderProgramFromFriendlyName("PingPong");
 
-   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("matModel", glGetUniformLocation(pingPongShader->ID, "matModel")));
-   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("matModelInverseTranspose", glGetUniformLocation(pingPongShader->ID, "matModelInverseTranspose")));
+    //glUseProgram(pingPongShader->ID);
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("screenWidthHeight", glGetUniformLocation(pingPongShader->ID, "screenWidthHeight")));
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("bloomMap", glGetUniformLocation(pingPongShader->ID, "bloomMap")));
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("horizontal", glGetUniformLocation(pingPongShader->ID, "horizontal")));
 
-   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("matView", glGetUniformLocation(pingPongShader->ID, "matView")));
-   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("matProjection", glGetUniformLocation(pingPongShader->ID, "matProjection")));
-   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseHeightMap", glGetUniformLocation(pingPongShader->ID, "bUseHeightMap")));
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("matModel", glGetUniformLocation(pingPongShader->ID, "matModel")));
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("matModelInverseTranspose", glGetUniformLocation(pingPongShader->ID, "matModelInverseTranspose")));
 
-   pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("bloomSize", glGetUniformLocation(pingPongShader->ID, "bloomSize")));
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("matView", glGetUniformLocation(pingPongShader->ID, "matView")));
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("matProjection", glGetUniformLocation(pingPongShader->ID, "matProjection")));
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseHeightMap", glGetUniformLocation(pingPongShader->ID, "bUseHeightMap")));
 
-   cShaderManager::cShaderProgram* shadowShader = gShaderManager.pGetShaderProgramFromFriendlyName("Shadow");
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("bloomSize", glGetUniformLocation(pingPongShader->ID, "bloomSize")));
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseInstancedRendering", glGetUniformLocation(pingPongShader->ID, "bUseInstancedRendering")));
 
-   shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("matModel", glGetUniformLocation(shadowShader->ID, "matModel")));
-   shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("matModelInverseTranspose", glGetUniformLocation(shadowShader->ID, "matModelInverseTranspose")));
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseWind", glGetUniformLocation(pingPongShader->ID, "bUseWind")));
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("windMap", glGetUniformLocation(pingPongShader->ID, "windMap")));
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("windDirection", glGetUniformLocation(pingPongShader->ID, "windDirection")));
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("windTime", glGetUniformLocation(pingPongShader->ID, "windTime")));
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("windStrength", glGetUniformLocation(pingPongShader->ID, "windStrength")));
+    pingPongShader->uniformLocations.insert(std::pair<std::string, GLint>("windSize", glGetUniformLocation(pingPongShader->ID, "windSize")));
 
-   shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("matView", glGetUniformLocation(shadowShader->ID, "matView")));
-   shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("matProjection", glGetUniformLocation(shadowShader->ID, "matProjection")));
-   shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseHeightMap", glGetUniformLocation(shadowShader->ID, "bUseHeightMap")));
+    cShaderManager::cShaderProgram* shadowShader = gShaderManager.pGetShaderProgramFromFriendlyName("Shadow");
 
-    /*sModelDrawInfo debugSphere;
-    if (!gVAOManager.LoadModelIntoVAO("ISO_Shphere_flat_3div_xyz_n_rgba_uv.ply", debugSphere, program))
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("matModel", glGetUniformLocation(shadowShader->ID, "matModel")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("matModelInverseTranspose", glGetUniformLocation(shadowShader->ID, "matModelInverseTranspose")));
+
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("matView", glGetUniformLocation(shadowShader->ID, "matView")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("matProjection", glGetUniformLocation(shadowShader->ID, "matProjection")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseHeightMap", glGetUniformLocation(shadowShader->ID, "bUseHeightMap")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseInstancedRendering", glGetUniformLocation(shadowShader->ID, "bUseInstancedRendering")));
+
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseWind", glGetUniformLocation(shadowShader->ID, "bUseWind")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windMap", glGetUniformLocation(shadowShader->ID, "windMap")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windDirection", glGetUniformLocation(shadowShader->ID, "windDirection")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windTime", glGetUniformLocation(shadowShader->ID, "windTime")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windStrength", glGetUniformLocation(shadowShader->ID, "windStrength")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windSize", glGetUniformLocation(shadowShader->ID, "windSize")));
+    
+    //Setup instanced renderers;
     {
-        std::cout << "Couldn't load debug sphere" << std::endl;
-    }*/
+        std::vector<cEntity*> entities = g_entityManager.GetEntities();
+        for (cEntity* entity : entities)
+        {        
+            cInstancedRenderer* instanceRenderer = entity->GetComponent<cInstancedRenderer>();
+
+            if (instanceRenderer != nullptr)
+            {
+                sModelDrawInfo drawInfo;
+
+                cMeshRenderer* mesh = entity->GetComponent<cMeshRenderer>();
+                gVAOManager.FindDrawInfoByModelName(mesh->meshName, drawInfo);
+
+                instanceRenderer->SetupVertexArrayAttrib(&drawInfo);
+            }
+        }
+    }
+
+
 
     g_DebugSphere = g_entityManager.CreateEntity(false);
 
@@ -663,6 +720,7 @@ int main(void)
         float useExposure = postProcessing.useExposureToneMapping ? 0.0f : 1.0f;
         glUniform4f(normalShader->uniformLocations["postprocessingVariables"], postProcessing.gamma, postProcessing.exposure, useExposure, postProcessing.bloomThreshhold);
         glUniform1f(normalShader->uniformLocations["ambientPower"], postProcessing.ambientPower);
+        glUniform1f(normalShader->uniformLocations["shadowBias"], postProcessing.shadowBias);
 
         float currentTime = (float)glfwGetTime();
         float deltaTime = currentTime - previousTime;
@@ -1016,6 +1074,20 @@ int main(void)
 
 void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparentMeshes, cShaderManager::cShaderProgram* program, float deltaTime)
 {
+    //Upload wind map
+    GLint windNoise = g_textureManager.getTextureIDFromName("noise.bmp");
+    if (windNoise != 0)
+    {
+        GLint unit = 27;
+        glActiveTexture(unit + GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, windNoise);
+        glUniform1i(program->uniformLocations["windMap"], unit);
+    }
+
+    glUniform3f(program->uniformLocations["windDirection"], windInfo.windDir.x, windInfo.windDir.y, windInfo.windDir.z);
+    glUniform1f(program->uniformLocations["windTime"], (float)glfwGetTime());
+    glUniform1f(program->uniformLocations["windStrength"], windInfo.strength);
+    glUniform1f(program->uniformLocations["windSize"], windInfo.size);
 
     //Draw non transparent objects
     for (unsigned int index = 0; index != opaqueMeshes->size(); index++)
@@ -1102,10 +1174,15 @@ void DrawGUI(float dt)
                 if (postProcessing.useExposureToneMapping)
                     ImGui::SliderFloat("Exposure", &postProcessing.exposure, 0.0f, 5.0f);
 
+                ImGui::Text("Bloom");
+                ImGui::Spacing();
                 ImGui::DragFloat("Bloom Threshhold", &postProcessing.bloomThreshhold, 0.1f, 0.0f, 10000.0f);
                 ImGui::DragFloat("Bloom Size", &postProcessing.bloomSize, 0.1f, 0.0f, 10.0f);
 
+                ImGui::Text("Shadows");
+                ImGui::Spacing();
                 ImGui::DragFloat("Ambient Power", &postProcessing.ambientPower, 0.01f, 0.0f, 1.0f);
+                ImGui::DragFloat("ShadowBias", &postProcessing.shadowBias, 0.0001f, 0.0f, 1.f, "%.5f");
 
                 ImGui::EndTabItem();
             }
@@ -1184,7 +1261,7 @@ void DrawGUI(float dt)
             if (ImGui::BeginTabItem("Visuals"))
             {
                 cMeshRenderer* renderer = curEntity->GetComponent<cMeshRenderer>();
-                ImGui::DragFloat("Emmision", &renderer->emmision, 0.1f, 1.0f, 10000.0f);
+                ImGui::DragFloat("Emmision", &renderer->emmision, 0.1f, 0.0f, 10000.0f);
 
                 float** tiling = new float* [2];
                 tiling[0] = &renderer->tiling.x;
@@ -1280,6 +1357,22 @@ void DrawGUI(float dt)
         ImGui::Text(camPos.c_str());
         
         ImGui::Text("Mobius Engine by Ethan Robertson");
+        ImGui::End();
+    }
+
+    //Wind
+    {
+        ImGui::Begin("Global Wind");
+        ImGui::SliderFloat("Wind Strength", &windInfo.strength, 0.0f, 5.0f);
+        ImGui::DragFloat("Wind Size", &windInfo.size, 0.01f, 0.0f, 10.0f);
+
+        float directionArray[3] = { windInfo.windDir.x, windInfo.windDir.y, windInfo.windDir.z };
+        ImGui::SliderFloat3("Wind Direction", directionArray, -1.0f, 1.0f);
+        windInfo.windDir.x = directionArray[0];
+        windInfo.windDir.y = directionArray[1];
+        windInfo.windDir.z = directionArray[2];
+
+
         ImGui::End();
     }
 
@@ -1399,6 +1492,8 @@ void SetUpLights()
     gTheLights.theLights[8].direction = glm::normalize(glm::vec4(0.2f, -.8f, -.4f, 1.0f));
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[8].param1.x = 2;
+
+    gTheLights.theLights[8].power = 2.36;
     gTheLights.TurnOnLight(8);  // Or this!
     gTheLights.SetUpUniformLocations(program, 8);
 

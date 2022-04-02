@@ -171,7 +171,7 @@
     <ClCompile Include="cShadowDepthFBO.cpp">
       <Filter>FBO</Filter>
     </ClCompile>
-    <ClCompile Include="cTreeRenderer.cpp">
+    <ClCompile Include="cInstancedRenderer.cpp">
       <Filter>Components</Filter>
     </ClCompile>
   </ItemGroup>
@@ -275,7 +275,7 @@
     <ClInclude Include="RenderType.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="cTreeRenderer.h">
+    <ClInclude Include="cInstancedRenderer.h">
       <Filter>Components</Filter>
     </ClInclude>
   </ItemGroup>

@@ -62,6 +62,7 @@ public:
 	bool bUseSkyboxRefraction;
 
 	float emmision;
+	float shadowBias;
 
 	bool bIsImposter = false;
 

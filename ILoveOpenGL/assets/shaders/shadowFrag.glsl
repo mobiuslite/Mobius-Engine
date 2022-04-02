@@ -9,6 +9,9 @@ in mat3 TBN;
 
 out vec4 pixelColour;
 
+uniform bool bUseAlphaMask;
+uniform sampler2D alphaMask;
+
 void main()
 {             
     //gl_FragDepth = gl_FragCoord.z;

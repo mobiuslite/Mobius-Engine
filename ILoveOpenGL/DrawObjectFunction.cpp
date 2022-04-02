@@ -10,7 +10,7 @@
 #include "cTextureViewer.h"
 #include "RenderType.h"
 #include "cShaderManager.h"
-#include "cTreeRenderer.h"
+#include "cInstancedRenderer.h"
 
 void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std::map<std::string, GLint>* uniformLocations)
 {
@@ -149,14 +149,43 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
     }
 }
 
+void Render(sModelDrawInfo* modelInfo, cEntity* curEntity, cShaderManager::cShaderProgram* shader)
+{
+    glBindVertexArray(modelInfo->VAO_ID);
+
+    cInstancedRenderer* instancedRenderer = curEntity->GetComponent<cInstancedRenderer>();
+    if (instancedRenderer == nullptr)
+    {
+        glUniform1f(shader->uniformLocations["bUseInstancedRendering"], (float)GL_FALSE);
+        glUniform1f(shader->uniformLocations["bUseWind"], (float)GL_FALSE);
+
+        glDrawElements(GL_TRIANGLES,
+            modelInfo->numberOfIndices,
+            GL_UNSIGNED_INT,
+            (void*)0);
+    }
+    else
+    {
+        glUniform1f(shader->uniformLocations["bUseInstancedRendering"], (float)GL_TRUE);
+        glUniform1f(shader->uniformLocations["bUseWind"], (float)GL_TRUE);
+
+        glDrawElementsInstanced(GL_TRIANGLES,
+            modelInfo->numberOfIndices,
+            GL_UNSIGNED_INT,
+            (void*)0, (GLsizei)instancedRenderer->GetCount());
+    }
+
+    glBindVertexArray(0);
+}
+
 void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderProgram* shader, cVAOManager* VAOManager,
     cBasicTextureManager textureManager,  glm::vec3 eyeLocation)
 {
-    if(shader->type == RenderType::Normal)
-        SetUpTextures(curEntity, textureManager, &shader->uniformLocations);
-
     cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
     cTransform* curTransform = curEntity->GetComponent<cTransform>();
+
+    if (shader->type == RenderType::Normal)
+        SetUpTextures(curEntity, textureManager, &shader->uniformLocations);
 
     // *****************************************************
             // Translate or "move" the object somewhere
@@ -203,14 +232,7 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
         sModelDrawInfo modelInfo;
         if (VAOManager->FindDrawInfoByModelName(curMesh->meshName, modelInfo))
         {
-            glBindVertexArray(modelInfo.VAO_ID);
-
-            glDrawElements(GL_TRIANGLES,
-                modelInfo.numberOfIndices,
-                GL_UNSIGNED_INT,
-                (void*)0);
-
-            glBindVertexArray(0);
+            Render(&modelInfo, curEntity, shader);
         }
         return;
     }
@@ -245,6 +267,7 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
         curMesh->wholeObjectShininess_SpecPower);
 
     glUniform1f(shader->uniformLocations["emmisionPower"], curMesh->emmision);
+    //glUniform1f(shader->uniformLocations["shadowBias"], curMesh->shadowBias);
 
     // See if mesh is wanting the vertex colour override (HACK) to be used?
     if (curMesh->bUseObjectDebugColour)
@@ -325,37 +348,7 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
 
     if (VAOManager->FindDrawInfoByModelName(curMesh->meshName, modelInfo))
     {
-        glBindVertexArray(modelInfo.VAO_ID);
-
-        cTreeRenderer* treeRenderer = curEntity->GetComponent<cTreeRenderer>();
-
-       
-
-        if (treeRenderer == nullptr)
-        {
-            glUniform1f(shader->uniformLocations["bUseInstancedRendering"], (float)GL_FALSE);
-
-            glDrawElements(GL_TRIANGLES,
-                modelInfo.numberOfIndices,
-                GL_UNSIGNED_INT,
-                (void*)0);
-        }
-        else
-        {
-            if (!treeRenderer->GetUniformSetupComplete())
-            {
-                treeRenderer->SetupUniformLocations(shader->ID);
-            }
-
-            glUniform1f(shader->uniformLocations["bUseInstancedRendering"], (float)GL_TRUE);
-
-            glDrawElementsInstanced(GL_TRIANGLES,
-                modelInfo.numberOfIndices,
-                GL_UNSIGNED_INT,
-                (void*)0, (GLsizei)treeRenderer->GetTreeCount());
-        }
-
-        glBindVertexArray(0);
+        Render(&modelInfo, curEntity, shader);
     }
 
     for (std::vector<cEntity*>::iterator childrenIt = curEntity->children.begin(); childrenIt != curEntity->children.end(); childrenIt++)

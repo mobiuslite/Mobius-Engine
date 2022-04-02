@@ -177,6 +177,24 @@ bool cSceneLoader::SaveScene(std::string sceneName, glm::vec3 cameraPos, cEntity
 				miscNode->append_node(specularNode);
 			}
 
+			if (mesh->emmision != 1.0f) 
+			{
+				xml_node<>* emmisionNode = doc->allocate_node(rapidxml::node_element, "Emmision");
+				std::string emmisionString = std::to_string(glm::length(mesh->emmision));
+				emmisionNode->value(doc->allocate_string(emmisionString.c_str()));
+
+				miscNode->append_node(emmisionNode);
+			}
+
+			if (mesh->shadowBias != 0.005f)
+			{
+				xml_node<>* biasNode = doc->allocate_node(rapidxml::node_element, "ShadowBias");
+				std::string biasString = std::to_string(glm::length(mesh->shadowBias));
+				biasNode->value(doc->allocate_string(biasString.c_str()));
+
+				miscNode->append_node(biasNode);
+			}
+
 			meshNode->append_node(miscNode);
 			descNode->append_node(meshNode);
 		}

@@ -12,6 +12,7 @@ cMeshRenderer::cMeshRenderer()
 
 	this->bIsDebugObject = false;
 	this->emmision = 1.0f;
+	this->shadowBias = 0.005f;
 
 	this->tiling = glm::vec2(1.0f);
 	this->offset = glm::vec2(0.0f);

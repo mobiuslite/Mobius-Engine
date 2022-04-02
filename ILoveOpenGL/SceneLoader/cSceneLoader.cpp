@@ -7,7 +7,7 @@
 #include "../cMeshRenderer.h"
 #include "../cTransform.h"
 #include "../cTextureViewer.h"
-#include "../cTreeRenderer.h"
+#include "../cInstancedRenderer.h"
 
 cSceneLoader::cSceneLoader()
 {
@@ -192,14 +192,27 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 				}
 			}
 
+			xml_node<>* emmisionNode = miscNode->first_node("Emmision");
+			if (emmisionNode != nullptr)
+			{
+				float emmision = std::stof(emmisionNode->value());
+				newMesh->emmision = emmision;
+			}
+			xml_node<>* shadowBiasNode = miscNode->first_node("ShadowBias");
+			if (shadowBiasNode != nullptr)
+			{
+				float bias = std::stof(shadowBiasNode->value());
+				newMesh->shadowBias = bias;
+			}
+
 			xml_node<>* treeNode = miscNode->first_node("TreeRenderer");
 			if (treeNode != nullptr)
 			{
 				unsigned int amount = std::stoi(treeNode->first_attribute("Amount")->value());
 				float offset = std::stof(treeNode->first_attribute("Offset")->value());
 
-				cTreeRenderer* treeRenderer = new cTreeRenderer(amount, offset);
-				newEntity->AddComponent<cTreeRenderer>(treeRenderer);
+				cInstancedRenderer* instancedRenderer = new cInstancedRenderer(amount, offset);
+				newEntity->AddComponent<cInstancedRenderer>(instancedRenderer);
 			}
 		}
 

@@ -39,6 +39,7 @@ uniform bool bUseSpecular;
 uniform vec4 eyeLocation;
 
 uniform float emmisionPower;
+uniform float shadowBias;
 
 //tiling xy, offset zw
 uniform vec4 tilingAndOffset;
@@ -131,7 +132,8 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
 	// check whether current frag pos is in shadow
 
 	//float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
-	float bias = 0.005f;
+	float bias = shadowBias;
+
 	float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
 
 	if (currentDepth > 1.0)
@@ -408,15 +410,6 @@ vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal,
 			vec3 specular = vertexSpecular.rgb * lightSpecularContrib.rgb;
 
 			float shadow = ShadowCalculation(lightSpacePos, norm, lightVector);
-
-			//if (shadow > 0.5f)
-			//{
-			//	finalObjectColour += vec4(0.0f, 1.0f, 0.0f, 1.0f);
-			//}
-			//else
-			//{
-			//	finalObjectColour += vec4(0.0f, 0.0f, 1.0f, 1.0f);
-			//}
 
 			//finalObjectColour += vec4((shadow * (diffuse + specular) + ambient) * vertexMaterialColour.rgb, 1.0f);
 			finalObjectColour += vec4((ambient + (1.0 - shadow) * (diffuse + specular)) * vertexMaterialColour.rgb, 1.0f);

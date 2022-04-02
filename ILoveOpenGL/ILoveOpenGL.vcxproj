@@ -164,7 +164,7 @@
     <ClCompile Include="cShadowDepthFBO.cpp" />
     <ClCompile Include="cTextureViewer.cpp" />
     <ClCompile Include="cTransform.cpp" />
-    <ClCompile Include="cTreeRenderer.cpp" />
+    <ClCompile Include="cInstancedRenderer.cpp" />
     <ClCompile Include="cVAOManager.cpp" />
     <ClCompile Include="DrawObjectFunction.cpp" />
     <ClCompile Include="FlyCamera\cFlyCamera.cpp" />
@@ -206,7 +206,7 @@
     <ClInclude Include="cShaderManager.h" />
     <ClInclude Include="cTextureViewer.h" />
     <ClInclude Include="cTransform.h" />
-    <ClInclude Include="cTreeRenderer.h" />
+    <ClInclude Include="cInstancedRenderer.h" />
     <ClInclude Include="cVAOManager.h" />
     <ClInclude Include="FlyCamera\cFlyCamera.h" />
     <ClInclude Include="FlyCamera\iCamera.h" />
