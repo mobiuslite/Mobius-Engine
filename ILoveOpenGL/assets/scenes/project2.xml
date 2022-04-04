@@ -85,6 +85,7 @@
 				</Textures>
 				<AlphaMask>grassAlpha.bmp</AlphaMask>
 				<Instanced Amount="10000" Offset="1.25" RandomStrength="0.78"></Instanced>
+        <UseWind></UseWind>
         <ShadowBias>0.005</ShadowBias>
 			</Misc>
 		</Mesh>
@@ -261,7 +262,7 @@
 				<UseLighting>true</UseLighting>
 				<NormalMap>waterNormalMap.bmp</NormalMap>
 				<UseSpecular/>
-        <Emmision>0.5</Emmision>
+        <Emmision>0.25</Emmision>
 			</Misc>
 		</Mesh>
 		<Mesh FriendlyName="glassClone" MeshName="glass.ply">

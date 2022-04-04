@@ -28,6 +28,6 @@ private:
 	float offset;
 	float randomStrength;
 
-	glm::vec4* translations;
+	std::vector<glm::vec4> translations;
 	unsigned int instancedVBO_ID;
 };

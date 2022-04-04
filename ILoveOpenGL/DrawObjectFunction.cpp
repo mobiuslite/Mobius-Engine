@@ -157,8 +157,6 @@ void Render(sModelDrawInfo* modelInfo, cEntity* curEntity, cShaderManager::cShad
     if (instancedRenderer == nullptr)
     {
         glUniform1f(shader->uniformLocations["bUseInstancedRendering"], (float)GL_FALSE);
-        glUniform1f(shader->uniformLocations["bUseWind"], (float)GL_FALSE);
-
         glDrawElements(GL_TRIANGLES,
             modelInfo->numberOfIndices,
             GL_UNSIGNED_INT,
@@ -167,8 +165,6 @@ void Render(sModelDrawInfo* modelInfo, cEntity* curEntity, cShaderManager::cShad
     else
     {
         glUniform1f(shader->uniformLocations["bUseInstancedRendering"], (float)GL_TRUE);
-        glUniform1f(shader->uniformLocations["bUseWind"], (float)GL_TRUE);
-
         glDrawElementsInstanced(GL_TRIANGLES,
             modelInfo->numberOfIndices,
             GL_UNSIGNED_INT,
@@ -267,7 +263,7 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
         curMesh->wholeObjectShininess_SpecPower);
 
     glUniform1f(shader->uniformLocations["emmisionPower"], curMesh->emmision);
-    //glUniform1f(shader->uniformLocations["shadowBias"], curMesh->shadowBias);
+    glUniform1f(shader->uniformLocations["bUseWind"], curMesh->useWind ? (float)GL_TRUE : (float) GL_FALSE);
 
     // See if mesh is wanting the vertex colour override (HACK) to be used?
     if (curMesh->bUseObjectDebugColour)

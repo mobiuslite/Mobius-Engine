@@ -65,6 +65,7 @@ public:
 	float shadowBias;
 
 	bool bIsImposter = false;
+	bool useWind = false;
 
 	std::vector<Texture> textures;
 	glm::vec2 tiling;

@@ -11,8 +11,6 @@ cInstancedRenderer::cInstancedRenderer(unsigned int amount, float offset, float 
     int eachAmount = (int)glm::sqrt(amount);
     int totalAmount = 0;
 
-    translations = new glm::vec4[amount];
-
     for (int y = -eachAmount; totalAmount < amount; y += 2)
     {
         for (int x = -eachAmount; x < eachAmount; x += 2)
@@ -26,21 +24,21 @@ cInstancedRenderer::cInstancedRenderer(unsigned int amount, float offset, float 
                 int randomXOffset = (rand() % 200) * randomAmount;
                 int randomZOffset = (rand() % 200) * randomAmount;
 
-                translations[totalAmount] = glm::vec4(x * offset + (randomXOffset / 100.0f), 0.0f, y * offset + (randomZOffset / 100.0f), 1.0f);
+                translations.push_back( glm::vec4(x * offset + (randomXOffset / 100.0f), 0.0f, y * offset + (randomZOffset / 100.0f), 1.0f));
                 totalAmount++;
             }
         }
     }
+
+    glGenBuffers(1, &this->instancedVBO_ID);
 }
 
 void cInstancedRenderer::SetupVertexArrayAttrib(sModelDrawInfo* drawInfo)
 {
     glBindVertexArray(drawInfo->VAO_ID);
-
-    glGenBuffers(1, &this->instancedVBO_ID);
     glBindBuffer(GL_ARRAY_BUFFER, this->instancedVBO_ID);
 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * amount, (GLvoid*)this->translations, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * this->translations.size(), (GLvoid*)&this->translations[0], GL_STATIC_DRAW);
 
     GLint vOffset_location = 6;
     glEnableVertexAttribArray(vOffset_location);
@@ -55,7 +53,6 @@ void cInstancedRenderer::SetupVertexArrayAttrib(sModelDrawInfo* drawInfo)
 
 cInstancedRenderer::~cInstancedRenderer()
 {
-    delete[] this->translations;
 }
 
 unsigned int cInstancedRenderer::GetCount()

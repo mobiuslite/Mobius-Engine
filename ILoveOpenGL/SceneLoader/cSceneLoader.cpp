@@ -215,6 +215,9 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 				cInstancedRenderer* instancedRenderer = new cInstancedRenderer(amount, offset, randomStrength);
 				newEntity->AddComponent<cInstancedRenderer>(instancedRenderer);
 			}
+
+			xml_node<>* windNode = miscNode->first_node("UseWind");
+			newMesh->useWind = windNode != nullptr;
 		}
 
 		newMesh->bIsSceneObject = true;	

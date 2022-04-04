@@ -52,7 +52,7 @@ struct PostProcessingInfo
 {
     float gamma = 1.85f;
     float exposure = 0.631f;
-    float shadowBias = 0.00045f;
+    float shadowBias = 0.00124f;
 
     bool useExposureToneMapping = true;
 

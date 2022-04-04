@@ -216,6 +216,11 @@ bool cSceneLoader::SaveScene(std::string sceneName, glm::vec3 cameraPos, cEntity
 				miscNode->append_node(instancedNode);
 			}
 
+			if (mesh->useWind)
+			{
+				xml_node<>* windNode = doc->allocate_node(rapidxml::node_element, "UseWind");
+				miscNode->append_node(windNode);
+			}
 
 			meshNode->append_node(miscNode);
 			descNode->append_node(meshNode);
