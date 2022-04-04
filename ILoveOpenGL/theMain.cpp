@@ -65,8 +65,8 @@ struct PostProcessingInfo
 
 struct WindInfo
 {
-    float strength = 0.5f;
-    float size = 0.065f;
+    float strength = 1.1f;
+    float size = 0.05f;
     glm::vec3 windDir = glm::vec3(1.0f, 0.1f, 1.0f);
 };
 

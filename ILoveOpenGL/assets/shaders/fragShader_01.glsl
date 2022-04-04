@@ -204,8 +204,6 @@ void main()
 		float depthValue = texture(shadowMapColorBuf, UVLookup).r;
 		pixelShadowColour = vec4(vec3(depthValue), 1.0);
 
-		
-
 		//If not lit
 		if(pixelWorldPos.w == 0.0f)
 		{
@@ -213,9 +211,12 @@ void main()
 		}
 		else
 		{
-			pixelColour = calcualteLightContrib( pixelMatColor.rgb, pixelNormal.xyz, pixelWorldPos.xyz, pixelSpecular.rgba, pixelLightSpacePos);										
+			pixelColour = calcualteLightContrib( pixelMatColor.rgb, pixelNormal.xyz, pixelWorldPos.xyz, pixelSpecular.rgba, pixelLightSpacePos);		
 			pixelColour.a = 1.0f;
 		}
+
+		float emmision = pixelMatColor.w;
+		pixelColour.rgb *= emmision;
 
 		//Get bright parts of screen for bloom
 		float brightness = dot(pixelColour.rgb, vec3(0.2126f, 0.7152, 0.0722f));
@@ -243,7 +244,7 @@ void main()
 		//pixelColour = skyBoxTexture;
 
 		pixelMatColor = pow(vec4(skyBoxTexture.rgb, 1.0f), vec4(postprocessingVariables.x));	
-		pixelMatColor *= emmisionPower;
+		pixelMatColor.w = emmisionPower;
 		pixelWorldPos = vec4(fVertWorldLocation.xyz, 0.0f);
 
 		return;
@@ -330,7 +331,8 @@ void main()
 	//Most textures are already in linear space, because they are created by an artist wit their eyes
 	//and monitors are already corrected
 	//So using gamma correction again would correct them twice
-	pixelMatColor = pow(vec4(vertexDiffuseColour.rgb * emmisionPower, 1.0f), vec4(postprocessingVariables.x));
+	pixelMatColor = pow(vec4(vertexDiffuseColour.rgb, 1.0f), vec4(postprocessingVariables.x));
+	pixelMatColor.w = emmisionPower;
 
 	pixelNormal = vec4(normalize(normals.xyz), 1.0f);
 	pixelWorldPos = vec4(fVertWorldLocation.xyz, 1.0f);

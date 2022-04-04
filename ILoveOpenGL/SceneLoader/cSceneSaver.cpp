@@ -6,6 +6,7 @@
 #include <rapidxml/rapidxml_print.hpp>
 #include "../cMeshRenderer.h"
 #include "../cTransform.h"
+#include "../cInstancedRenderer.h"
 
 bool cSceneLoader::SaveScene(std::string sceneName, glm::vec3 cameraPos, cEntityManager* entityManager)
 {
@@ -180,7 +181,7 @@ bool cSceneLoader::SaveScene(std::string sceneName, glm::vec3 cameraPos, cEntity
 			if (mesh->emmision != 1.0f) 
 			{
 				xml_node<>* emmisionNode = doc->allocate_node(rapidxml::node_element, "Emmision");
-				std::string emmisionString = std::to_string(glm::length(mesh->emmision));
+				std::string emmisionString = std::to_string(mesh->emmision);
 				emmisionNode->value(doc->allocate_string(emmisionString.c_str()));
 
 				miscNode->append_node(emmisionNode);
@@ -189,11 +190,32 @@ bool cSceneLoader::SaveScene(std::string sceneName, glm::vec3 cameraPos, cEntity
 			if (mesh->shadowBias != 0.005f)
 			{
 				xml_node<>* biasNode = doc->allocate_node(rapidxml::node_element, "ShadowBias");
-				std::string biasString = std::to_string(glm::length(mesh->shadowBias));
+				std::string biasString = std::to_string(mesh->shadowBias);
 				biasNode->value(doc->allocate_string(biasString.c_str()));
 
 				miscNode->append_node(biasNode);
 			}
+
+			cInstancedRenderer* instancedRenderer = entity->GetComponent<cInstancedRenderer>();
+			if (instancedRenderer != nullptr)
+			{
+				xml_node<>* instancedNode = doc->allocate_node(rapidxml::node_element, "Instanced");
+				
+				std::string amountString = std::to_string(instancedRenderer->GetCount());
+				char* amountCharArray = doc->allocate_string(amountString.c_str());
+				instancedNode->append_attribute(doc->allocate_attribute("Amount", amountCharArray));
+
+				std::string offsetString = std::to_string(instancedRenderer->GetOffset());
+				char* offsetCharArray = doc->allocate_string(offsetString.c_str());
+				instancedNode->append_attribute(doc->allocate_attribute("Offset", offsetCharArray));
+
+				std::string randomString = std::to_string(instancedRenderer->GetRandomStrength());
+				char* randomCharArray = doc->allocate_string(randomString.c_str());
+				instancedNode->append_attribute(doc->allocate_attribute("RandomStrength", randomCharArray));
+
+				miscNode->append_node(instancedNode);
+			}
+
 
 			meshNode->append_node(miscNode);
 			descNode->append_node(meshNode);

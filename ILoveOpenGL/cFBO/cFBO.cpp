@@ -57,7 +57,7 @@ bool cFBO::init( int width, int height, std::string &error )
 
 	glGenTextures(1, &(this->vertexMatColour_1_ID));
 	glBindTexture(GL_TEXTURE_2D, this->vertexMatColour_1_ID);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB16F, this->width,this->height);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, this->width,this->height);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 

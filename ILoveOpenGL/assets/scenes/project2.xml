@@ -84,7 +84,7 @@
 					<Texture Ratio="0.000000"/>
 				</Textures>
 				<AlphaMask>grassAlpha.bmp</AlphaMask>
-				<TreeRenderer Amount="10000" Offset="1.25"></TreeRenderer>
+				<Instanced Amount="10000" Offset="1.25" RandomStrength="0.78"></Instanced>
         <ShadowBias>0.005</ShadowBias>
 			</Misc>
 		</Mesh>

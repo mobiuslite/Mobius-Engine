@@ -205,13 +205,14 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 				newMesh->shadowBias = bias;
 			}
 
-			xml_node<>* treeNode = miscNode->first_node("TreeRenderer");
+			xml_node<>* treeNode = miscNode->first_node("Instanced");
 			if (treeNode != nullptr)
 			{
 				unsigned int amount = std::stoi(treeNode->first_attribute("Amount")->value());
 				float offset = std::stof(treeNode->first_attribute("Offset")->value());
+				float randomStrength = std::stof(treeNode->first_attribute("RandomStrength")->value());
 
-				cInstancedRenderer* instancedRenderer = new cInstancedRenderer(amount, offset);
+				cInstancedRenderer* instancedRenderer = new cInstancedRenderer(amount, offset, randomStrength);
 				newEntity->AddComponent<cInstancedRenderer>(instancedRenderer);
 			}
 		}

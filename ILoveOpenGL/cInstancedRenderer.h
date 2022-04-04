@@ -12,17 +12,21 @@
 class cInstancedRenderer : public cComponent
 {
 public:
-	cInstancedRenderer(unsigned int amount, float offset);
+	cInstancedRenderer(unsigned int amount, float offset, float randomAmount = 0.0f);
 
 	virtual ~cInstancedRenderer();
 	virtual void Update(float dt) {};
 
 	unsigned int GetCount();
+	float GetOffset();
+	float GetRandomStrength();
+
 	void SetupVertexArrayAttrib(sModelDrawInfo* drawInfo);
 
 private:
 	unsigned int amount;
 	float offset;
+	float randomStrength;
 
 	glm::vec4* translations;
 	unsigned int instancedVBO_ID;

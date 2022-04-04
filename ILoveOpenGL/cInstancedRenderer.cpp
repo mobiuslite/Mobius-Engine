@@ -2,10 +2,11 @@
 #include "GLCommon.h"
 
 
-cInstancedRenderer::cInstancedRenderer(unsigned int amount, float offset)
+cInstancedRenderer::cInstancedRenderer(unsigned int amount, float offset, float randomAmount)
 {
 	this->amount = amount;
 	this->offset = offset;
+    this->randomStrength = randomAmount;
 
     int eachAmount = (int)glm::sqrt(amount);
     int totalAmount = 0;
@@ -22,8 +23,8 @@ cInstancedRenderer::cInstancedRenderer(unsigned int amount, float offset)
             }
             else
             {
-                int randomXOffset = rand() % 200;
-                int randomZOffset = rand() % 200;
+                int randomXOffset = (rand() % 200) * randomAmount;
+                int randomZOffset = (rand() % 200) * randomAmount;
 
                 translations[totalAmount] = glm::vec4(x * offset + (randomXOffset / 100.0f), 0.0f, y * offset + (randomZOffset / 100.0f), 1.0f);
                 totalAmount++;
@@ -60,4 +61,13 @@ cInstancedRenderer::~cInstancedRenderer()
 unsigned int cInstancedRenderer::GetCount()
 {
     return this->amount;
+}
+
+float cInstancedRenderer::GetOffset()
+{
+    return this->offset;
+}
+float cInstancedRenderer::GetRandomStrength()
+{
+    return this->randomStrength;
 }
