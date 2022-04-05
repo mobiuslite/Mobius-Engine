@@ -1,10 +1,10 @@
 #include "cInstancedRenderer.h"
 #include "GLCommon.h"
+#include <iostream>
 
 
 cInstancedRenderer::cInstancedRenderer(unsigned int amount, float offset, float randomAmount)
 {
-	this->amount = amount;
 	this->offset = offset;
     this->randomStrength = randomAmount;
 
@@ -15,7 +15,7 @@ cInstancedRenderer::cInstancedRenderer(unsigned int amount, float offset, float 
     {
         for (int x = -eachAmount; x < eachAmount; x += 2)
         {
-            if (totalAmount >= this->amount)
+            if (totalAmount >= amount)
             {
                 break;
             }
@@ -38,7 +38,7 @@ void cInstancedRenderer::SetupVertexArrayAttrib(sModelDrawInfo* drawInfo)
     glBindVertexArray(drawInfo->VAO_ID);
     glBindBuffer(GL_ARRAY_BUFFER, this->instancedVBO_ID);
 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * this->translations.size(), (GLvoid*)&this->translations[0], GL_STATIC_DRAW);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * this->translations.size(), (GLvoid*)&this->translations[0], GL_STATIC_DRAW);
 
     GLint vOffset_location = 6;
     glEnableVertexAttribArray(vOffset_location);
@@ -53,17 +53,39 @@ void cInstancedRenderer::SetupVertexArrayAttrib(sModelDrawInfo* drawInfo)
 
 cInstancedRenderer::~cInstancedRenderer()
 {
+    //GLuint bufferToDelete[1];
+    //bufferToDelete[0] = this->instancedVBO_ID;
+    //
+    //glDeleteBuffers(1, bufferToDelete);
+    //
+    //GLenum err;
+    //while ((err = glGetError()) != GL_NO_ERROR)
+    //{
+    //    std::cout << "WARNING: OpenGL errors found!: " << err << std::endl;
+    //}
 }
 
 unsigned int cInstancedRenderer::GetCount()
 {
-    return this->amount;
+    return (unsigned int)this->translations.size();
 }
 
 float cInstancedRenderer::GetOffset()
 {
     return this->offset;
 }
+void cInstancedRenderer::AddOffset(glm::vec3 pos)
+{
+    glm::vec4 newPos = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
+
+    this->translations.push_back(newPos);
+
+    glBindBuffer(GL_ARRAY_BUFFER, this->instancedVBO_ID);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * this->translations.size(), (GLvoid*)&this->translations[0], GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+}
+
 float cInstancedRenderer::GetRandomStrength()
 {
     return this->randomStrength;

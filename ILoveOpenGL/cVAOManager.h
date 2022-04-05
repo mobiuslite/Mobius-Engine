@@ -16,8 +16,12 @@
 //	float r, g, b;
 //};
 
+#include <assimp/Importer.hpp>  
+#include <assimp/scene.h>       
+#include <assimp/postprocess.h> 
+
 #include "../sVertex_Types.h"
-#include <list>
+#include <vector>
 
 struct sModelDrawInfo
 {
@@ -71,9 +75,13 @@ public:
 
 	std::string getLastError(bool bAndClear = true);
 
+	std::vector<sModelDrawInfo> GetLoadedModels();
+
 private:
 
-	std::list<sModelDrawInfo> listPendingModelsToLoad;
+
+	bool LoadFBXModelFromFile(std::string fileName, sModelDrawInfo& drawInfo);
+	Assimp::Importer assimpImporter;
 	unsigned int shaderProgramID_ThreadedLoader;
 
 	bool workerThreadIsRunning = false;

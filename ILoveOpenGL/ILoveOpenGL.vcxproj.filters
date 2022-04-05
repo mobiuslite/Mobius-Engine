@@ -64,6 +64,9 @@
     <Filter Include="ShaderManager\Shaders\Shadow">
       <UniqueIdentifier>{5bc99248-c220-4148-91e6-dec90a848b2e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Components\Brush">
+      <UniqueIdentifier>{cbb4450f-5ebf-4270-88ec-23d0b62dc9a9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="theMain.cpp">
@@ -174,6 +177,9 @@
     <ClCompile Include="cInstancedRenderer.cpp">
       <Filter>Components</Filter>
     </ClCompile>
+    <ClCompile Include="cInstancedBrush.cpp">
+      <Filter>Components\Brush</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cShaderManager.h">
@@ -277,6 +283,9 @@
     </ClInclude>
     <ClInclude Include="cInstancedRenderer.h">
       <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="cInstancedBrush.h">
+      <Filter>Components\Brush</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

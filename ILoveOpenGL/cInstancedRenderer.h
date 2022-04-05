@@ -18,13 +18,15 @@ public:
 	virtual void Update(float dt) {};
 
 	unsigned int GetCount();
+
 	float GetOffset();
+	void AddOffset(glm::vec3 pos);
+
 	float GetRandomStrength();
 
 	void SetupVertexArrayAttrib(sModelDrawInfo* drawInfo);
 
 private:
-	unsigned int amount;
 	float offset;
 	float randomStrength;
 

@@ -36,6 +36,12 @@ cEntity* cEntityManager::CreateEntity(bool addToList)
 
 void cEntityManager::DeleteEntity(cEntity* e)
 {
+	std::vector<cEntity*>::iterator it = std::find(this->entities.begin(), this->entities.end(), e);
+	if (it != this->entities.end())
+	{
+		this->entities.erase(it);
+	}
+
 	delete e;
 	e = nullptr;
 }

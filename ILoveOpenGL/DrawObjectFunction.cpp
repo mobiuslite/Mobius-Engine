@@ -60,10 +60,8 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
             GLint unit = 2;
             glActiveTexture(unit + GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureId);
-            glTexParameteri(textureId, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(textureId, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glUniform1i(uniformLocations->at("normalMap"), unit);
 
+            glUniform1i(uniformLocations->at("normalMap"), unit);
             glUniform2f(uniformLocations->at("normalOffset"), curMesh->normalOffset.x, curMesh->normalOffset.y);
         }
     }
@@ -177,11 +175,25 @@ void Render(sModelDrawInfo* modelInfo, cEntity* curEntity, cShaderManager::cShad
 void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderProgram* shader, cVAOManager* VAOManager,
     cBasicTextureManager textureManager,  glm::vec3 eyeLocation)
 {
+    GLenum err;
+
     cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
     cTransform* curTransform = curEntity->GetComponent<cTransform>();
 
+    while ((err = glGetError()) != GL_NO_ERROR)
+    {
+        int i = 0;
+
+    }
+
     if (shader->type == RenderType::Normal)
         SetUpTextures(curEntity, textureManager, &shader->uniformLocations);
+
+    while ((err = glGetError()) != GL_NO_ERROR)
+    {
+        int i = 0;
+
+    }
 
     // *****************************************************
             // Translate or "move" the object somewhere
@@ -223,6 +235,7 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
         glUniformMatrix4fv(matModelInverseTranspose_Location, 1, GL_FALSE, glm::value_ptr(matInvTransposeModel));
     }
 
+
     if (shader->type == RenderType::PingPong || shader->type == RenderType::Shadow)
     {
         sModelDrawInfo modelInfo;
@@ -254,6 +267,12 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
     else
     {
         glUniform1f(shader->uniformLocations["bUseWholeObjectDiffuseColour"], (float)GL_FALSE);
+    }
+
+    while ((err = glGetError()) != GL_NO_ERROR)
+    {
+        int i = 0;
+
     }
 
     glUniform4f(shader->uniformLocations["wholeObjectSpecularColour"],

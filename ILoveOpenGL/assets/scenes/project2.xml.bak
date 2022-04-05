@@ -71,20 +71,22 @@
 		</Mesh>
 		<Mesh FriendlyName="minecraftGrass" MeshName="grass.ply">
 			<Transform>
-				<Position x="-5.000000" y="1.940000" z="-8.000000"/>
+				<Position x="0" y="0" z="0"/>
 				<Rotation x="0.000000" y="0.000000" z="0.000000"/>
-				<Scale>1.000000</Scale>
+        <Scale>1</Scale>
 			</Transform>
 			<Misc>
 				<UseLighting>true</UseLighting>
 				<Textures>
-					<Texture Ratio="1.000000">testing-RGB.bmp</Texture>
+					<Texture Ratio="1.000000">grass.bmp</Texture>
 					<Texture Ratio="0.000000"/>
 					<Texture Ratio="0.000000"/>
 					<Texture Ratio="0.000000"/>
 				</Textures>
-				<AlphaMask>testing-Alpha.bmp</AlphaMask>
-				<TreeRenderer Amount="10" Offset="5"></TreeRenderer>
+				<AlphaMask>grassAlpha.bmp</AlphaMask>
+				<Instanced Amount="0" Offset="1.25" RandomStrength="0.78"></Instanced>
+        <UseWind></UseWind>
+        <ShadowBias>0.005</ShadowBias>
 			</Misc>
 		</Mesh>
 		<Mesh FriendlyName="minecraftTree2" MeshName="tree2.ply">
@@ -260,6 +262,7 @@
 				<UseLighting>true</UseLighting>
 				<NormalMap>waterNormalMap.bmp</NormalMap>
 				<UseSpecular/>
+        <Emmision>0.25</Emmision>
 			</Misc>
 		</Mesh>
 		<Mesh FriendlyName="glassClone" MeshName="glass.ply">

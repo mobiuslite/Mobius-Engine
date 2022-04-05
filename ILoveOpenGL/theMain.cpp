@@ -47,6 +47,7 @@
 
 #include "RenderType.h"
 #include "cInstancedRenderer.h"
+#include "cInstancedBrush.h"
 
 struct PostProcessingInfo
 {
@@ -122,10 +123,14 @@ ImGuiIO* io = nullptr;
 size_t selectedEntityDebug = 0;
 size_t selectedLightDebug = 0;
 
+size_t selectedModelDebug = 0;
+
 float fov = 70.0f;
 
 PostProcessingInfo postProcessing;
 WindInfo windInfo;
+
+cInstancedBrush brush;
 
 cPingPongFBOs* pingPongFBO;
 cShadowDepthFBO* shadowFBO;
@@ -255,7 +260,7 @@ void ProcessAsyncMouse(GLFWwindow* window, float deltaTime)
         lastY = (float)y;
 
 
-        if ((glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+        if ((glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
             && g_MouseIsInsideWindow)
         {
             const double MOUSE_SENSITIVITY = .1f;
@@ -280,46 +285,87 @@ void ProcessAsyncMouse(GLFWwindow* window, float deltaTime)
             cameraRight = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), cameraDir));
             cameraUp = glm::cross(cameraDir, cameraRight);
         }
+        else if ((glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+            && g_MouseIsInsideWindow)
+        {
+            if (brush.HasRenderer())
+            {
+                glBindFramebuffer(GL_FRAMEBUFFER, g_fbo->ID);
+
+                int windowWidth, windowHeight;
+                glfwGetWindowSize(window, &windowWidth, &windowHeight);
+
+                float fixedYValue = (float)abs(y - (double)windowHeight);
+
+                float widthRatio = x / windowWidth;
+                float heightRatio = fixedYValue / windowHeight;
+
+                glm::vec2 curPixelPos = glm::vec2(g_fbo->width * widthRatio, g_fbo->height * heightRatio);
+
+                float pixel[4];
+
+                //world pos buffer
+                glReadBuffer(GL_COLOR_ATTACHMENT3);
+                glReadPixels(curPixelPos.x, curPixelPos.y, 1, 1, GL_RGBA, GL_FLOAT, pixel);
+
+                //std::cout << "x: " << g_fbo->width * widthRatio << " | y: " << g_fbo->height * heightRatio << std::endl;
+                //std::cout << "r: " << pixel[0] << " | g: " << pixel[1] << " | b: " << pixel[2] << " | a: " << pixel[3] << std::endl;
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+                glm::vec3 pixelWorldPos = glm::vec3(pixel[0], pixel[1], pixel[2]);
+                brush.AddOffset(pixelWorldPos);
+                
+                //RAY CAST IDEA
+
+                //normalize(raycastDirection = pixelWorldPos - cameraEye);
+                //vec3 Start = cameraEye;
+                //vec3 End = raycastDirection * rayLength;
+            }
+        }
     }
     return;
 }
 
 void ProcessAsyncKeyboard(GLFWwindow* window, float deltaTime)
 {
-    if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_RELEASE
-        && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE)
+    if (!io->WantCaptureKeyboard)
     {
-        float speed = flyCameraSpeed;
-        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_REPEAT || glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        {
-            speed *= 3.0f;
-        }
 
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_S) != GLFW_PRESS)
+        if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_RELEASE
+            && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE)
         {
-            cameraEye += cameraDir * speed * deltaTime;
-        }
-        else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_W) != GLFW_PRESS)
-        {
-            cameraEye -= cameraDir * speed * deltaTime;
-        }
+            float speed = flyCameraSpeed;
+            if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_REPEAT || glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+            {
+                speed *= 3.0f;
+            }
 
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_D) != GLFW_PRESS)
-        {
-            cameraEye += cameraRight * speed * deltaTime;
-        }
-        else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_A) != GLFW_PRESS)
-        {
-            cameraEye -= cameraRight * speed * deltaTime;
-        }
+            if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_S) != GLFW_PRESS)
+            {
+                cameraEye += cameraDir * speed * deltaTime;
+            }
+            else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_W) != GLFW_PRESS)
+            {
+                cameraEye -= cameraDir * speed * deltaTime;
+            }
 
-        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_E) != GLFW_PRESS)
-        {
-            cameraEye -= glm::vec3(0.0f, 1.0f, 0.0f) * speed * deltaTime;
-        }
-        else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_Q) != GLFW_PRESS)
-        {
-            cameraEye += glm::vec3(0.0f, 1.0f, 0.0f) * speed * deltaTime;
+            if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_D) != GLFW_PRESS)
+            {
+                cameraEye += cameraRight * speed * deltaTime;
+            }
+            else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_A) != GLFW_PRESS)
+            {
+                cameraEye -= cameraRight * speed * deltaTime;
+            }
+
+            if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_E) != GLFW_PRESS)
+            {
+                cameraEye -= glm::vec3(0.0f, 1.0f, 0.0f) * speed * deltaTime;
+            }
+            else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_Q) != GLFW_PRESS)
+            {
+                cameraEye += glm::vec3(0.0f, 1.0f, 0.0f) * speed * deltaTime;
+            }
         }
     }
 }
@@ -717,6 +763,8 @@ int main(void)
 
     while (!glfwWindowShouldClose(window))
     {
+        GLenum err;
+
         float useExposure = postProcessing.useExposureToneMapping ? 0.0f : 1.0f;
         glUniform4f(normalShader->uniformLocations["postprocessingVariables"], postProcessing.gamma, postProcessing.exposure, useExposure, postProcessing.bloomThreshhold);
         glUniform1f(normalShader->uniformLocations["ambientPower"], postProcessing.ambientPower);
@@ -743,7 +791,6 @@ int main(void)
         g_fbo->clearBuffers(true, true);
 
         // Turn on the depth buffer
-        glEnable(GL_DEPTH);         // Turns on the depth buffer
         glEnable(GL_DEPTH_TEST);    // Check if the pixel is already closer
 
         // *******************************************************
@@ -808,8 +855,6 @@ int main(void)
 
         Draw(&opaqueMeshes, &transparentMeshes, shadowShader, deltaTime);
 
-
-
         //Render normal scene
         //glCullFace(GL_BACK);
 
@@ -834,7 +879,6 @@ int main(void)
             0.1f,
             1000.0f);     
         glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
-
         //glm::vec3 cameraEye = glm::vec3(0.0, 0.0, -4.0f);
         glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -842,13 +886,12 @@ int main(void)
         v = glm::lookAt(cameraEye,     // "eye"
             cameraEye + cameraDir,  // "at"
             cameraUp);
-        glUniformMatrix4fv(matView_Location, 1, GL_FALSE, glm::value_ptr(v));     
+        glUniformMatrix4fv(matView_Location, 1, GL_FALSE, glm::value_ptr(v)); 
         //Draw scene
         Draw(&opaqueMeshes, &transparentMeshes, normalShader, deltaTime);    
         //End of zeroth pass
 
-
-
+        
         //Lighting Pass
         glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_1_LIGHTING);
         glm::vec3 fullscreenPos = glm::vec3(0.f, 0.f, -10.f);
@@ -932,7 +975,6 @@ int main(void)
             glUniform1i(normalShader->uniformLocations["texture_LightSpacePos"], unit);
         }
 
-
         g_fbo->clearColourBuffer(0);  
 
         //fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
@@ -980,7 +1022,6 @@ int main(void)
         glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_2_EFFECTS);
         
         GLint textureId = 0;
-        
         //Select which texture to show
         switch (showTextureIndex)
         {
@@ -1048,6 +1089,17 @@ int main(void)
 
         ProcessAsyncMouse(window, (float)deltaTime);
         ProcessAsyncKeyboard(window, (float)deltaTime);
+
+        while ((err = glGetError()) != GL_NO_ERROR)
+        {
+            std::cout << "WARNING: OpenGL errors found!: " << err << std::endl;
+        }
+    }
+
+    GLenum err;
+    while ((err = glGetError()) != GL_NO_ERROR)
+    {
+        std::cout << "WARNING: OpenGL errors found!: " << err << std::endl;
     }
 
     g_entityManager.DeleteEntity(g_DebugSphere);
@@ -1074,6 +1126,8 @@ int main(void)
 
 void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparentMeshes, cShaderManager::cShaderProgram* program, float deltaTime)
 {
+    GLenum err;
+
     //Upload wind map
     GLint windNoise = g_textureManager.getTextureIDFromName("noise.bmp");
     if (windNoise != 0)
@@ -1124,8 +1178,7 @@ void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparen
 
         DrawObject(curEntity, matModel, program, &gVAOManager, g_textureManager, cameraEye);
     }//for (unsigned int index
-
-
+   
     //Render debug sphere
     if (isDebugMode)
     {
@@ -1219,72 +1272,155 @@ void DrawGUI(float dt)
     {
         ImGui::Begin("Entities");
 
-        ImGui::BeginChild("left entity pane", ImVec2(150, 0), true);
-        std::vector<cEntity*> entities = g_entityManager.GetEntities();
-        for (size_t i = 0; i < entities.size(); i++)
+        if (ImGui::BeginTabBar("EntityBar", ImGuiTabBarFlags_None))
         {
-            if (ImGui::Selectable(std::string(entities[i]->name + ": " + std::to_string(i)).c_str(), selectedEntityDebug == i))
-                selectedEntityDebug = i;
-        }
-        ImGui::EndChild();
-
-        ImGui::SameLine();
-
-        cEntity* curEntity = entities[selectedEntityDebug];
-        ImGui::BeginChild("entity view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
-        ImGui::Text(std::string(curEntity->name + ": %d").c_str(), selectedEntityDebug);
-        ImGui::Separator();
-        if (ImGui::BeginTabBar("##Tabs", ImGuiTabBarFlags_None))
-        {
-            if (ImGui::BeginTabItem("Transform"))
+            if (ImGui::BeginTabItem("Entity List"))
             {
-                cTransform* curTransform = curEntity->GetComponent<cTransform>();
-                ImGui::Text("Position");
-                ImGui::DragFloat("pos x", &curTransform->position.x, 0.1f);
-                ImGui::DragFloat("pos y", &curTransform->position.y, 0.1f);
-                ImGui::DragFloat("pos z", &curTransform->position.z, 0.1f);
+                ImGui::BeginChild("left entity pane", ImVec2(150, 0), true);
+                std::vector<cEntity*> entities = g_entityManager.GetEntities();
+                size_t entitiesSize = entities.size();
+                if (selectedEntityDebug >= entitiesSize)
+                {
+                    selectedEntityDebug = entitiesSize - 1;
+                }
 
-                glm::vec3 angleRotation = curTransform->GetEulerRotation();
-                ImGui::Text("Rotation");
-                ImGui::DragFloat("rot x", &angleRotation.x, 0.01f);
-                ImGui::DragFloat("rot y", &angleRotation.y, 0.01f);
-                ImGui::DragFloat("rot z", &angleRotation.z, 0.01f);
-                curTransform->SetRotation(angleRotation);
+                for (size_t i = 0; i < entitiesSize; i++)
+                {
+                    if (ImGui::Selectable(std::string(entities[i]->name + ": " + std::to_string(i)).c_str(), selectedEntityDebug == i))
+                        selectedEntityDebug = i;
+                }
+                ImGui::EndChild();
 
-                ImGui::Text("Scale");
-                ImGui::DragFloat("scale x", &curTransform->scale.x, 0.1f);
-                ImGui::DragFloat("scale y", &curTransform->scale.y, 0.1f);
-                ImGui::DragFloat("scale z", &curTransform->scale.z, 0.1f);
+                ImGui::SameLine();
+
+                if (entitiesSize != 0)
+                {
+                    cEntity* curEntity = entities[selectedEntityDebug];
+                    ImGui::BeginChild("entity view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
+                    ImGui::Text(std::string(curEntity->name + ": %d").c_str(), selectedEntityDebug);
+                    ImGui::Separator();
+                    if (ImGui::BeginTabBar("##Tabs", ImGuiTabBarFlags_None))
+                    {
+                        if (ImGui::BeginTabItem("Transform"))
+                        {
+                            cTransform* curTransform = curEntity->GetComponent<cTransform>();
+                            ImGui::Text("Position");
+                            ImGui::DragFloat("pos x", &curTransform->position.x, 0.1f);
+                            ImGui::DragFloat("pos y", &curTransform->position.y, 0.1f);
+                            ImGui::DragFloat("pos z", &curTransform->position.z, 0.1f);
+
+                            glm::vec3 angleRotation = curTransform->GetEulerRotation();
+                            ImGui::Text("Rotation");
+                            ImGui::DragFloat("rot x", &angleRotation.x, 0.01f);
+                            ImGui::DragFloat("rot y", &angleRotation.y, 0.01f);
+                            ImGui::DragFloat("rot z", &angleRotation.z, 0.01f);
+                            curTransform->SetRotation(angleRotation);
+
+                            ImGui::Text("Scale");
+                            ImGui::DragFloat("scale x", &curTransform->scale.x, 0.1f);
+                            ImGui::DragFloat("scale y", &curTransform->scale.y, 0.1f);
+                            ImGui::DragFloat("scale z", &curTransform->scale.z, 0.1f);
+
+                            ImGui::EndTabItem();
+                        }
+                        if (ImGui::BeginTabItem("Visuals"))
+                        {
+                            cMeshRenderer* renderer = curEntity->GetComponent<cMeshRenderer>();
+
+                            ImGui::Checkbox("Use Diffuse", &renderer->bUseWholeObjectDiffuseColour);
+                            if (renderer->bUseWholeObjectDiffuseColour)
+                            {
+                                float colors[3] = { renderer->wholeObjectDiffuseRGBA.x, renderer->wholeObjectDiffuseRGBA.y, renderer->wholeObjectDiffuseRGBA.z };
+                                ImGui::ColorEdit3("Diffuse", colors);
+                                renderer->wholeObjectDiffuseRGBA.x = colors[0];
+                                renderer->wholeObjectDiffuseRGBA.y = colors[1];
+                                renderer->wholeObjectDiffuseRGBA.z = colors[2];
+                            }
+
+                            ImGui::DragFloat("Emmision", &renderer->emmision, 0.1f, 0.0f, 10000.0f);
+
+                            float** tiling = new float* [2];
+                            tiling[0] = &renderer->tiling.x;
+                            tiling[1] = &renderer->tiling.y;
+
+                            ImGui::DragFloat2("Tiling", *tiling, 0.1f, 0.0f, 10000.0f);
+
+                            delete[] tiling;
+
+                            ImGui::Checkbox("Use Wind", &renderer->useWind);
+
+                            ImGui::EndTabItem();
+                        }
+                        if (ImGui::BeginTabItem("Details"))
+                        {
+                            cMeshRenderer* renderer = curEntity->GetComponent<cMeshRenderer>();
+
+                            ImGui::Text(std::string("Mesh Name: " + renderer->meshName).c_str());
+                            ImGui::Text(std::string("Friendly Name: " + curEntity->name).c_str());
+
+                            ImGui::EndTabItem();
+                        }
+
+                        cInstancedRenderer* instancedRenderer = curEntity->GetComponent<cInstancedRenderer>();
+                        if (instancedRenderer != nullptr)
+                        {
+                            if (ImGui::BeginTabItem("Instanced Renderer"))
+                            {
+                                if (ImGui::Button("Set Brush to this entity"))
+                                {
+                                    brush.ChangeRenderer(instancedRenderer);
+                                    std::cout << "Set Brush Entity to \"" << curEntity->name << "\"" << std::endl;
+                                }
+                                ImGui::EndTabItem();
+                            }
+                        }
+
+                        ImGui::EndTabBar();
+                    }
+
+                    ImGui::Separator();
+                    if (ImGui::Button("Delete Entity"))
+                    {
+                        g_entityManager.DeleteEntity(curEntity);
+                    }
+
+                    ImGui::EndChild();
+                }
 
                 ImGui::EndTabItem();
             }
-            if (ImGui::BeginTabItem("Visuals"))
+
+            if (ImGui::BeginTabItem("Add an Entity"))
             {
-                cMeshRenderer* renderer = curEntity->GetComponent<cMeshRenderer>();
-                ImGui::DragFloat("Emmision", &renderer->emmision, 0.1f, 0.0f, 10000.0f);
+                std::vector<sModelDrawInfo> models = gVAOManager.GetLoadedModels();
 
-                float** tiling = new float* [2];
-                tiling[0] = &renderer->tiling.x;
-                tiling[1] = &renderer->tiling.y;
+                if (ImGui::BeginCombo("Model Combo", models[selectedModelDebug].meshName.c_str()))
+                {
+                    for (size_t i = 0; i < models.size(); i++)
+                    {
+                        if (ImGui::Selectable(std::string(models[i].meshName + ": " + std::to_string(i)).c_str(), selectedModelDebug == i))
+                            selectedModelDebug = i;
+                    }
+                    ImGui::EndCombo();
+                }
 
-                ImGui::DragFloat2("Tiling",*tiling, 0.1f, 0.0f, 10000.0f);
+                static char nameBuf[64] = ""; ImGui::InputText("Friendly Name", nameBuf, 64);
 
-                delete[] tiling;
+                ImGui::Separator();
+                if(ImGui::Button("Add as Entity"))
+                {
+                    cEntity* newEntity = g_entityManager.CreateEntity();
+                    newEntity->name = nameBuf;
 
-                ImGui::EndTabItem();
-            }
-            if (ImGui::BeginTabItem("Details"))
-            {
-                cMeshRenderer* renderer = curEntity->GetComponent<cMeshRenderer>();
-
-                ImGui::Text(std::string("Mesh Name: " + renderer->meshName).c_str());
-                ImGui::Text(std::string("Friendly Name: " + renderer->friendlyName).c_str());
-
+                    cMeshRenderer* newMesh = newEntity->AddComponent<cMeshRenderer>();
+                    newMesh->meshName = models[selectedModelDebug].meshName;
+                }
+                
                 ImGui::EndTabItem();
             }
             ImGui::EndTabBar();
         }
-        ImGui::EndChild();
+        
 
         ImGui::End();
     }

@@ -9,6 +9,7 @@
 #include <vector>
 #include <fstream>
 #include <glm/geometric.hpp>
+#include <iostream>
 
 
 bool LoadPLYModelFromFile(std::string fileName, sModelDrawInfo& drawInfo);
@@ -54,7 +55,34 @@ cVAOManager::cVAOManager()
 
 cVAOManager::~cVAOManager()
 {
+   //for (std::map<std::string, sModelDrawInfo>::iterator it = this->m_map_ModelName_to_VAOID.begin(); it != this->m_map_ModelName_to_VAOID.end(); it++)
+   //{
+   //    GLuint buffersToDelete[2];
+   //    buffersToDelete[0] = (*it).second.VertexBufferID;
+   //    buffersToDelete[1] = (*it).second.IndexBufferID;
+   //
+   //    glDeleteBuffers(2, buffersToDelete);
+   //
+   //    GLenum err;
+   //    while ((err = glGetError()) != GL_NO_ERROR)
+   //    {
+   //        std::cout << "WARNING: OpenGL errors found!: " << err << std::endl;
+   //    }
+   //}
+
     delete m_pendingLoadingModel;
+}
+
+std::vector<sModelDrawInfo> cVAOManager::GetLoadedModels()
+{
+    std::vector<sModelDrawInfo> returnVector;
+
+    for (std::map<std::string, sModelDrawInfo>::iterator it = this->m_map_ModelName_to_VAOID.begin(); it != this->m_map_ModelName_to_VAOID.end(); it++)
+    {
+        returnVector.push_back((*it).second);
+    }
+        
+    return returnVector;
 }
 
 bool cVAOManager::LoadPendingModelIntoVAO(std::string fileName,
@@ -96,9 +124,21 @@ bool cVAOManager::LoadModelIntoVAO(
 
 	// TODO: Load the model from file
 
-    if (!LoadPLYModelFromFile(fileName, drawInfo))
+    std::string fileExtension = fileName.substr(fileName.size() - 3, 3);
+
+    if (fileExtension == "fbx" || fileExtension == "FBX")
     {
-        return false;
+        if (!this->LoadFBXModelFromFile(fileName, drawInfo))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        if (!LoadPLYModelFromFile(fileName, drawInfo))
+        {
+            return false;
+        }
     }
 	// 
 	// Model is loaded and the vertices and indices are in the drawInfo struct
@@ -238,6 +278,254 @@ bool cVAOManager::FindDrawInfoByModelName(
 	// ...so 'return' that information
 	drawInfo = itDrawInfo->second;
 	return true;
+}
+
+bool cVAOManager::LoadFBXModelFromFile(std::string fileName, sModelDrawInfo& drawInfo)
+{
+    const aiScene* scene = assimpImporter.ReadFile("assets/models/" + fileName,
+        aiProcess_Triangulate |
+        aiProcess_GenSmoothNormals |
+        aiProcess_PopulateArmatureData |
+        aiProcess_FixInfacingNormals |
+        aiProcess_LimitBoneWeights);
+
+    if (scene == nullptr)
+    {
+        printf("MeshManager::LoadMeshWithAssimp: ERROR: Failed to load file %s\n", fileName.c_str());
+        return false;
+    }
+
+    if (!scene->HasMeshes())
+    {
+        printf("MeshManager::LoadMeshWithAssimp: ERROR: Model file does not contain any meshes %s\n", fileName.c_str());
+        return false;
+    }
+
+    aiMesh* mesh = scene->mMeshes[0];
+
+    bool useRGBA = false;
+    bool useNormals = false;
+    bool useUV = false;
+    bool useBones = false;
+
+    // These structures match the PLY file format
+    struct sVertex
+    {
+        float x, y, z;
+        float r, g, b, a;
+        float nx, ny, nz;
+        float u, v;
+    };
+    struct sTriangle
+    {
+        unsigned int vertIndex[3];
+    };
+
+
+    // Read the number of vertices
+    drawInfo.numberOfVertices = mesh->mNumVertices;
+    drawInfo.numberOfTriangles = mesh->mNumFaces;
+    drawInfo.numberOfIndices = mesh->mNumFaces * 3;
+
+    float biggestVertex = 0.0;
+
+    //    sVertex myVertexArray[500];
+    std::vector<sVertex> vecVertexArray;    // aka "smart array"
+    std::vector<sTriangle> vecTriagleArray;
+
+    std::map<int, int> indiciesTest;
+
+    int indexOfVertex = 0;
+
+    // Now we can read the vertices (in a for loop)
+    for (unsigned int faceIndx = 0; faceIndx < drawInfo.numberOfTriangles; faceIndx++)
+    {
+        aiFace curFace = mesh->mFaces[faceIndx];
+        sTriangle tempTri;
+
+        for (unsigned int idx = 0; idx != 3; idx++)
+        {
+            sVertex tempVertex;
+            unsigned int index = curFace.mIndices[idx];
+
+            //Vertex doesn't exist, create a new one
+            std::map<int, int>::iterator indiciesIt = indiciesTest.find(index);
+            if (indiciesIt == indiciesTest.end())
+            {
+                aiVector3D pos = mesh->mVertices[index];
+                tempVertex.x = pos.x;
+                tempVertex.y = pos.y;
+                tempVertex.z = pos.z;
+
+                if (mesh->HasTextureCoords(0))
+                {
+                    aiVector3D uv = mesh->mTextureCoords[0][index];
+                    tempVertex.u = uv.x;
+                    tempVertex.v = uv.y;
+                    useUV = true;
+                }
+
+                if (mesh->HasNormals())
+                {
+                    aiVector3D normals = mesh->mNormals[index];
+                    tempVertex.nx = normals.x;
+                    tempVertex.ny = normals.y;
+                    tempVertex.nz = normals.z;
+                    useNormals = true;
+                }
+
+                if (mesh->HasVertexColors(0))
+                {
+                    aiColor4D* test = mesh->mColors[index];
+                    tempVertex.r = test->r;
+                    tempVertex.g = test->g;
+                    tempVertex.b = test->b;
+                    tempVertex.a = test->a;
+                    useRGBA = true;
+
+                }
+
+                vecVertexArray.push_back(tempVertex);
+
+                tempTri.vertIndex[idx] = indexOfVertex;
+                indiciesTest.insert(std::pair<int, int>(index, indexOfVertex));
+
+                indexOfVertex++;
+            }
+            //Vertex was already created, don't create a new one, just get the one that was already created
+            else
+            {
+                std::pair<int, int> indexDup = *indiciesIt;
+                tempTri.vertIndex[idx] = indexDup.second;
+            }
+        }
+
+        vecTriagleArray.push_back(tempTri);
+    }
+    float thisBiggestVertex = glm::distance(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z));
+
+    drawInfo.defaultScale = 1.0f / biggestVertex;
+
+
+    // Allocate the amount of space we need for the GPU side arrays
+    drawInfo.pVertices = new sVertex_XYZW_RGBA_N_UV_T_B[drawInfo.numberOfVertices];
+    drawInfo.pIndices = new unsigned int[drawInfo.numberOfIndices];
+
+
+    // Copy the vertices from the PLY format vector
+    //  to the one we'll use to draw in the GPU
+    for (unsigned int index = 0; index != drawInfo.numberOfVertices; index++)
+    {
+        drawInfo.pVertices[index].x = vecVertexArray[index].x;
+        drawInfo.pVertices[index].y = vecVertexArray[index].y;
+        drawInfo.pVertices[index].z = vecVertexArray[index].z;
+        drawInfo.pVertices[index].w = 1.0f;
+
+        if (useNormals)
+        {
+            drawInfo.pVertices[index].nx = vecVertexArray[index].nx;
+            drawInfo.pVertices[index].ny = vecVertexArray[index].ny;
+            drawInfo.pVertices[index].nz = vecVertexArray[index].nz;
+            drawInfo.pVertices[index].nw = 1.0f;
+        }
+        else
+        {
+            drawInfo.pVertices[index].nx = 1.0f;
+            drawInfo.pVertices[index].ny = 1.0f;
+            drawInfo.pVertices[index].nz = 1.0f;
+            drawInfo.pVertices[index].nw = 1.0f;
+        }
+
+        if (useRGBA)
+        {
+            drawInfo.pVertices[index].r = vecVertexArray[index].r;
+            drawInfo.pVertices[index].g = vecVertexArray[index].g;
+            drawInfo.pVertices[index].b = vecVertexArray[index].b;
+            drawInfo.pVertices[index].a = vecVertexArray[index].a;
+        }
+        else
+        {
+            drawInfo.pVertices[index].r = 1.0f;
+            drawInfo.pVertices[index].g = 1.0f;
+            drawInfo.pVertices[index].b = 1.0f;
+            drawInfo.pVertices[index].a = 1.0f;
+        }
+
+        if (useUV)
+        {
+            drawInfo.pVertices[index].u0 = vecVertexArray[index].u;
+            drawInfo.pVertices[index].v0 = vecVertexArray[index].v;
+        }
+    }
+
+    // Copy the triangle ("index") values to the index (element) array
+    unsigned int elementIndex = 0;
+    for (unsigned int triIndex = 0; triIndex < drawInfo.numberOfTriangles;
+        triIndex++, elementIndex += 3)
+    {
+        drawInfo.pIndices[elementIndex + 0] = vecTriagleArray[triIndex].vertIndex[0];
+        drawInfo.pIndices[elementIndex + 1] = vecTriagleArray[triIndex].vertIndex[1];
+        drawInfo.pIndices[elementIndex + 2] = vecTriagleArray[triIndex].vertIndex[2];
+
+        if (useNormals && useUV)
+        {
+            sVertex_XYZW_RGBA_N_UV_T_B* vert1 = &drawInfo.pVertices[drawInfo.pIndices[elementIndex + 0]];
+            sVertex_XYZW_RGBA_N_UV_T_B* vert2 = &drawInfo.pVertices[drawInfo.pIndices[elementIndex + 1]];
+            sVertex_XYZW_RGBA_N_UV_T_B* vert3 = &drawInfo.pVertices[drawInfo.pIndices[elementIndex + 2]];
+
+            glm::vec3 tangent, biTangent;
+            glm::vec3 e1 = glm::vec3(vert2->x, vert2->y, vert2->z) - glm::vec3(vert1->x, vert1->y, vert1->z);
+            glm::vec3 e2 = glm::vec3(vert3->x, vert3->y, vert3->z) - glm::vec3(vert1->x, vert1->y, vert1->z);
+            glm::vec2 dUV1 = glm::vec2(vert2->u0, vert2->v0) - glm::vec2(vert1->u0, vert1->v0);
+            glm::vec2 dUV2 = glm::vec2(vert3->u0, vert3->v0) - glm::vec2(vert1->u0, vert1->v0);
+
+            GLfloat f = 1.0f / (dUV1.x * dUV2.y - dUV2.x * dUV1.y);
+
+            tangent.x = f * (dUV2.y * e1.x - dUV1.y * e2.x);
+            tangent.y = f * (dUV2.y * e1.y - dUV1.y * e2.y);
+            tangent.z = f * (dUV2.y * e1.z - dUV1.y * e2.z);
+            tangent = glm::normalize(tangent);
+
+            biTangent.x = f * (-dUV2.x * e1.x - dUV1.x * e2.x);
+            biTangent.y = f * (-dUV2.x * e1.y - dUV1.x * e2.y);
+            biTangent.z = f * (-dUV2.x * e1.z - dUV1.x * e2.z);
+            biTangent = glm::normalize(biTangent);
+
+            vert1->tx = tangent.x;
+            vert1->ty = tangent.y;
+            vert1->tz = tangent.z;
+            vert1->tw = 1.0f;
+
+            vert2->tx = tangent.x;
+            vert2->ty = tangent.y;
+            vert2->tz = tangent.z;
+            vert2->tw = 1.0f;
+
+            vert3->tx = tangent.x;
+            vert3->ty = tangent.y;
+            vert3->tz = tangent.z;
+            vert3->tw = 1.0f;
+
+            vert1->bx = biTangent.x;
+            vert1->by = biTangent.y;
+            vert1->bz = biTangent.z;
+            vert1->bw = 1.0f;
+
+            vert2->bx = biTangent.x;
+            vert2->by = biTangent.y;
+            vert2->bz = biTangent.z;
+            vert2->bw = 1.0f;
+
+            vert3->bx = biTangent.x;
+            vert3->by = biTangent.y;
+            vert3->bz = biTangent.z;
+            vert3->bw = 1.0f;
+        }
+
+    }
+
+    return true;
+
 }
 
 bool LoadPLYModelFromFile(std::string fileName, sModelDrawInfo& drawInfo)
