@@ -92,7 +92,7 @@ float pitch = 0.0f;
 float flyCameraSpeed = 5.0f;
 float speedMultiple = 3.0f;
 
-cVAOManager     gVAOManager;
+cVAOManager*     gVAOManager;
 cShaderManager  gShaderManager;
 
 cEntityManager g_entityManager;
@@ -524,13 +524,13 @@ int main(void)
 
    //g_textureManager.Create2DTextureFromBMPFile("smoke.bmp", true);
    //g_textureManager.Create2DTextureFromBMPFile("spyglass.bmp", true);
-
-    gVAOManager.SetShaderProgramID_Threaded(program);
+    gVAOManager = new cVAOManager();
+    gVAOManager->SetShaderProgramID_Threaded(program);
     sModelDrawInfo loadingModel;
-    gVAOManager.LoadPendingModelIntoVAO("loading.ply", loadingModel);
+    gVAOManager->LoadPendingModelIntoVAO("loading.ply", loadingModel);
 
     sModelDrawInfo fullscreenQuadInfo;
-    if (!gVAOManager.LoadModelIntoVAO("fullscreenquad.ply", fullscreenQuadInfo, program))
+    if (!gVAOManager->LoadModelIntoVAO("fullscreenquad.ply", fullscreenQuadInfo, program))
     {
         std::cout << "Issue loading fullscreenquad" << std::endl;
     }
@@ -541,7 +541,7 @@ int main(void)
     {
         std::cout << "Loaded scene: " << sceneName << std::endl << std::endl;
         std::cout << "Loading scene into VAO manager...." << std::endl;
-        if (sceneLoader->LoadIntoVAO(&gVAOManager, program))
+        if (sceneLoader->LoadIntoVAO(gVAOManager, program))
         {
             std::cout << "Loaded scene into VAO manager" << std::endl << std::endl;
 
@@ -698,7 +698,7 @@ int main(void)
                 sModelDrawInfo drawInfo;
 
                 cMeshRenderer* mesh = entity->GetComponent<cMeshRenderer>();
-                gVAOManager.FindDrawInfoByModelName(mesh->meshName, drawInfo);
+                gVAOManager->FindDrawInfoByModelName(mesh->meshName, drawInfo);
 
                 instanceRenderer->SetupVertexArrayAttrib(&drawInfo);
             }
@@ -978,7 +978,7 @@ int main(void)
         g_fbo->clearColourBuffer(0);  
 
         //fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
-        DrawObject(fullscreenEntity, glm::mat4(1.0f), normalShader, &gVAOManager, g_textureManager, fullscreenPos);
+        DrawObject(fullscreenEntity, glm::mat4(1.0f), normalShader, gVAOManager, g_textureManager, fullscreenPos);
         //DONE 1ST PASS (Lighting)
         
         bool horizontal = true;
@@ -1005,7 +1005,7 @@ int main(void)
             }
         
             fullscreenEntity->GetComponent<cTransform>()->position.z -= .01f;
-            DrawObject(fullscreenEntity, glm::mat4(1.0f), pingPongShader, &gVAOManager, g_textureManager, fullscreenPos);
+            DrawObject(fullscreenEntity, glm::mat4(1.0f), pingPongShader, gVAOManager, g_textureManager, fullscreenPos);
             horizontal = !horizontal;
         }
         glUseProgram(normalShader->ID);
@@ -1073,7 +1073,7 @@ int main(void)
         }  
 
         fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
-        DrawObject(fullscreenEntity, glm::mat4(1.0f), normalShader, &gVAOManager, g_textureManager, fullscreenPos);
+        DrawObject(fullscreenEntity, glm::mat4(1.0f), normalShader, gVAOManager, g_textureManager, fullscreenPos);
         //END OF FINAL PASS
 
         if(showDebugGui)
@@ -1118,6 +1118,29 @@ int main(void)
     delete pingPongFBO;
     delete shadowFBO;
 
+    std::vector<sModelDrawInfo> modelInfoArray = gVAOManager->GetLoadedModels();
+
+    glBindVertexArray(0);
+    delete gVAOManager;
+
+    //Delete vertex and indicie buffers.
+    for (sModelDrawInfo modelInfo : modelInfoArray)
+    {
+
+        //glBindVertexArray((*it).second.VAO_ID);
+        GLuint buffersToDelete[2];
+        buffersToDelete[0] = modelInfo.VertexBufferID;
+        buffersToDelete[1] = modelInfo.IndexBufferID;
+
+        glDeleteBuffers(2, buffersToDelete);
+
+        GLenum err;
+        while ((err = glGetError()) != GL_NO_ERROR)
+        {
+            std::cout << "WARNING: OpenGL errors found!: " << err << std::endl;
+        }
+    }
+
     glfwDestroyWindow(window);
 
     glfwTerminate();
@@ -1155,7 +1178,7 @@ void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparen
             curEntity->GetComponent<cTransform>()->position = cameraEye;
         }
 
-        DrawObject(curEntity, matModel, program, &gVAOManager, g_textureManager, cameraEye);
+        DrawObject(curEntity, matModel, program, gVAOManager, g_textureManager, cameraEye);
     }//for (unsigned int index
 
     //glEnable(GL_BLEND);
@@ -1176,7 +1199,7 @@ void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparen
             curMesh->normalOffset.y += (float)deltaTime / 100.0f;
         }
 
-        DrawObject(curEntity, matModel, program, &gVAOManager, g_textureManager, cameraEye);
+        DrawObject(curEntity, matModel, program, gVAOManager, g_textureManager, cameraEye);
     }//for (unsigned int index
    
     //Render debug sphere
@@ -1197,7 +1220,7 @@ void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparen
         debugSphereMesh->objectDebugColourRGBA = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
         glm::mat4 matModelDS = glm::mat4(1.0f);
-        DrawObject(g_DebugSphere, matModelDS, program, &gVAOManager, g_textureManager, cameraEye);
+        DrawObject(g_DebugSphere, matModelDS, program, gVAOManager, g_textureManager, cameraEye);
     }
     else
     {
@@ -1392,7 +1415,7 @@ void DrawGUI(float dt)
 
             if (ImGui::BeginTabItem("Add an Entity"))
             {
-                std::vector<sModelDrawInfo> models = gVAOManager.GetLoadedModels();
+                std::vector<sModelDrawInfo> models = gVAOManager->GetLoadedModels();
 
                 if (ImGui::BeginCombo("Model Combo", models[selectedModelDebug].meshName.c_str()))
                 {

@@ -55,21 +55,6 @@ cVAOManager::cVAOManager()
 
 cVAOManager::~cVAOManager()
 {
-   //for (std::map<std::string, sModelDrawInfo>::iterator it = this->m_map_ModelName_to_VAOID.begin(); it != this->m_map_ModelName_to_VAOID.end(); it++)
-   //{
-   //    GLuint buffersToDelete[2];
-   //    buffersToDelete[0] = (*it).second.VertexBufferID;
-   //    buffersToDelete[1] = (*it).second.IndexBufferID;
-   //
-   //    glDeleteBuffers(2, buffersToDelete);
-   //
-   //    GLenum err;
-   //    while ((err = glGetError()) != GL_NO_ERROR)
-   //    {
-   //        std::cout << "WARNING: OpenGL errors found!: " << err << std::endl;
-   //    }
-   //}
-
     delete m_pendingLoadingModel;
 }
 
