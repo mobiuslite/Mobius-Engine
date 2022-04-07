@@ -127,6 +127,7 @@ size_t selectedModelDebug = 0;
 size_t selectedTexture = 0;
 
 float fov = 70.0f;
+float mouseSense = 0.1f;
 
 PostProcessingInfo postProcessing;
 WindInfo windInfo;
@@ -264,10 +265,9 @@ void ProcessAsyncMouse(GLFWwindow* window, float deltaTime)
         if ((glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
             && g_MouseIsInsideWindow)
         {
-            const double MOUSE_SENSITIVITY = .1f;
 
-            xDelta *= MOUSE_SENSITIVITY;
-            yDelta *= MOUSE_SENSITIVITY;
+            xDelta *= mouseSense;
+            yDelta *= mouseSense;
 
             yaw += (float)xDelta;
             pitch += (float)yDelta;
@@ -1543,6 +1543,9 @@ void DrawGUI(float dt)
     //Misc
     {
         ImGui::Begin("Misc");
+        ImGui::DragFloat("Mouse Sensitivity", &mouseSense, 0.005f, 0.0001f, 10.0f);
+        ImGui::SliderFloat("Camera FOV", &fov, 60.0f, 110.0f);
+
         ImGui::Text(std::string("Frame time: %f").c_str(), dt);
 
         std::string camPos = "x: " + std::to_string(cameraEye.x) + " y: " + std::to_string(cameraEye.y) + " z: " + std::to_string(cameraEye.z);
