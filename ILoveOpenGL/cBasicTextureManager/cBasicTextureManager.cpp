@@ -53,6 +53,16 @@ GLuint cBasicTextureManager::getTextureIDFromName( std::string textureFileName )
 	return itTexture->second->getTextureNumber();
 }
 
+std::vector<std::string> cBasicTextureManager::getAllTextures()
+{
+	std::vector<std::string> textures;
+	for (std::map< std::string, CTextureFromBMP* >::iterator it = this->m_map_TexNameToTexture.begin(); it != this->m_map_TexNameToTexture.end(); it++)
+	{
+		textures.push_back((*it).first);
+	}
+
+	return textures;
+}
 
 void cBasicTextureManager::m_appendErrorStringLine( std::string nextErrorTextLine )
 {

@@ -14,7 +14,7 @@ layout (location = 0)out vec4 pixelColour;
 layout (location = 1)out vec4 pixelMatColor;
 layout (location = 2)out vec4 pixelNormal;
 layout (location = 3)out vec4 pixelWorldPos;
-//layout (location = 4)out vec4 pixelSpecular;
+layout (location = 4)out vec4 pixelSpecular;
 layout (location = 5)out vec4 pixelBrightColour;
 layout (location = 6)out vec4 pixelEmmision;
 layout (location = 7)out vec4 pixelLightSpacePos;
@@ -248,6 +248,7 @@ void main()
 
 		float depthValue = texture(shadowMapColorBuf, UVLookup).r;
 
+		pixelSpecular = vec4(depthValue, depthValue, depthValue, 1.0f);
 		//If not lit
 		if(pixelWorldPos.w == 0.0f)
 		{
@@ -315,7 +316,7 @@ void main()
 	{
 		vec3 alphaMaskTexture = texture(alphaMask, fUVx2.xy).rgb;
 
-		float alphaValue = (alphaMaskTexture.r + alphaMaskTexture.g + alphaMaskTexture.b) / 3.0f;
+		float alphaValue = alphaMaskTexture.r;
 		//pixelColour.a = alphaValue;
 
 		if(alphaValue < 0.001f)

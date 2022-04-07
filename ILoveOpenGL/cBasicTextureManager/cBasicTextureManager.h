@@ -2,6 +2,7 @@
 #define _cBasicTextureManager_HG_
 
 #include <string>
+#include <vector>
 #include <map>
 #include "CTextureFromBMP.h"
 
@@ -22,6 +23,7 @@ public:
 
 	// returns 0 on error
 	GLuint getTextureIDFromName( std::string textureFileName );
+	std::vector<std::string> getAllTextures();
 
 	void SetBasePath(std::string basepath);
 

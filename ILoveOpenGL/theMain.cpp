@@ -124,6 +124,7 @@ size_t selectedEntityDebug = 0;
 size_t selectedLightDebug = 0;
 
 size_t selectedModelDebug = 0;
+size_t selectedTexture = 0;
 
 float fov = 70.0f;
 
@@ -701,6 +702,15 @@ int main(void)
 
     shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseAlphaMask", glGetUniformLocation(shadowShader->ID, "bUseAlphaMask")));
     shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("alphaMask", glGetUniformLocation(shadowShader->ID, "alphaMask")));
+
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseInstancedRendering", glGetUniformLocation(shadowShader->ID, "bUseInstancedRendering")));
+
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseWind", glGetUniformLocation(shadowShader->ID, "bUseWind")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windMap", glGetUniformLocation(shadowShader->ID, "windMap")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windDirection", glGetUniformLocation(shadowShader->ID, "windDirection")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windTime", glGetUniformLocation(shadowShader->ID, "windTime")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windStrength", glGetUniformLocation(shadowShader->ID, "windStrength")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windSize", glGetUniformLocation(shadowShader->ID, "windSize")));
     
     //Setup instanced renderers;
     {
@@ -848,7 +858,7 @@ int main(void)
         glViewport(0, 0, shadowFBO->SHADOW_WIDTH, shadowFBO->SHADOW_HEIGHT);
 
         //glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_SHADOW);
-        float near_plane = .1f, far_plane = 70.5f;
+        float near_plane = .01f, far_plane = 80.5f;
         float shadowOrthoBounds = 40.0f;
         p = glm::ortho(-shadowOrthoBounds, shadowOrthoBounds, -shadowOrthoBounds, shadowOrthoBounds, near_plane, far_plane);
 
@@ -1258,18 +1268,18 @@ void DrawGUI(float dt)
                     showTextureIndex = 0;
                 if (ImGui::Selectable("Diffuse"))
                     showTextureIndex = 1;
+                if (ImGui::Selectable("Emmision"))
+                    showTextureIndex = 6;
                 if (ImGui::Selectable("Normals"))
-                    showTextureIndex = 2;
-                if (ImGui::Selectable("Specular"))
-                    showTextureIndex = 3;
+                    showTextureIndex = 2;     
                 if (ImGui::Selectable("World Position"))
                     showTextureIndex = 4;
+                if (ImGui::Selectable("Shadow Map"))
+                    showTextureIndex = 3;
                 if (ImGui::Selectable("Light Space Position"))
                     showTextureIndex = 7;
                 if (ImGui::Selectable("Bright Colours"))
-                    showTextureIndex = 5;
-                if (ImGui::Selectable("Emmision"))
-                    showTextureIndex = 6;
+                    showTextureIndex = 5;              
                 ImGui::EndTabItem();
             }
             ImGui::EndTabBar();
@@ -1347,7 +1357,31 @@ void DrawGUI(float dt)
                                 renderer->wholeObjectDiffuseRGBA.y = colors[1];
                                 renderer->wholeObjectDiffuseRGBA.z = colors[2];
                             }
+                            else
+                            {
+                                ImGui::Text(std::string("Current Texture: " + (renderer->textures[0].name == "" ? "No Texture" : renderer->textures[0].name)).c_str());
 
+                                std::vector<std::string> textureVec = g_textureManager.getAllTextures();
+                                if (ImGui::BeginCombo("Textures", textureVec[selectedTexture].c_str()))
+                                {                              
+                                    for (size_t i = 0; i < textureVec.size(); i++)
+                                    {
+                                        if (ImGui::Selectable(std::string(textureVec[i] + ": " + std::to_string(i)).c_str(), selectedTexture == i))
+                                            selectedTexture = i;
+                                    }
+                                    ImGui::EndCombo();
+                                }
+                                
+                                if(ImGui::Button("Set Texture"))
+                                {
+                                    renderer->textures[0].name = textureVec[selectedTexture];
+                                    renderer->textures[0].ratio = 1.0f;
+                                }
+                            }
+
+                            ImGui::Spacing();
+                            ImGui::Separator();
+                            ImGui::Spacing();
                             float emmisionColors[3] = { renderer->emmisionDiffuse.r, renderer->emmisionDiffuse.g, renderer->emmisionDiffuse.b };
                             ImGui::ColorEdit3("Emmision Diffuse", emmisionColors);
                             renderer->emmisionDiffuse.r = emmisionColors[0];
@@ -1490,9 +1524,7 @@ void DrawGUI(float dt)
                 curLight->diffuse.z = colors[2];
 
                 ImGui::Text("Attenuation");
-                ImGui::DragFloat("atten x", &curLight->atten.x, 0.01f, 0.0f, 3.0f);
-                ImGui::DragFloat("atten y", &curLight->atten.y, 0.01f, 0.0f, 3.0f);
-                ImGui::DragFloat("atten z", &curLight->atten.z, .01f, 0.0f, 3.0f);
+                ImGui::DragFloat("atten", &curLight->atten.z, .01f, 0.0f, 3.0f);
                 ImGui::DragFloat("distance cutoff", &curLight->atten.w, 0.5f, 0.0f, 10000.0f);
 
                 ImGui::Text("Light Power");
@@ -1653,7 +1685,7 @@ void SetUpLights()
     //SUN
 
     gTheLights.theLights[8].name = "Sun light";
-    gTheLights.theLights[8].position = glm::vec4(-2.f, 30.f, 17.f, 1.0f);
+    gTheLights.theLights[8].position = glm::vec4(-12.f, 25.f, 21.f, 1.0f);
     gTheLights.theLights[8].diffuse = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     gTheLights.theLights[8].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100.0f);
     gTheLights.theLights[8].direction = glm::normalize(glm::vec4(0.2f, -.8f, -.4f, 1.0f));

@@ -256,6 +256,28 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
         glm::mat4 matInvTransposeModel = glm::inverse(glm::transpose(matModel));
         glUniformMatrix4fv(matModelInverseTranspose_Location, 1, GL_FALSE, glm::value_ptr(matInvTransposeModel));
     }
+    else if (shader->type == RenderType::Shadow)
+    {
+        glUniform1f(shader->uniformLocations["bUseWind"], curMesh->useWind ? (float)GL_TRUE : (float)GL_FALSE);
+
+        if (curMesh->bUseAlphaMask)
+        {
+            glUniform1f(shader->uniformLocations.at("bUseAlphaMask"), (float)GL_TRUE);
+
+            GLint textureId = textureManager.getTextureIDFromName(curMesh->alphaMaskName);
+            if (textureId != 0)
+            {
+                GLint unit = 1;
+                glActiveTexture(unit + GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, textureId);
+                glUniform1i(shader->uniformLocations.at("alphaMask"), unit);
+            }
+        }
+        else
+        {
+            glUniform1f(shader->uniformLocations.at("bUseAlphaMask"), (float)GL_FALSE);
+        }
+    }
 
 
     if (shader->type == RenderType::PingPong || shader->type == RenderType::Shadow)
