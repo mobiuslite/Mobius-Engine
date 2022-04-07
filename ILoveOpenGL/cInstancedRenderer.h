@@ -12,7 +12,7 @@
 class cInstancedRenderer : public cComponent
 {
 public:
-	cInstancedRenderer(unsigned int amount, float offset, float randomAmount = 0.0f);
+	cInstancedRenderer(unsigned int amount, float offset, std::string fileName, float randomAmount = 0.0f);
 
 	virtual ~cInstancedRenderer();
 	virtual void Update(float dt) {};
@@ -21,11 +21,13 @@ public:
 
 	float GetOffset();
 	void AddOffset(glm::vec3 pos);
+	void SaveOffsets();
 
 	float GetRandomStrength();
 
 	void SetupVertexArrayAttrib(sModelDrawInfo* drawInfo);
 
+	std::string fileName;
 private:
 	float offset;
 	float randomStrength;

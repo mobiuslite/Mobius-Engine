@@ -1,15 +1,37 @@
 #include "cInstancedRenderer.h"
 #include "GLCommon.h"
 #include <iostream>
+#include <fstream>
 
 
-cInstancedRenderer::cInstancedRenderer(unsigned int amount, float offset, float randomAmount)
+cInstancedRenderer::cInstancedRenderer(unsigned int amount, float offset, std::string fileName, float randomAmount)
 {
 	this->offset = offset;
     this->randomStrength = randomAmount;
+    this->fileName = fileName;
 
     int eachAmount = (int)glm::sqrt(amount);
     int totalAmount = 0;
+
+    //TODO: Read in file and input offsets
+    std::ifstream inputFile(fileName);
+    if (inputFile.is_open())
+    {
+        while (!inputFile.eof())
+        {
+            std::string xOffset;
+            std::string yOffset;
+            std::string zOffset;
+    
+            std::getline(inputFile, xOffset, ',');
+            std::getline(inputFile, yOffset, ',');
+            std::getline(inputFile, zOffset);
+    
+            glm::vec4 newTranslation = glm::vec4(std::stof(xOffset), std::stof(yOffset), std::stof(zOffset), 1.0f);
+            translations.push_back(newTranslation);
+        }
+    }
+    inputFile.close();
 
     for (int y = -eachAmount; totalAmount < amount; y += 2)
     {
@@ -28,9 +50,26 @@ cInstancedRenderer::cInstancedRenderer(unsigned int amount, float offset, float 
                 totalAmount++;
             }
         }
-    }
+    } 
 
     glGenBuffers(1, &this->instancedVBO_ID);
+}
+
+void cInstancedRenderer::SaveOffsets()
+{
+    std::ofstream outputFile(fileName);
+    if (outputFile.is_open())
+    {
+        for (size_t i = 0; i < this->translations.size(); i++)
+        {
+            glm::vec4 offset = this->translations[i];
+            outputFile << offset.x << "," << offset.y << "," << offset.z;
+
+            if (i < this->translations.size() - 1)
+                outputFile << std::endl;
+        }
+    }
+    outputFile.close();
 }
 
 void cInstancedRenderer::SetupVertexArrayAttrib(sModelDrawInfo* drawInfo)
@@ -38,7 +77,8 @@ void cInstancedRenderer::SetupVertexArrayAttrib(sModelDrawInfo* drawInfo)
     glBindVertexArray(drawInfo->VAO_ID);
     glBindBuffer(GL_ARRAY_BUFFER, this->instancedVBO_ID);
 
-    //glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * this->translations.size(), (GLvoid*)&this->translations[0], GL_STATIC_DRAW);
+    if(this->translations.size() > 0)
+        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * this->translations.size(), (GLvoid*)&this->translations[0], GL_STATIC_DRAW);
 
     GLint vOffset_location = 6;
     glEnableVertexAttribArray(vOffset_location);

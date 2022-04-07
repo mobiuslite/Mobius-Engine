@@ -57,8 +57,8 @@ struct PostProcessingInfo
 
     bool useExposureToneMapping = true;
 
-    float bloomThreshhold = 5.0f;
-    float bloomSize = 1.0f;
+    float bloomThreshhold = 5.1f;
+    float bloomSize = 2.0f;
     unsigned int bloomIterationAmount = 15;
 
     float ambientPower = 0.05f;
@@ -696,6 +696,9 @@ int main(void)
     shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windTime", glGetUniformLocation(shadowShader->ID, "windTime")));
     shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windStrength", glGetUniformLocation(shadowShader->ID, "windStrength")));
     shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windSize", glGetUniformLocation(shadowShader->ID, "windSize")));
+
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseAlphaMask", glGetUniformLocation(shadowShader->ID, "bUseAlphaMask")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("alphaMask", glGetUniformLocation(shadowShader->ID, "alphaMask")));
     
     //Setup instanced renderers;
     {
@@ -797,10 +800,11 @@ int main(void)
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         g_fbo->clearBuffers(true, true);
 
+       
+
         //Clear fbo buffers
         glBindFramebuffer(GL_FRAMEBUFFER, g_fbo->ID);
         g_fbo->clearBuffers(true, true);
-
         // Turn on the depth buffer
         glEnable(GL_DEPTH_TEST);    // Check if the pixel is already closer
         //glShadeModel(GL_SMOOTH);
@@ -863,9 +867,7 @@ int main(void)
         glUniformMatrix4fv(shadowShader->uniformLocations["matProjection"], 1, GL_FALSE, glm::value_ptr(p));
         glUniform1f(shadowShader->uniformLocations["bUseInstancedRendering"], (float)GL_FALSE);
         glUniform1f(shadowShader->uniformLocations["bUseHeightMap"], (float)GL_FALSE);
-
         Draw(&opaqueMeshes, &transparentMeshes, shadowShader, deltaTime);
-
         //Render normal scene
         //glCullFace(GL_BACK);
 
@@ -884,7 +886,6 @@ int main(void)
         float usedFov = fov;
 
         ratio = g_fbo->width / (float)g_fbo->height;
-
         p = glm::perspective(glm::radians(usedFov),
             ratio,
             0.1f,
@@ -901,8 +902,6 @@ int main(void)
         //Draw scene
         Draw(&opaqueMeshes, &transparentMeshes, normalShader, deltaTime);    
         //End of zeroth pass
-
-        
         //Lighting Pass
         glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_1_LIGHTING);
         glm::vec3 fullscreenPos = glm::vec3(0.f, 0.f, -10.f);
@@ -922,7 +921,6 @@ int main(void)
         fullscreenTransform->scale = glm::vec3(10.0f);
         fullscreenTransform->Rotate(glm::vec3(0.0f, glm::radians(180.0f), 0.0f));
        
-       
         v = glm::lookAt(fullscreenPos,     // "eye"
             fullscreenPos + glm::vec3(0.f, 0.f, 1.0f) ,  // "at"
             cameraUp);
@@ -930,7 +928,7 @@ int main(void)
         
         p = glm::ortho(0.0f, 1.0f / (float)width, 0.0f, 1.0f / (float)height, 0.01f, 1000.0f);
         glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
-        
+
         //Uploading textures to gpu
         GLint textureMatId = g_fbo->vertexMatColour_1_ID;
         if (textureMatId != 0)
@@ -994,7 +992,6 @@ int main(void)
             glBindTexture(GL_TEXTURE_2D, textureLightSpace);
             glUniform1i(normalShader->uniformLocations["texture_LightSpacePos"], unit);
         }
-
         g_fbo->clearColourBuffer(0);  
 
         //fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
@@ -1035,7 +1032,6 @@ int main(void)
 
         glfwGetFramebufferSize(window, &width, &height);
         ratio = width / (float)height;
-        
         glViewport(0, 0, width, height);
         
         glUniform2f(normalShader->uniformLocations["screenWidthHeight"], width, height);
@@ -1169,7 +1165,6 @@ int main(void)
 void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparentMeshes, cShaderManager::cShaderProgram* program, float deltaTime)
 {
     GLenum err;
-
     //Upload wind map
     GLint windNoise = g_textureManager.getTextureIDFromName("noise.bmp");
     if (windNoise != 0)
@@ -1196,13 +1191,12 @@ void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparen
         {
             curEntity->GetComponent<cTransform>()->position = cameraEye;
         }
-
         DrawObject(curEntity, matModel, program, gVAOManager, g_textureManager, cameraEye);
+
     }//for (unsigned int index
 
     //glEnable(GL_BLEND);
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     //Draw transparent objects
     for (unsigned int index = 0; index != transparentMeshes->size(); index++)
     {
@@ -1220,31 +1214,6 @@ void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparen
 
         DrawObject(curEntity, matModel, program, gVAOManager, g_textureManager, cameraEye);
     }//for (unsigned int index
-   
-    //Render debug sphere
-    if (isDebugMode)
-    {
-        glUniform1f(program->uniformLocations["bDebugMode"], (float)GL_TRUE);
-
-        glUniform1f(program->uniformLocations["bDebugShowLighting"], (float)debugShowLighting);
-        glUniform1f(program->uniformLocations["bDebugShowNormals"], (float)debugShowNormals);
-
-        cMeshRenderer* debugSphereMesh = g_DebugSphere->GetComponent<cMeshRenderer>();
-        cTransform* debugSphereTransform = g_DebugSphere->GetComponent<cTransform>();
-
-        debugSphereTransform->position = gTheLights.theLights[g_selectedLight].position;
-        debugSphereTransform->scale = glm::vec3(0.01f);
-        debugSphereMesh->bDontLight = true;
-        debugSphereMesh->bUseObjectDebugColour = true;
-        debugSphereMesh->objectDebugColourRGBA = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-
-        glm::mat4 matModelDS = glm::mat4(1.0f);
-        DrawObject(g_DebugSphere, matModelDS, program, gVAOManager, g_textureManager, cameraEye);
-    }
-    else
-    {
-        glUniform1f(program->uniformLocations["bDebugMode"], (float)GL_FALSE);
-    }
 }
 
 void DrawGUI(float dt)
@@ -1418,6 +1387,11 @@ void DrawGUI(float dt)
                                 {
                                     brush.ChangeRenderer(instancedRenderer);
                                     std::cout << "Set Brush Entity to \"" << curEntity->name << "\"" << std::endl;
+                                }
+                                if (ImGui::Button("Save Offsets"))
+                                {
+                                    instancedRenderer->SaveOffsets();
+                                    std::cout << "Saved to file" << std::endl;
                                 }
                                 ImGui::EndTabItem();
                             }

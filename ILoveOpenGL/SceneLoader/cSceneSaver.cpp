@@ -222,6 +222,8 @@ bool cSceneLoader::SaveScene(std::string sceneName, glm::vec3 cameraPos, cEntity
 			{
 				xml_node<>* instancedNode = doc->allocate_node(rapidxml::node_element, "Instanced");
 				
+				instancedNode->value(doc->allocate_string(instancedRenderer->fileName.c_str()));
+
 				std::string amountString = std::to_string(instancedRenderer->GetCount());
 				char* amountCharArray = doc->allocate_string(amountString.c_str());
 				instancedNode->append_attribute(doc->allocate_attribute("Amount", amountCharArray));

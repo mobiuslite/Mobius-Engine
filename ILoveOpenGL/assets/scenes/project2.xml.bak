@@ -109,7 +109,7 @@
 					<Texture Ratio="0.000000"/>
 				</Textures>
 				<AlphaMask>grassAlpha.bmp</AlphaMask>
-				<Instanced Amount="0" Offset="1.25" RandomStrength="0.78"></Instanced>
+				<Instanced Amount="0" Offset="1.25" RandomStrength="0.78">assets/scenes/grassOffsets.txt</Instanced>
         <UseWind></UseWind>
         <ShadowBias>0.005</ShadowBias>
 			</Misc>
@@ -287,7 +287,8 @@
 				<UseLighting>true</UseLighting>
 				<NormalMap>waterNormalMap.bmp</NormalMap>
 				<UseSpecular/>
-				<Brightness>2.45</Brightness>
+				<Brightness>.5</Brightness>
+        <Roughness>0.14</Roughness>
 			</Misc>
 		</Mesh>
 		<Mesh FriendlyName="glassClone" MeshName="glass.ply">

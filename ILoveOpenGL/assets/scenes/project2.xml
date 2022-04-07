@@ -25,6 +25,7 @@
 		<Model>grass.ply</Model>
 		<Model>monkey.fbx</Model>
 		<Model>sphere.fbx</Model>
+		<Model>grass.fbx</Model>
 	</Models>
 	<Description>
 		<Mesh FriendlyName="Sky" MeshName="SkyBoxUV.ply">
@@ -94,7 +95,7 @@
 				<AlphaMask>testing-Alpha.bmp</AlphaMask>
 			</Misc>
 		</Mesh>
-		<Mesh FriendlyName="minecraftGrass" MeshName="grass.ply">
+		<Mesh FriendlyName="minecraftGrass" MeshName="grass.fbx">
 			<Transform>
 				<Position x="0" y="0" z="0"/>
 				<Rotation x="0.000000" y="0.000000" z="0.000000"/>
@@ -109,7 +110,7 @@
 					<Texture Ratio="0.000000"/>
 				</Textures>
 				<AlphaMask>grassAlpha.bmp</AlphaMask>
-				<Instanced Amount="0" Offset="1.25" RandomStrength="0.78"></Instanced>
+				<Instanced Amount="0" Offset="1.25" RandomStrength="0.78">assets/scenes/grassOffsets.txt</Instanced>
         <UseWind></UseWind>
         <ShadowBias>0.005</ShadowBias>
 			</Misc>

@@ -262,11 +262,12 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 			xml_node<>* treeNode = miscNode->first_node("Instanced");
 			if (treeNode != nullptr)
 			{
+				std::string fileName = treeNode->value();
 				unsigned int amount = std::stoi(treeNode->first_attribute("Amount")->value());
 				float offset = std::stof(treeNode->first_attribute("Offset")->value());
 				float randomStrength = std::stof(treeNode->first_attribute("RandomStrength")->value());
 
-				cInstancedRenderer* instancedRenderer = new cInstancedRenderer(amount, offset, randomStrength);
+				cInstancedRenderer* instancedRenderer = new cInstancedRenderer(amount, offset, fileName, randomStrength);
 				newEntity->AddComponent<cInstancedRenderer>(instancedRenderer);
 			}
 

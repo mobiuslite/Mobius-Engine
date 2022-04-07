@@ -47,6 +47,8 @@ void main()
 	//mvp = p * v * matModel; from C++ code
 	
 	mat4 MVP = matProjection * matView * matModel;
+
+	vec3 modelPos = vec3(matModel[3][0], matModel[3][1], matModel[3][2]);
 			
 	vec4 vertPosition = vPosition;
 
@@ -67,7 +69,7 @@ void main()
 	
 	if (bUseWind)
 	{
-		float windSample = texture(windMap, (fVertWorldLocation.xz + vec2(windTime)) * windSize).r;
+		float windSample = texture(windMap, (modelPos.xz + vInstancedOffset.xz + vec2(windTime)) * windSize).r;
 		//Makes 0-1 range into -1 - 1 range
 		windSample = windSample * 2.0f - 1.0f;
 		windSample *= vUVx2.y * windStrength;

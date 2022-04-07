@@ -247,10 +247,10 @@ void cFBO::clearBuffers(bool bClearColour, bool bClearDepth)
 	glClearBufferfv(GL_COLOR, 3, &zero);
 	glClearBufferfv(GL_COLOR, 4, rgbBlack);
 	glClearBufferfv(GL_COLOR, 5, rgbBlack);
-
 	glClearBufferfv(GL_COLOR, 6, rgbBlack);
 	glClearBufferfv(GL_COLOR, 7, rgbBlack);
-	glClearBufferfv(GL_COLOR, 8, rgbBlack);
+
+
 	// If buffer is GL_STENCIL, drawbuffer must be zero, and value points to a 
 	//  single value to clear the stencil buffer to. Masking is performed in the 
 	//  same fashion as for glClearStencil. Only the *iv forms of these commands 
@@ -268,7 +268,6 @@ void cFBO::clearBuffers(bool bClearColour, bool bClearDepth)
 						 1.0f,	// Clear value for depth
 						 0 );	// Clear value for stencil
 	}
-
 	return;
 }
 
