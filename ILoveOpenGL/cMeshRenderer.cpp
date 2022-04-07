@@ -48,6 +48,10 @@ cMeshRenderer::cMeshRenderer()
 	this->bUseSkybox = false;
 	this->bUseNormalMap = false;
 	this->bUseHeightMap = false;
+
+	this->useMetallicMap = false;
+	this->useRoughnessMap = false;
+
 	this->normalOffset = glm::vec2(0.0f);
 
 	bIsSceneObject = false;

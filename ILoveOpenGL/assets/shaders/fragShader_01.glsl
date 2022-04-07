@@ -100,6 +100,12 @@ uniform sampler2D shadowMapColorBuf;
 uniform bool bUseAlphaMask;
 uniform sampler2D alphaMask;
 
+uniform bool bUseMetallicMap;
+uniform sampler2D metallicMap;
+
+uniform bool bUseRoughMap;
+uniform sampler2D roughMap;
+
 uniform bool bUseNormalMap;
 uniform sampler2D normalMap;
 uniform vec2 normalOffset;
@@ -150,7 +156,18 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
 	//float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
 	float bias = shadowBias;
 
-	float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+	//float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+	float shadow = 0.0f;
+	vec2 texelSize = 1.0 / textureSize(shadowMapColorBuf, 0);
+	for (int x = -1; x <= 1; ++x)
+	{
+		for (int y = -1; y <= 1; ++y)
+		{
+			float pcfDepth = texture(shadowMapColorBuf, projCoords.xy + vec2(x, y) * texelSize).r;
+			shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+		}
+	}
+	shadow /= 9.0;
 
 	if (currentDepth > 1.0)
 		shadow = 0.0;
@@ -166,6 +183,10 @@ void main()
 
 	vec4 normals = fNormal;
 	vec4 vertexDiffuseColour = fVertexColour;
+
+	float pixelRoughness = roughness;
+	float pixelMetallic = metallic;
+
 	//pixelFirstPass = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 	if(passNumber == RENDER_PASS_2_EFFECTS_PASS)
 	{
@@ -302,6 +323,18 @@ void main()
 		normals.xyz = normalize(TBN * normalMapTexture);
 	}
 
+	if (bUseMetallicMap)
+	{
+		float mapTexture = texture(metallicMap, fUVx2.xy).r;
+		pixelMetallic = mapTexture * metallic;
+	}
+
+	if (bUseRoughMap)
+	{
+		float mapTexture = texture(roughMap, fUVx2.xy).r;
+		pixelRoughness = mapTexture * roughness;
+	}
+
 	if(bDebugMode && bDebugShowNormals)
 	{
 		pixelColour.rgb = normals.xyz;
@@ -365,12 +398,12 @@ void main()
 	pixelMatColor = pow(vec4(vertexDiffuseColour.rgb * brightness, 1.0f), vec4(postprocessingVariables.x));
 	pixelMatColor.w = 1.0f;
 
-	pixelNormal = vec4(normalize(normals.xyz), roughness);
+	pixelNormal = vec4(normalize(normals.xyz), pixelRoughness);
 
 	pixelWorldPos = vec4(fVertWorldLocation.xyz, 1.0f);
 	pixelLightSpacePos = fLightSpacePos;
 
-	pixelEmmision = vec4(emmision, metallic);
+	pixelEmmision = vec4(emmision, pixelMetallic);
 
 	//if(bUseSpecular){
 	//	//pixelSpecular = wholeObjectSpecularColour.rgba;
@@ -430,6 +463,7 @@ vec3 PBR(vec3 albedo, vec3 normal, vec3 worldPos, vec4 lightSpacePos, float roug
 		vec3 kD = vec3(1.0) - kS;
 		kD *= 1.0 - metallic;
 
+		//Calculate Cook-Torrance specular BRDF
 		vec3 numerator = NDF * G * F;
 		float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
 		vec3 specular = numerator / denominator;

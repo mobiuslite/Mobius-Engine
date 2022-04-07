@@ -610,6 +610,12 @@ int main(void)
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseHeightMap", glGetUniformLocation(program, "bUseHeightMap")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("heightMap", glGetUniformLocation(program, "heightMap")));
 
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseMetallicMap", glGetUniformLocation(program, "bUseMetallicMap")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("metallicMap", glGetUniformLocation(program, "metallicMap")));
+
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseRoughMap", glGetUniformLocation(program, "bUseRoughMap")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("roughMap", glGetUniformLocation(program, "roughMap")));
+
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkybox", glGetUniformLocation(program, "bUseSkybox")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("skyBox", glGetUniformLocation(program, "skyBox")));
 
@@ -1572,6 +1578,7 @@ void SetUpLights()
     //gTheLights.theLights[0].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[0].param1.x = 0;
+    gTheLights.theLights[0].power = 38.0f;
     gTheLights.TurnOnLight(0);  // Or this!
     gTheLights.SetUpUniformLocations(program, 0);
 
@@ -1582,6 +1589,7 @@ void SetUpLights()
     // gTheLights.theLights[1].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
      //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[1].param1.x = 0;
+    gTheLights.theLights[1].power = 38.0f;
     gTheLights.TurnOnLight(1);  // Or this!
     gTheLights.SetUpUniformLocations(program, 1);
 
@@ -1592,6 +1600,7 @@ void SetUpLights()
     //gTheLights.theLights[2].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[2].param1.x = 0;
+    gTheLights.theLights[2].power = 38.0f;
     gTheLights.TurnOnLight(2);  // Or this!
     gTheLights.SetUpUniformLocations(program, 2);
 
@@ -1602,6 +1611,7 @@ void SetUpLights()
     //gTheLights.theLights[3].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[3].param1.x = 0;
+    gTheLights.theLights[3].power = 38.0f;
     gTheLights.TurnOnLight(3);  // Or this!
     gTheLights.SetUpUniformLocations(program, 3);
 
@@ -1612,6 +1622,7 @@ void SetUpLights()
     //gTheLights.theLights[3].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[6].param1.x = 0;
+    gTheLights.theLights[6].power = 38.0f;
     gTheLights.TurnOnLight(6);  // Or this!
     gTheLights.SetUpUniformLocations(program, 6);
 
@@ -1622,6 +1633,7 @@ void SetUpLights()
     //gTheLights.theLights[3].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[7].param1.x = 0;
+    gTheLights.theLights[7].power = 38.0f;
     gTheLights.TurnOnLight(7);  // Or this!
     gTheLights.SetUpUniformLocations(program, 7);
 
@@ -1632,6 +1644,7 @@ void SetUpLights()
     //gTheLights.theLights[0].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[9].param1.x = 0;
+    gTheLights.theLights[9].power = 38.0f;
     gTheLights.TurnOnLight(9);  // Or this!
     gTheLights.SetUpUniformLocations(program, 9);
 

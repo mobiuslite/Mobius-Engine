@@ -192,6 +192,46 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 				}
 			}
 
+			xml_node<>* metallicNode = miscNode->first_node("Metallic");
+			if (metallicNode != nullptr)
+			{
+				newMesh->metallic = std::stof(metallicNode->value());
+			}
+			xml_node<>* metallicMapNode = miscNode->first_node("MetallicMap");
+			if (metallicMapNode != nullptr)
+			{
+				newMesh->useMetallicMap = true;
+				newMesh->metallicMapName = metallicMapNode->value();
+
+				if (textureManager->getTextureIDFromName(newMesh->metallicMapName) == 0)
+				{
+					if (!textureManager->Create2DTextureFromBMPFile(newMesh->metallicMapName, true))
+					{
+						std::cout << "ERROR! Could not add metallic map to manager: " << newMesh->metallicMapName << std::endl;
+					}
+				}
+			}
+
+			xml_node<>* roughNode = miscNode->first_node("Roughness");
+			if (roughNode != nullptr)
+			{
+				newMesh->roughness = std::stof(roughNode->value());
+			}
+			xml_node<>* roughMapNode = miscNode->first_node("RoughnessMap");
+			if (roughMapNode != nullptr)
+			{
+				newMesh->useRoughnessMap = true;
+				newMesh->roughnessMapName = roughMapNode->value();
+
+				if (textureManager->getTextureIDFromName(newMesh->roughnessMapName) == 0)
+				{
+					if (!textureManager->Create2DTextureFromBMPFile(newMesh->roughnessMapName, true))
+					{
+						std::cout << "ERROR! Could not add roughness map to manager: " << newMesh->roughnessMapName << std::endl;
+					}
+				}
+			}
+
 			xml_node<>* emmisionNode = miscNode->first_node("Emmision");
 			if (emmisionNode != nullptr)
 			{

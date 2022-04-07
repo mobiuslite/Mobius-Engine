@@ -50,6 +50,42 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
         glUniform1f(uniformLocations->at("bUseAlphaMask"), (float)GL_FALSE);
     }
 
+    if (curMesh->useMetallicMap)
+    {
+        glUniform1f(uniformLocations->at("bUseMetallicMap"), (float)GL_TRUE);
+
+        GLint textureId = textureManager.getTextureIDFromName(curMesh->metallicMapName);
+        if (textureId != 0)
+        {
+            GLint unit = 1;
+            glActiveTexture(unit + GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textureId);
+            glUniform1i(uniformLocations->at("metallicMap"), unit);
+        }
+    }
+    else
+    {
+        glUniform1f(uniformLocations->at("bUseMetallicMap"), (float)GL_FALSE);
+    }
+
+    if (curMesh->useRoughnessMap)
+    {
+        glUniform1f(uniformLocations->at("bUseRoughMap"), (float)GL_TRUE);
+
+        GLint textureId = textureManager.getTextureIDFromName(curMesh->roughnessMapName);
+        if (textureId != 0)
+        {
+            GLint unit = 1;
+            glActiveTexture(unit + GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textureId);
+            glUniform1i(uniformLocations->at("roughMap"), unit);
+        }
+    }
+    else
+    {
+        glUniform1f(uniformLocations->at("bUseRoughMap"), (float)GL_FALSE);
+    }
+
     if (curMesh->bUseNormalMap)
     {
         glUniform1f(uniformLocations->at("bUseNormalMap"), (float)GL_TRUE);

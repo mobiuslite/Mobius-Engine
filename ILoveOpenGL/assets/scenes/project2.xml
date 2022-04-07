@@ -60,8 +60,10 @@
           <Texture Ratio="0.000000"/>
         </Textures>
         <NormalMap>rustnorm.bmp</NormalMap>
-		<MetallicMap>rustmet.bmp</MetallicMap>
-		<RoughnessMap>rustrough.bmp</RoughnessMap>
+				<MetallicMap>rustmet.bmp</MetallicMap>
+        <Metallic>1</Metallic>
+				<RoughnessMap>rustrough.bmp</RoughnessMap>
+        <Roughness>1</Roughness>
       </Misc>
     </Mesh>
 
@@ -285,6 +287,8 @@
 				<UseLighting>true</UseLighting>
 				<NormalMap>waterNormalMap.bmp</NormalMap>
 				<UseSpecular/>
+				<Brightness>.5</Brightness>
+        <Roughness>0.14</Roughness>
 			</Misc>
 		</Mesh>
 		<Mesh FriendlyName="glassClone" MeshName="glass.ply">
