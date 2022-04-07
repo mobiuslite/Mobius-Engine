@@ -128,36 +128,28 @@ uniform vec2 screenWidthHeight;
 uniform vec4 postprocessingVariables;
 uniform float ambientPower;
 
-uniform samplerCube skyBox; // GL_TEXTURE_CUBE_MAP
+uniform samplerCube skyBox;
 
-const float PI = 3.14159265359;
+const float PI = 3.14159f;
 
-float DistributionGGX(vec3 N, vec3 H, float roughness);
-float GeometrySchlickGGX(float NdotV, float roughness);
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
-vec3 fresnelSchlick(float cosTheta, vec3 F0);
+float TrowbridgeGGXNormalDist(vec3 N, vec3 H, float roughness);
+float SchlickGGXGeometry(float NdotV, float roughness);
+float SmithGeometry(vec3 N, vec3 V, vec3 L, float roughness);
+vec3 schlickFresnel(float cosTheta, vec3 F0);
 
 vec3 PBR(vec3 albedo, vec3 normal, vec3 worldPos, vec4 lightSpacePos, float roughness, float metallic);
 
-vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal, 
-                            vec3 vertexWorldPos, vec4 vertexSpecular, vec4 lightSpacePos);
-
 float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
 {
-	// perform perspective divide
+	// perform perspective divide, redundant but needed if in non-orthographic projection
 	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-	// transform to [0,1] range
+	// transform to 0-1 range
 	projCoords = projCoords * 0.5 + 0.5;
-	// get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+
 	float closestDepth = texture(shadowMapColorBuf, projCoords.xy).r;
-	// get depth of current fragment from light's perspective
 	float currentDepth = projCoords.z;
-	// check whether current frag pos is in shadow
 
-	//float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
-	float bias = shadowBias;
-
-	//float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+	//Smooth Shadows
 	float shadow = 0.0f;
 	vec2 texelSize = 1.0 / textureSize(shadowMapColorBuf, 0);
 	for (int x = -1; x <= 1; ++x)
@@ -165,7 +157,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
 		for (int y = -1; y <= 1; ++y)
 		{
 			float pcfDepth = texture(shadowMapColorBuf, projCoords.xy + vec2(x, y) * texelSize).r;
-			shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+			shadow += currentDepth - shadowBias > pcfDepth ? 1.0 : 0.0;
 		}
 	}
 	shadow /= 9.0;
@@ -421,7 +413,7 @@ vec3 PBR(vec3 albedo, vec3 normal, vec3 worldPos, vec4 lightSpacePos, float roug
 	vec3 F0 = vec3(0.04);
 	F0 = mix(F0, albedo, metallic);
 
-	vec3 Lo = vec3(0.0);
+	vec3 finalColor = vec3(0.0);
 	for (int index = 0; index < NUMBEROFLIGHTS; index++)
 	{
 		if (theLights[index].param2.x == 0.0f)
@@ -455,13 +447,12 @@ vec3 PBR(vec3 albedo, vec3 normal, vec3 worldPos, vec4 lightSpacePos, float roug
 		vec3 H = normalize(V + L);		
 		vec3 radiance = theLights[index].diffuse.rgb * attenuation;
 
-		float NDF = DistributionGGX(N, H, roughness);
-		float G = GeometrySmith(N, V, L, roughness);
-		vec3 F = fresnelSchlick(max(dot(V, H), 0.0), F0);
+		float NDF = TrowbridgeGGXNormalDist(N, H, roughness);
+		float G = SmithGeometry(N, V, L, roughness);
+		vec3 F = schlickFresnel(max(dot(V, H), 0.0), F0);
 
 		vec3 kS = F;
-		vec3 kD = vec3(1.0) - kS;
-		kD *= 1.0 - metallic;
+		vec3 kD = (vec3(1.0) - kS) * (1.0 - metallic);
 
 		//Calculate Cook-Torrance specular BRDF
 		vec3 numerator = NDF * G * F;
@@ -476,26 +467,26 @@ vec3 PBR(vec3 albedo, vec3 normal, vec3 worldPos, vec4 lightSpacePos, float roug
 			shadow = ShadowCalculation(lightSpacePos, N, L);
 		}
 
-		Lo += ((kD * albedo / PI + specular) * radiance * NdotL) * (1.0f - shadow);
+		finalColor += ((kD * albedo / PI + specular) * radiance * NdotL) * (1.0f - shadow);
 	}
-	return Lo;
+	return finalColor;
 }
 
-float DistributionGGX(vec3 N, vec3 H, float roughness)
+float TrowbridgeGGXNormalDist(vec3 N, vec3 H, float roughness)
 {
 	float a = roughness * roughness;
-	float a2 = a * a;
+	float aSquared = a * a;
 	float NdotH = max(dot(N, H), 0.0);
 	float NdotH2 = NdotH * NdotH;
 
-	float num = a2;
-	float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+	float num = aSquared;
+	float denom = (NdotH2 * (aSquared - 1.0) + 1.0);
 	denom = PI * denom * denom;
 
 	return num / denom;
 }
 
-float GeometrySchlickGGX(float NdotV, float roughness)
+float SchlickGGXGeometry(float NdotV, float roughness)
 {
 	float r = (roughness + 1.0);
 	float k = (r * r) / 8.0;
@@ -505,196 +496,17 @@ float GeometrySchlickGGX(float NdotV, float roughness)
 
 	return num / denom;
 }
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+float SmithGeometry(vec3 N, vec3 V, vec3 L, float roughness)
 {
 	float NdotV = max(dot(N, V), 0.0);
 	float NdotL = max(dot(N, L), 0.0);
-	float ggx2 = GeometrySchlickGGX(NdotV, roughness);
-	float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+	float ggx2 = SchlickGGXGeometry(NdotV, roughness);
+	float ggx1 = SchlickGGXGeometry(NdotL, roughness);
 
 	return ggx1 * ggx2;
 }
 
-vec3 fresnelSchlick(float cosTheta, vec3 F0)
+vec3 schlickFresnel(float cosTheta, vec3 F0)
 {
 	return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
-}
-
-// Calculates the colour of the vertex based on the lighting and vertex information:
-vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal, 
-                            vec3 vertexWorldPos, vec4 vertexSpecular, vec4 lightSpacePos)
-{
-	vec3 norm = normalize(vertexNormal);
-	
-	vec4 finalObjectColour = vec4( 0.0f, 0.0f, 0.0f, 1.0f );
-	
-	for ( int index = 0; index < NUMBEROFLIGHTS; index++ )
-	{	
-		// ********************************************************
-		// is light "on"
-		if ( theLights[index].param2.x == 0.0f )
-		{	// it's off
-			continue;
-		}
-		
-		// Cast to an int (note with c'tor)
-		int intLightType = int(theLights[index].param1.x);
-		
-		// We will do the directional light here... 
-		// (BEFORE the attenuation, since sunlight has no attenuation, really)
-		if ( intLightType == DIRECTIONAL_LIGHT_TYPE )		// = 2
-		{
-			// This is supposed to simulate sunlight. 
-			// SO: 
-			// -- There's ONLY direction, no position
-			// -- Almost always, there's only 1 of these in a scene
-			// Cheapest light to calculate. 
-
-			vec3 lightContrib = theLights[index].diffuse.rgb;
-			
-			// Get the dot product of the light and normalize
-			float dotProduct = dot( -theLights[index].direction.xyz,  
-									   norm.xyz );	// -1 to 1
-
-			dotProduct = max( 0.0f, dotProduct );		// 0 to 1
-		
-
-			vec3 ambient = ambientPower * lightContrib;
-
-			lightContrib *= dotProduct;				
-			vec3 diffuse = theLights[index].diffuse.rgb * lightContrib; 
-
-			vec3 lightVector = normalize(theLights[index].direction.xyz);
-
-			vec3 eyeVector = normalize(eyeLocation.xyz - vertexWorldPos.xyz);
-			vec3 halfwayVec = normalize(lightVector + eyeVector);
-			float objectSpecularPower = vertexSpecular.a;
-
-			vec3 lightSpecularContrib = vec3(0.0f);
-			if (dotProduct > 0.0f && vertexSpecular.w > 0.0f)
-			{
-				lightSpecularContrib = pow(clamp(dot(norm.xyz, halfwayVec), 0.0f, 1.0f), objectSpecularPower)
-					* theLights[index].specular.rgb;
-			}
-
-			vec3 specular = vertexSpecular.rgb * lightSpecularContrib.rgb;
-
-			float shadow = ShadowCalculation(lightSpacePos, norm, lightVector);
-
-			//finalObjectColour += vec4((shadow * (diffuse + specular) + ambient) * vertexMaterialColour.rgb, 1.0f);
-			finalObjectColour += vec4((ambient + (1.0 - shadow) * (diffuse + specular)) * vertexMaterialColour.rgb, 1.0f);
-			//finalObjectColour += vec4(vec3(shadow), 1.0f);
-
-			continue;
-		}
-		
-		// Assume it's a point light 
-		// intLightType = 0
-		
-		// Contribution for this light
-		vec3 vLightToVertex = theLights[index].position.xyz - vertexWorldPos.xyz;
-		float distanceToLight = length(vLightToVertex);	
-
-		if(distanceToLight > theLights[index].atten.w)
-		{
-			continue;
-		}
-
-		vec3 lightVector = normalize(vLightToVertex);
-		float dotProduct = dot(lightVector, vertexNormal.xyz);	 
-		
-		dotProduct = max( 0.0f, dotProduct );	
-		
-		vec3 lightDiffuseContrib = dotProduct * theLights[index].diffuse.rgb;
-			
-
-		// Specular 
-		vec3 lightSpecularContrib = vec3(0.0f);
-			
-		vec3 reflectVector = reflect( -lightVector, norm.xyz);
-		//vec3 reflectVector = 2.0 * dot(norm.xyz, lightVector) * norm.xyz - lightVector;
-
-		// Get eye or view vector
-		// The location of the vertex in the world to your eye
-		vec3 eyeVector = normalize(eyeLocation.xyz - vertexWorldPos.xyz);
-		vec3 halfwayVec = normalize(lightVector + eyeVector);
-		// To simplify, we are NOT using the light specular value, just the object’s.
-		float objectSpecularPower = vertexSpecular.a; 
-		//float objectSpecularPower = 10.0f; 
-		
-//		lightSpecularContrib = pow( max(0.0f, dot( eyeVector, reflectVector) ), objectSpecularPower )
-//			                   * vertexSpecular.rgb;	//* theLights[lightIndex].Specular.rgb
-
-		if(dotProduct > 0.0f && vertexSpecular.w > 0.0f)
-		{
-			lightSpecularContrib = pow( clamp(dot( norm.xyz, halfwayVec), 0.0f, 1.0f ), objectSpecularPower )
-			                   * theLights[index].specular.rgb;
-		}
-		// Attenuation
-		float attenuation = 1.0f / 
-				( theLights[index].atten.x + 										
-				  theLights[index].atten.y * distanceToLight +						
-				  theLights[index].atten.z * distanceToLight*distanceToLight );  	
-				  
-		// total light contribution is Diffuse + Specular
-		lightDiffuseContrib *= attenuation;
-		lightSpecularContrib *= attenuation;
-		
-		
-		// But is it a spot light
-		if ( intLightType == SPOT_LIGHT_TYPE )		// = 1
-		{	
-		
-
-			// Yes, it's a spotlight
-			// Calcualate light vector (light to vertex, in world)
-			vec3 vertexToLight = vertexWorldPos.xyz - theLights[index].position.xyz;
-
-			vertexToLight = normalize(vertexToLight);
-
-			float currentLightRayAngle
-					= dot( vertexToLight.xyz, theLights[index].direction.xyz );
-					
-			currentLightRayAngle = max(0.0f, currentLightRayAngle);
-
-			//vec4 param1;	
-			// x = lightType, y = inner angle, z = outer angle, w = TBD
-
-			// Is this inside the cone? 
-			float outerConeAngleCos = cos(radians(theLights[index].param1.z));
-			float innerConeAngleCos = cos(radians(theLights[index].param1.y));
-							
-			// Is it completely outside of the spot?
-			if ( currentLightRayAngle < outerConeAngleCos )
-			{
-				// Nope. so it's in the dark
-				lightDiffuseContrib = vec3(0.0f, 0.0f, 0.0f);
-				lightSpecularContrib = vec3(0.0f, 0.0f, 0.0f);
-			}
-			else if ( currentLightRayAngle < innerConeAngleCos )
-			{
-				// Angle is between the inner and outer cone
-				// (this is called the penumbra of the spot light, by the way)
-				// 
-				// This blends the brightness from full brightness, near the inner cone
-				//	to black, near the outter cone
-				float penumbraRatio = (currentLightRayAngle - outerConeAngleCos) / 
-									  (innerConeAngleCos - outerConeAngleCos);
-									  
-				lightDiffuseContrib *= penumbraRatio;
-				lightSpecularContrib *= penumbraRatio;
-			}
-						
-		}// if ( intLightType == 1 )
-		
-		
-					
-		finalObjectColour.rgb += (vertexMaterialColour.rgb * lightDiffuseContrib.rgb)
-								  + (vertexSpecular.rgb  * lightSpecularContrib.rgb );
-
-	}//for(intindex=0...
-	
-	finalObjectColour.a = 1.0f;
-	
-	return finalObjectColour;
 }

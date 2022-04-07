@@ -749,7 +749,7 @@ int main(void)
     glfwGetFramebufferSize(window, &width, &height);
     ratio = width / (float)height;
 
-    int screenPixelDensity = 2000;
+    int screenPixelDensity = 1250;
 
     g_fbo = new cFBO();
     if (!g_fbo->init((int)(screenPixelDensity * ratio), screenPixelDensity, errorString))
@@ -1105,6 +1105,11 @@ int main(void)
 
         if(showDebugGui)
             DrawGUI(deltaTime);
+        else
+        {
+            io->WantCaptureKeyboard = false;
+            io->WantCaptureMouse = false;
+        }
 
         //glEnable(GL_CULL_FACE);
         //glCullFace(GL_BACK);
@@ -1117,10 +1122,10 @@ int main(void)
         ProcessAsyncMouse(window, (float)deltaTime);
         ProcessAsyncKeyboard(window, (float)deltaTime);
 
-        while ((err = glGetError()) != GL_NO_ERROR)
-        {
-            std::cout << "WARNING: OpenGL errors found!: " << err << std::endl;
-        }
+        //while ((err = glGetError()) != GL_NO_ERROR)
+        //{
+          //  std::cout << "WARNING: OpenGL errors found!: " << err << std::endl;
+        //}
     }
 
     GLenum err;
