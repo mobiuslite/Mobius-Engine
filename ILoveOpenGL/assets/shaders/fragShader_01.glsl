@@ -111,8 +111,9 @@ uniform sampler2D normalMap;
 uniform vec2 normalOffset;
 
 uniform bool bUseSkybox;
-uniform bool bIsImposter;
 uniform bool bShowBloom;
+
+uniform bool bIsPlane;
 
 uniform bool bUseSkyboxReflections;
 
@@ -288,6 +289,14 @@ void main()
 	
 	}
 
+	if (bIsPlane)
+	{
+		if (!gl_FrontFacing)
+		{
+			normals = -normals;
+		}
+	}
+
 	if(bUseSkybox)
 	{	
 		vec4 skyBoxTexture = texture(skyBox, fVertPosition.xyz);
@@ -347,16 +356,6 @@ void main()
 		vec3 textureColour = (texture(texture_00, vec2(fUVx2.x * tilingAndOffset.x, fUVx2.y * tilingAndOffset.y)).rgb * textureRatios.x) + (texture(texture_01, fUVx2.xy).rgb * textureRatios.y);
 
 		vertexDiffuseColour = vec4(textureColour, 1.0f);
-
-		if(bIsImposter)
-		{
-			float averageTexValue = textureColour.r + textureColour.g + textureColour.b;
-			averageTexValue /= 3.0f;
-
-			float alphaValue = averageTexValue;
-
-			vertexDiffuseColour.a = alphaValue;
-		}
 	}
 	
 	// Use model vertex colours or not?

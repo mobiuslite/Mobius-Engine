@@ -57,8 +57,8 @@ struct PostProcessingInfo
 
     bool useExposureToneMapping = true;
 
-    float bloomThreshhold = 5.1f;
-    float bloomSize = 2.0f;
+    float bloomThreshhold = 5.18f;
+    float bloomSize = 1.75f;
     unsigned int bloomIterationAmount = 15;
 
     float ambientPower = 0.05f;
@@ -656,6 +656,8 @@ int main(void)
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_Emmision", glGetUniformLocation(program, "texture_Emmision")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("brightness", glGetUniformLocation(program, "brightness")));
 
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bIsPlane", glGetUniformLocation(program, "bIsPlane")));
+
     cShaderManager::cShaderProgram* pingPongShader = gShaderManager.pGetShaderProgramFromFriendlyName("PingPong");
 
     //glUseProgram(pingPongShader->ID);
@@ -853,12 +855,12 @@ int main(void)
 
         glm::vec4 sunPos = gTheLights.theLights[8].position;
         glm::vec3 sunPosVec3 = glm::vec3(sunPos.x, sunPos.y, sunPos.z);
-        glm::vec4 sunDir = gTheLights.theLights[8].direction;
-        glm::vec3 sunDirVec3 = glm::vec3(sunDir.x, sunDir.y, sunDir.z);
-
-        glm::vec3 sunLookAtDir = sunPosVec3 + sunDirVec3;
+        //glm::vec4 sunDir = gTheLights.theLights[8].direction;
+        //glm::vec3 sunDirVec3 = glm::vec3(sunDir.x, sunDir.y, sunDir.z);
+        //
+        //glm::vec3 sunLookAtDir = sunPosVec3 + sunDirVec3;
                                     //look at center of scene
-        v = glm::lookAt(sunPosVec3, sunLookAtDir, glm::vec3(0.0f, 1.0f, 0.0f));
+        v = glm::lookAt(sunPosVec3, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
         glm::mat4 lightSpaceMat = p * v;
         //glm::mat4 lightSpaceMat = v * p;

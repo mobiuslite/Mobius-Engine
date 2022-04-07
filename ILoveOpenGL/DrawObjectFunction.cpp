@@ -299,6 +299,7 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
 
     glUniform3f(shader->uniformLocations["emmision"], curMesh->emmisionDiffuse.r * curMesh->emmisionPower, curMesh->emmisionDiffuse.g * curMesh->emmisionPower, curMesh->emmisionDiffuse.b * curMesh->emmisionPower);
     glUniform1f(shader->uniformLocations["bUseWind"], curMesh->useWind ? (float)GL_TRUE : (float) GL_FALSE);
+    glUniform1f(shader->uniformLocations["bIsPlane"], curMesh->useWind ? (float)GL_TRUE : (float) GL_FALSE);
     glUniform1f(shader->uniformLocations["brightness"], curMesh->diffuseBrightness);
 
     glUniform1f(shader->uniformLocations["roughness"], curMesh->roughness);
