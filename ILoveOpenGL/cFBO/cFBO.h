@@ -17,8 +17,8 @@ public:
 		vertexWorldPos_3_ID(0),
 		vertexSpecular_4_ID(0),
 		brightColour_5_ID(0),
-		dirShadow_6_ID(0),
 		vertexLightSpacePos_7_ID(0),
+		vertexEmmision_6_ID(0),
 		width(-1), height(-1) {};
 
 	GLuint ID;						// = 0;
@@ -29,9 +29,9 @@ public:
 	GLuint vertexWorldPos_3_ID;
 	GLuint vertexLightSpacePos_7_ID;
 	GLuint vertexSpecular_4_ID;
+	GLuint vertexEmmision_6_ID;
 
 	GLuint brightColour_5_ID;
-	GLuint dirShadow_6_ID;
 
 //	GLuint TBDTexture_1_ID;
 //	GLuint TBDTexture_2_ID;

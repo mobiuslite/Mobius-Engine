@@ -47,6 +47,8 @@ public:
 	glm::vec4 wholeObjectDiffuseRGBA;		// The "colour" of the object
 	bool bUseWholeObjectDiffuseColour;		// If true, then wholeObject colour (not model vertex) is used
 
+	float diffuseBrightness;
+
 	glm::vec3 wholeObjectSpecularRGB;		// Specular HIGHLIGHT colour (usually the same as the light, or white)
 	float wholeObjectShininess_SpecPower;	// 1.0 to ??
 
@@ -61,8 +63,17 @@ public:
 	bool bUseSkyboxReflection;
 	bool bUseSkyboxRefraction;
 
-	float emmision;
+	float emmisionPower;
+	glm::vec3 emmisionDiffuse;
 	float shadowBias;
+
+	float roughness;
+	bool useRoughnessMap;
+	std::string roughnessMapName;
+
+	float metallic;
+	bool useMetallicMap;
+	std::string metallicMapName;
 
 	bool bIsImposter = false;
 	bool useWind = false;

@@ -269,20 +269,18 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
         glUniform1f(shader->uniformLocations["bUseWholeObjectDiffuseColour"], (float)GL_FALSE);
     }
 
-    while ((err = glGetError()) != GL_NO_ERROR)
-    {
-        int i = 0;
-
-    }
-
     glUniform4f(shader->uniformLocations["wholeObjectSpecularColour"],
         curMesh->wholeObjectSpecularRGB.r,
         curMesh->wholeObjectSpecularRGB.g,
         curMesh->wholeObjectSpecularRGB.b,
         curMesh->wholeObjectShininess_SpecPower);
 
-    glUniform1f(shader->uniformLocations["emmisionPower"], curMesh->emmision);
+    glUniform3f(shader->uniformLocations["emmision"], curMesh->emmisionDiffuse.r * curMesh->emmisionPower, curMesh->emmisionDiffuse.g * curMesh->emmisionPower, curMesh->emmisionDiffuse.b * curMesh->emmisionPower);
     glUniform1f(shader->uniformLocations["bUseWind"], curMesh->useWind ? (float)GL_TRUE : (float) GL_FALSE);
+    glUniform1f(shader->uniformLocations["brightness"], curMesh->diffuseBrightness);
+
+    glUniform1f(shader->uniformLocations["roughness"], curMesh->roughness);
+    glUniform1f(shader->uniformLocations["metallic"], curMesh->metallic);
 
     // See if mesh is wanting the vertex colour override (HACK) to be used?
     if (curMesh->bUseObjectDebugColour)

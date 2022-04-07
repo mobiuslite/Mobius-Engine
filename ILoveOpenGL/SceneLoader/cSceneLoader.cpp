@@ -196,13 +196,27 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 			if (emmisionNode != nullptr)
 			{
 				float emmision = std::stof(emmisionNode->value());
-				newMesh->emmision = emmision;
+				newMesh->emmisionPower = emmision;
+
+				glm::vec3 colors;
+				colors.r = std::stof(emmisionNode->first_attribute("r")->value());
+				colors.g = std::stof(emmisionNode->first_attribute("g")->value());
+				colors.b = std::stof(emmisionNode->first_attribute("b")->value());
+
+				newMesh->emmisionDiffuse = colors;
 			}
 			xml_node<>* shadowBiasNode = miscNode->first_node("ShadowBias");
 			if (shadowBiasNode != nullptr)
 			{
 				float bias = std::stof(shadowBiasNode->value());
 				newMesh->shadowBias = bias;
+			}
+
+			xml_node<>* brightnessNode = miscNode->first_node("Brightness");
+			if (brightnessNode != nullptr)
+			{
+				float brightness = std::stof(brightnessNode->value());
+				newMesh->diffuseBrightness = brightness;
 			}
 
 			xml_node<>* treeNode = miscNode->first_node("Instanced");

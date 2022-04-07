@@ -11,8 +11,14 @@ cMeshRenderer::cMeshRenderer()
 	this->bDontLight = false;
 
 	this->bIsDebugObject = false;
-	this->emmision = 1.0f;
+	this->emmisionPower = 0.0f;
+	this->emmisionDiffuse = glm::vec3(1.0f);
 	this->shadowBias = 0.005f;
+
+	this->diffuseBrightness = 1.0f;
+
+	this->roughness = 1.0f;
+	this->metallic = 0.0f;
 
 	this->tiling = glm::vec2(1.0f);
 	this->offset = glm::vec2(0.0f);

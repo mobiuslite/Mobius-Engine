@@ -61,7 +61,7 @@ struct PostProcessingInfo
     float bloomSize = 1.0f;
     unsigned int bloomIterationAmount = 15;
 
-    float ambientPower = 0.1f;
+    float ambientPower = 0.05f;
 };
 
 struct WindInfo
@@ -627,7 +627,7 @@ int main(void)
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxRefraction", glGetUniformLocation(program, "bUseSkyboxRefraction")));
 
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("postprocessingVariables", glGetUniformLocation(program, "postprocessingVariables")));
-    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("emmisionPower", glGetUniformLocation(program, "emmisionPower")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("emmision", glGetUniformLocation(program, "emmision")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bloomMapColorBuf", glGetUniformLocation(program, "bloomMapColorBuf")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("ambientPower", glGetUniformLocation(program, "ambientPower")));
 
@@ -644,6 +644,11 @@ int main(void)
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("windTime", glGetUniformLocation(program, "windTime")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("windStrength", glGetUniformLocation(program, "windStrength")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("windSize", glGetUniformLocation(program, "windSize")));
+
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("roughness", glGetUniformLocation(program, "roughness")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("metallic", glGetUniformLocation(program, "metallic")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_Emmision", glGetUniformLocation(program, "texture_Emmision")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("brightness", glGetUniformLocation(program, "brightness")));
 
     cShaderManager::cShaderProgram* pingPongShader = gShaderManager.pGetShaderProgramFromFriendlyName("PingPong");
 
@@ -792,7 +797,7 @@ int main(void)
 
         // Turn on the depth buffer
         glEnable(GL_DEPTH_TEST);    // Check if the pixel is already closer
-
+        //glShadeModel(GL_SMOOTH);
         // *******************************************************
         // Screen is cleared and we are ready to draw the scene...
         // *******************************************************
@@ -957,6 +962,15 @@ int main(void)
             glUniform1i(normalShader->uniformLocations["texture_Specular"], unit);
         }
 
+        GLint textureEmmisionId = g_fbo->vertexEmmision_6_ID;
+        if (textureEmmisionId != 0)
+        {
+            GLint unit = 29;
+            glActiveTexture(unit + GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textureEmmisionId);
+            glUniform1i(normalShader->uniformLocations["texture_Emmision"], unit);
+        }
+
         GLint textureShadowId = shadowFBO->depthMap;
         if (textureShadowId != 0)
         {
@@ -1044,12 +1058,11 @@ int main(void)
             textureId = pingPongFBO->pingpongBuffer[!horizontal];
             break;
         case 6:
-            //This is the fbo object so that we can see the buffer later (it gets written to in the light pass)
-            textureId = g_fbo->dirShadow_6_ID;
+            textureId = g_fbo->vertexEmmision_6_ID;
             break;
         case 7:
             textureId = g_fbo->vertexLightSpacePos_7_ID;
-            break;
+            break;      
         }
         
         //Upload colour buffer
@@ -1278,10 +1291,8 @@ void DrawGUI(float dt)
                     showTextureIndex = 7;
                 if (ImGui::Selectable("Bright Colours"))
                     showTextureIndex = 5;
-                if (ImGui::Selectable("Shadow Map"))
+                if (ImGui::Selectable("Emmision"))
                     showTextureIndex = 6;
-                
-
                 ImGui::EndTabItem();
             }
             ImGui::EndTabBar();
@@ -1360,7 +1371,15 @@ void DrawGUI(float dt)
                                 renderer->wholeObjectDiffuseRGBA.z = colors[2];
                             }
 
-                            ImGui::DragFloat("Emmision", &renderer->emmision, 0.1f, 0.0f, 10000.0f);
+                            float emmisionColors[3] = { renderer->emmisionDiffuse.r, renderer->emmisionDiffuse.g, renderer->emmisionDiffuse.b };
+                            ImGui::ColorEdit3("Emmision Diffuse", emmisionColors);
+                            renderer->emmisionDiffuse.r = emmisionColors[0];
+                            renderer->emmisionDiffuse.g = emmisionColors[1];
+                            renderer->emmisionDiffuse.b = emmisionColors[2];
+                            ImGui::DragFloat("Emmision Power", &renderer->emmisionPower, 0.1f, 0.0f, 10000.0f);
+                            ImGui::DragFloat("Brightness", &renderer->diffuseBrightness, 0.1f, 0.0f, 10000.0f);
+                            ImGui::SliderFloat("Roughness", &renderer->roughness, 0.0f, 1.0f);
+                            ImGui::SliderFloat("Metallic", &renderer->metallic, 0.0f, 1.0f);
 
                             float** tiling = new float* [2];
                             tiling[0] = &renderer->tiling.x;
@@ -1652,7 +1671,7 @@ void SetUpLights()
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[8].param1.x = 2;
 
-    gTheLights.theLights[8].power = 2.36;
+    gTheLights.theLights[8].power = 7.36;
     gTheLights.TurnOnLight(8);  // Or this!
     gTheLights.SetUpUniformLocations(program, 8);
 

@@ -178,11 +178,23 @@ bool cSceneLoader::SaveScene(std::string sceneName, glm::vec3 cameraPos, cEntity
 				miscNode->append_node(specularNode);
 			}
 
-			if (mesh->emmision != 1.0f) 
+			if (mesh->emmisionPower != 1.0f) 
 			{
 				xml_node<>* emmisionNode = doc->allocate_node(rapidxml::node_element, "Emmision");
-				std::string emmisionString = std::to_string(mesh->emmision);
+				std::string emmisionString = std::to_string(mesh->emmisionPower);
 				emmisionNode->value(doc->allocate_string(emmisionString.c_str()));
+
+				std::string rString = std::to_string(mesh->emmisionDiffuse.r);
+				std::string gString = std::to_string(mesh->emmisionDiffuse.g);
+				std::string bString = std::to_string(mesh->emmisionDiffuse.b);
+
+				char* r = doc->allocate_string(rString.c_str());
+				char* g = doc->allocate_string(gString.c_str());
+				char* b = doc->allocate_string(bString.c_str());
+
+				emmisionNode->append_attribute(doc->allocate_attribute("r", r));
+				emmisionNode->append_attribute(doc->allocate_attribute("g", g));
+				emmisionNode->append_attribute(doc->allocate_attribute("b", b));
 
 				miscNode->append_node(emmisionNode);
 			}
@@ -194,6 +206,15 @@ bool cSceneLoader::SaveScene(std::string sceneName, glm::vec3 cameraPos, cEntity
 				biasNode->value(doc->allocate_string(biasString.c_str()));
 
 				miscNode->append_node(biasNode);
+			}
+
+			if (mesh->diffuseBrightness != 1.0f)
+			{
+				xml_node<>* brightnessNode = doc->allocate_node(rapidxml::node_element, "Brightness");
+				std::string biasString = std::to_string(mesh->diffuseBrightness);
+				brightnessNode->value(doc->allocate_string(biasString.c_str()));
+
+				miscNode->append_node(brightnessNode);
 			}
 
 			cInstancedRenderer* instancedRenderer = entity->GetComponent<cInstancedRenderer>();

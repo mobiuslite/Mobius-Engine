@@ -24,6 +24,7 @@
 		<Model>plane.ply</Model>
 		<Model>grass.ply</Model>
 		<Model>monkey.fbx</Model>
+		<Model>sphere.fbx</Model>
 	</Models>
 	<Description>
 		<Mesh FriendlyName="Sky" MeshName="SkyBoxUV.ply">
@@ -40,10 +41,31 @@
 					<Texture Ratio="0.000000" Type="SkyBox"/>
 					<Texture Ratio="0.000000" Type="SkyBox"/>
 				</Textures>
-        <Emmision>5.1</Emmision>
+        <Brightness>2.45</Brightness>
 			</Misc>
 		</Mesh>
-		<Mesh FriendlyName="testing!" MeshName="Beachball.ply">
+
+    <Mesh FriendlyName="Sphere" MeshName="sphere.fbx">
+      <Transform>
+        <Position x="0.448472" y="8.637508" z="-12.3147"/>
+        <Rotation x="0.000000" y="0.000000" z="0.000000"/>
+        <Scale>0.025</Scale>
+      </Transform>
+      <Misc>
+        <UseLighting>true</UseLighting>
+        <Textures>
+          <Texture Ratio="1.000000">rust.bmp</Texture>
+          <Texture Ratio="0.000000"/>
+          <Texture Ratio="0.000000"/>
+          <Texture Ratio="0.000000"/>
+        </Textures>
+        <NormalMap>rustnorm.bmp</NormalMap>
+		<MetallicMap>rustmet.bmp</MetallicMap>
+		<RoughnessMap>rustrough.bmp</RoughnessMap>
+      </Misc>
+    </Mesh>
+
+    <Mesh FriendlyName="testing!" MeshName="Beachball.ply">
 			<Transform>
 				<Position x="-2.099999" y="-0.700000" z="-0.200000"/>
 				<Rotation x="0.000000" y="0.000000" z="-41.000011"/>
@@ -263,7 +285,6 @@
 				<UseLighting>true</UseLighting>
 				<NormalMap>waterNormalMap.bmp</NormalMap>
 				<UseSpecular/>
-        <Emmision>0.25</Emmision>
 			</Misc>
 		</Mesh>
 		<Mesh FriendlyName="glassClone" MeshName="glass.ply">
