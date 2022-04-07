@@ -9,6 +9,7 @@ public:
 	~cInstancedBrush();
 
 	void AddOffset(glm::vec3 pos);
+	void SaveOffset();
 	void ChangeRenderer(cInstancedRenderer* renderer);
 
 	bool HasRenderer() { return this->renderer != nullptr; }

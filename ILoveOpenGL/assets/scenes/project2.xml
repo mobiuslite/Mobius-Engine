@@ -24,6 +24,8 @@
 		<Model>plane.ply</Model>
 		<Model>grass.ply</Model>
 		<Model>monkey.fbx</Model>
+		<Model>sphere.fbx</Model>
+		<Model>grass.fbx</Model>
 	</Models>
 	<Description>
 		<Mesh FriendlyName="Sky" MeshName="SkyBoxUV.ply">
@@ -40,10 +42,33 @@
 					<Texture Ratio="0.000000" Type="SkyBox"/>
 					<Texture Ratio="0.000000" Type="SkyBox"/>
 				</Textures>
-        <Emmision>5.1</Emmision>
+        <Brightness>2.45</Brightness>
 			</Misc>
 		</Mesh>
-		<Mesh FriendlyName="testing!" MeshName="Beachball.ply">
+
+    <Mesh FriendlyName="Sphere" MeshName="sphere.fbx">
+      <Transform>
+        <Position x="0.448472" y="8.637508" z="-12.3147"/>
+        <Rotation x="0.000000" y="0.000000" z="0.000000"/>
+        <Scale>0.025</Scale>
+      </Transform>
+      <Misc>
+        <UseLighting>true</UseLighting>
+        <Textures>
+          <Texture Ratio="1.000000">rust.bmp</Texture>
+          <Texture Ratio="0.000000"/>
+          <Texture Ratio="0.000000"/>
+          <Texture Ratio="0.000000"/>
+        </Textures>
+        <NormalMap>rustnorm.bmp</NormalMap>
+				<MetallicMap>rustmet.bmp</MetallicMap>
+        <Metallic>1</Metallic>
+				<RoughnessMap>rustrough.bmp</RoughnessMap>
+        <Roughness>1</Roughness>
+      </Misc>
+    </Mesh>
+
+    <Mesh FriendlyName="testing!" MeshName="Beachball.ply">
 			<Transform>
 				<Position x="-2.099999" y="-0.700000" z="-0.200000"/>
 				<Rotation x="0.000000" y="0.000000" z="-41.000011"/>
@@ -85,7 +110,7 @@
 					<Texture Ratio="0.000000"/>
 				</Textures>
 				<AlphaMask>grassAlpha.bmp</AlphaMask>
-				<Instanced Amount="0" Offset="1.25" RandomStrength="0.78"></Instanced>
+				<Instanced Amount="0" Offset="1.25" RandomStrength="0.78">assets/scenes/grassOffsets.txt</Instanced>
         <UseWind></UseWind>
         <ShadowBias>0.005</ShadowBias>
 			</Misc>
@@ -263,7 +288,8 @@
 				<UseLighting>true</UseLighting>
 				<NormalMap>waterNormalMap.bmp</NormalMap>
 				<UseSpecular/>
-        <Emmision>0.25</Emmision>
+				<Brightness>.5</Brightness>
+        <Roughness>0.14</Roughness>
 			</Misc>
 		</Mesh>
 		<Mesh FriendlyName="glassClone" MeshName="glass.ply">

@@ -14,10 +14,11 @@ layout (location = 0)out vec4 pixelColour;
 layout (location = 1)out vec4 pixelMatColor;
 layout (location = 2)out vec4 pixelNormal;
 layout (location = 3)out vec4 pixelWorldPos;
-layout (location = 4)out vec4 pixelSpecular;
+//layout (location = 4)out vec4 pixelSpecular;
 layout (location = 5)out vec4 pixelBrightColour;
-layout (location = 6)out vec4 pixelShadowColour;
+layout (location = 6)out vec4 pixelEmmision;
 layout (location = 7)out vec4 pixelLightSpacePos;
+
 
 // The "whole object" colour (diffuse and specular)
 uniform vec4 wholeObjectDiffuseColour;	// Whole object diffuse colour
@@ -38,8 +39,13 @@ uniform bool bUseSpecular;
 // This is the camera eye location (update every frame)
 uniform vec4 eyeLocation;
 
-uniform float emmisionPower;
+uniform vec3 emmision;
 uniform float shadowBias;
+
+uniform float roughness;
+uniform float metallic;
+
+uniform float brightness;
 
 //tiling xy, offset zw
 uniform vec4 tilingAndOffset;
@@ -84,7 +90,8 @@ uniform sampler2D texture_MatColor;
 uniform sampler2D texture_Normal;
 uniform sampler2D texture_WorldPos;
 uniform sampler2D texture_LightSpacePos;
-uniform sampler2D texture_Specular;
+//uniform sampler2D texture_Specular;
+uniform sampler2D texture_Emmision;
 
 uniform sampler2D texLightpassColorBuf;
 uniform sampler2D bloomMapColorBuf;
@@ -93,13 +100,20 @@ uniform sampler2D shadowMapColorBuf;
 uniform bool bUseAlphaMask;
 uniform sampler2D alphaMask;
 
+uniform bool bUseMetallicMap;
+uniform sampler2D metallicMap;
+
+uniform bool bUseRoughMap;
+uniform sampler2D roughMap;
+
 uniform bool bUseNormalMap;
 uniform sampler2D normalMap;
 uniform vec2 normalOffset;
 
 uniform bool bUseSkybox;
-uniform bool bIsImposter;
 uniform bool bShowBloom;
+
+uniform bool bIsPlane;
 
 uniform bool bUseSkyboxReflections;
 
@@ -115,6 +129,15 @@ uniform vec4 postprocessingVariables;
 uniform float ambientPower;
 
 uniform samplerCube skyBox; // GL_TEXTURE_CUBE_MAP
+
+const float PI = 3.14159265359;
+
+float DistributionGGX(vec3 N, vec3 H, float roughness);
+float GeometrySchlickGGX(float NdotV, float roughness);
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
+vec3 fresnelSchlick(float cosTheta, vec3 F0);
+
+vec3 PBR(vec3 albedo, vec3 normal, vec3 worldPos, vec4 lightSpacePos, float roughness, float metallic);
 
 vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal, 
                             vec3 vertexWorldPos, vec4 vertexSpecular, vec4 lightSpacePos);
@@ -134,7 +157,18 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
 	//float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
 	float bias = shadowBias;
 
-	float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+	//float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+	float shadow = 0.0f;
+	vec2 texelSize = 1.0 / textureSize(shadowMapColorBuf, 0);
+	for (int x = -1; x <= 1; ++x)
+	{
+		for (int y = -1; y <= 1; ++y)
+		{
+			float pcfDepth = texture(shadowMapColorBuf, projCoords.xy + vec2(x, y) * texelSize).r;
+			shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+		}
+	}
+	shadow /= 9.0;
 
 	if (currentDepth > 1.0)
 		shadow = 0.0;
@@ -150,6 +184,10 @@ void main()
 
 	vec4 normals = fNormal;
 	vec4 vertexDiffuseColour = fVertexColour;
+
+	float pixelRoughness = roughness;
+	float pixelMetallic = metallic;
+
 	//pixelFirstPass = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 	if(passNumber == RENDER_PASS_2_EFFECTS_PASS)
 	{
@@ -196,13 +234,19 @@ void main()
 
 		//Sends the textures back to their fbo buffers, so we can display them for debugging purposes
 		pixelMatColor = texture(texture_MatColor, UVLookup).rgba;
+
+		//w value = roughness
 		pixelNormal = texture(texture_Normal, UVLookup).rgba;
+		float lightingRoughness = pixelNormal.w;
+
 		pixelWorldPos = texture(texture_WorldPos, UVLookup).rgba;
 		pixelLightSpacePos = texture(texture_LightSpacePos, UVLookup).rgba;
-		pixelSpecular = texture(texture_Specular, UVLookup).rgba;
+		//pixelSpecular = texture(texture_Specular, UVLookup).rgba;
+
+		pixelEmmision = texture(texture_Emmision, UVLookup).rgba;
+		float lightingMetallic = pixelEmmision.w;
 
 		float depthValue = texture(shadowMapColorBuf, UVLookup).r;
-		pixelShadowColour = vec4(vec3(depthValue), 1.0);
 
 		//If not lit
 		if(pixelWorldPos.w == 0.0f)
@@ -211,15 +255,22 @@ void main()
 		}
 		else
 		{
-			pixelColour = calcualteLightContrib( pixelMatColor.rgb, pixelNormal.xyz, pixelWorldPos.xyz, pixelSpecular.rgba, pixelLightSpacePos);		
-			pixelColour.a = 1.0f;
-		}
+			//pixelColour = calcualteLightContrib( pixelMatColor.rgb, pixelNormal.xyz, pixelWorldPos.xyz, pixelSpecular.rgba, pixelLightSpacePos);		
+			//pixelColour.a = 1.0f;
 
-		float emmision = pixelMatColor.w;
-		pixelColour.rgb *= emmision;
+			vec3 pbrColor = PBR(pixelMatColor.rgb, pixelNormal.xyz, pixelWorldPos.xyz, pixelLightSpacePos, lightingRoughness, lightingMetallic);
+			
+			
+			vec3 ambient = ambientPower * pixelMatColor.rgb;
+			vec3 color = ambient + pbrColor;
+			
+			pixelColour = vec4(color, 1.0);
+		}
+		
+		pixelColour.rgb += pixelEmmision.rgb;
 
 		//Get bright parts of screen for bloom
-		float brightness = dot(pixelColour.rgb, vec3(0.2126f, 0.7152, 0.0722f));
+		float brightness = dot(pixelColour.rgb, vec3(0.2126f, 0.7152f, 0.0722f));
 		if(brightness > postprocessingVariables.w)
 		{
 			pixelBrightColour = vec4(pixelColour.rgb, 1.0f);
@@ -238,14 +289,24 @@ void main()
 	
 	}
 
+	if (bIsPlane)
+	{
+		if (!gl_FrontFacing)
+		{
+			normals = -normals;
+		}
+	}
+
 	if(bUseSkybox)
 	{	
 		vec4 skyBoxTexture = texture(skyBox, fVertPosition.xyz);
 		//pixelColour = skyBoxTexture;
 
-		pixelMatColor = pow(vec4(skyBoxTexture.rgb, 1.0f), vec4(postprocessingVariables.x));	
-		pixelMatColor.w = emmisionPower;
+		pixelMatColor = pow(vec4(skyBoxTexture.rgb * brightness, 1.0f), vec4(postprocessingVariables.x));	
+		pixelMatColor.w = 1.0f;
 		pixelWorldPos = vec4(fVertWorldLocation.xyz, 0.0f);
+
+		pixelEmmision = vec4(emmision, metallic);
 
 		return;
 	}
@@ -271,6 +332,18 @@ void main()
 		normals.xyz = normalize(TBN * normalMapTexture);
 	}
 
+	if (bUseMetallicMap)
+	{
+		float mapTexture = texture(metallicMap, fUVx2.xy).r;
+		pixelMetallic = mapTexture * metallic;
+	}
+
+	if (bUseRoughMap)
+	{
+		float mapTexture = texture(roughMap, fUVx2.xy).r;
+		pixelRoughness = mapTexture * roughness;
+	}
+
 	if(bDebugMode && bDebugShowNormals)
 	{
 		pixelColour.rgb = normals.xyz;
@@ -283,16 +356,6 @@ void main()
 		vec3 textureColour = (texture(texture_00, vec2(fUVx2.x * tilingAndOffset.x, fUVx2.y * tilingAndOffset.y)).rgb * textureRatios.x) + (texture(texture_01, fUVx2.xy).rgb * textureRatios.y);
 
 		vertexDiffuseColour = vec4(textureColour, 1.0f);
-
-		if(bIsImposter)
-		{
-			float averageTexValue = textureColour.r + textureColour.g + textureColour.b;
-			averageTexValue /= 3.0f;
-
-			float alphaValue = averageTexValue;
-
-			vertexDiffuseColour.a = alphaValue;
-		}
 	}
 	
 	// Use model vertex colours or not?
@@ -331,26 +394,130 @@ void main()
 	//Most textures are already in linear space, because they are created by an artist wit their eyes
 	//and monitors are already corrected
 	//So using gamma correction again would correct them twice
-	pixelMatColor = pow(vec4(vertexDiffuseColour.rgb, 1.0f), vec4(postprocessingVariables.x));
-	pixelMatColor.w = emmisionPower;
+	pixelMatColor = pow(vec4(vertexDiffuseColour.rgb * brightness, 1.0f), vec4(postprocessingVariables.x));
+	pixelMatColor.w = 1.0f;
 
-	pixelNormal = vec4(normalize(normals.xyz), 1.0f);
+	pixelNormal = vec4(normalize(normals.xyz), pixelRoughness);
+
 	pixelWorldPos = vec4(fVertWorldLocation.xyz, 1.0f);
 	pixelLightSpacePos = fLightSpacePos;
 
-	if(bUseSpecular){
-		//pixelSpecular = wholeObjectSpecularColour.rgba;
-		pixelSpecular = wholeObjectSpecularColour;
-		pixelSpecular.rgb *= 10.0f;
-		pixelSpecular.a *= 0.001f;
-	}else{
-		pixelSpecular = vec4(0.0f, 0.0f, 0.0f, 0.0f);
-	}
+	pixelEmmision = vec4(emmision, pixelMetallic);
 
-	
+	//if(bUseSpecular){
+	//	//pixelSpecular = wholeObjectSpecularColour.rgba;
+	//	pixelSpecular = wholeObjectSpecularColour;
+	//}else{
+	//	pixelSpecular = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	//}	
 };
 
+vec3 PBR(vec3 albedo, vec3 normal, vec3 worldPos, vec4 lightSpacePos, float roughness, float metallic)
+{
+	vec3 N = normalize(normal);
+	vec3 V = normalize(eyeLocation.xyz - worldPos);
 
+	vec3 F0 = vec3(0.04);
+	F0 = mix(F0, albedo, metallic);
+
+	vec3 Lo = vec3(0.0);
+	for (int index = 0; index < NUMBEROFLIGHTS; index++)
+	{
+		if (theLights[index].param2.x == 0.0f)
+		{	// it's off
+			continue;
+		}
+
+		vec3 lightVec;
+		float attenuation = theLights[index].atten.z;
+
+		int intLightType = int(theLights[index].param1.x);
+
+		if (intLightType == DIRECTIONAL_LIGHT_TYPE)		// = 2
+		{
+			//lightVec = theLights[index].direction.xyz;
+			lightVec = theLights[index].position.xyz;
+			attenuation = 1.0;
+		}
+		else
+		{
+			lightVec = theLights[index].position.xyz - worldPos;
+			float distanceToLight = length(lightVec);
+
+			if (distanceToLight > theLights[index].atten.w)
+			{
+				continue;
+			}
+		}
+
+		vec3 L = normalize(lightVec);
+		vec3 H = normalize(V + L);		
+		vec3 radiance = theLights[index].diffuse.rgb * attenuation;
+
+		float NDF = DistributionGGX(N, H, roughness);
+		float G = GeometrySmith(N, V, L, roughness);
+		vec3 F = fresnelSchlick(max(dot(V, H), 0.0), F0);
+
+		vec3 kS = F;
+		vec3 kD = vec3(1.0) - kS;
+		kD *= 1.0 - metallic;
+
+		//Calculate Cook-Torrance specular BRDF
+		vec3 numerator = NDF * G * F;
+		float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+		vec3 specular = numerator / denominator;
+
+		float NdotL = max(dot(N, L), 0.0);
+
+		float shadow = 0.0f;
+		if (intLightType == DIRECTIONAL_LIGHT_TYPE)		// = 2
+		{
+			shadow = ShadowCalculation(lightSpacePos, N, L);
+		}
+
+		Lo += ((kD * albedo / PI + specular) * radiance * NdotL) * (1.0f - shadow);
+	}
+	return Lo;
+}
+
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+	float a = roughness * roughness;
+	float a2 = a * a;
+	float NdotH = max(dot(N, H), 0.0);
+	float NdotH2 = NdotH * NdotH;
+
+	float num = a2;
+	float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+	denom = PI * denom * denom;
+
+	return num / denom;
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+	float r = (roughness + 1.0);
+	float k = (r * r) / 8.0;
+
+	float num = NdotV;
+	float denom = NdotV * (1.0 - k) + k;
+
+	return num / denom;
+}
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+	float NdotV = max(dot(N, V), 0.0);
+	float NdotL = max(dot(N, L), 0.0);
+	float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+	float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+	return ggx1 * ggx2;
+}
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+	return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
 
 // Calculates the colour of the vertex based on the lighting and vertex information:
 vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal, 
@@ -400,7 +567,7 @@ vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal,
 
 			vec3 eyeVector = normalize(eyeLocation.xyz - vertexWorldPos.xyz);
 			vec3 halfwayVec = normalize(lightVector + eyeVector);
-			float objectSpecularPower = vertexSpecular.a * 1000.0f;
+			float objectSpecularPower = vertexSpecular.a;
 
 			vec3 lightSpecularContrib = vec3(0.0f);
 			if (dotProduct > 0.0f && vertexSpecular.w > 0.0f)
@@ -451,7 +618,7 @@ vec4 calcualteLightContrib( vec3 vertexMaterialColour, vec3 vertexNormal,
 		vec3 eyeVector = normalize(eyeLocation.xyz - vertexWorldPos.xyz);
 		vec3 halfwayVec = normalize(lightVector + eyeVector);
 		// To simplify, we are NOT using the light specular value, just the object’s.
-		float objectSpecularPower = vertexSpecular.a * 1000.0f; 
+		float objectSpecularPower = vertexSpecular.a; 
 		//float objectSpecularPower = 10.0f; 
 		
 //		lightSpecularContrib = pow( max(0.0f, dot( eyeVector, reflectVector) ), objectSpecularPower )

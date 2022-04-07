@@ -192,11 +192,58 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 				}
 			}
 
+			xml_node<>* metallicNode = miscNode->first_node("Metallic");
+			if (metallicNode != nullptr)
+			{
+				newMesh->metallic = std::stof(metallicNode->value());
+			}
+			xml_node<>* metallicMapNode = miscNode->first_node("MetallicMap");
+			if (metallicMapNode != nullptr)
+			{
+				newMesh->useMetallicMap = true;
+				newMesh->metallicMapName = metallicMapNode->value();
+
+				if (textureManager->getTextureIDFromName(newMesh->metallicMapName) == 0)
+				{
+					if (!textureManager->Create2DTextureFromBMPFile(newMesh->metallicMapName, true))
+					{
+						std::cout << "ERROR! Could not add metallic map to manager: " << newMesh->metallicMapName << std::endl;
+					}
+				}
+			}
+
+			xml_node<>* roughNode = miscNode->first_node("Roughness");
+			if (roughNode != nullptr)
+			{
+				newMesh->roughness = std::stof(roughNode->value());
+			}
+			xml_node<>* roughMapNode = miscNode->first_node("RoughnessMap");
+			if (roughMapNode != nullptr)
+			{
+				newMesh->useRoughnessMap = true;
+				newMesh->roughnessMapName = roughMapNode->value();
+
+				if (textureManager->getTextureIDFromName(newMesh->roughnessMapName) == 0)
+				{
+					if (!textureManager->Create2DTextureFromBMPFile(newMesh->roughnessMapName, true))
+					{
+						std::cout << "ERROR! Could not add roughness map to manager: " << newMesh->roughnessMapName << std::endl;
+					}
+				}
+			}
+
 			xml_node<>* emmisionNode = miscNode->first_node("Emmision");
 			if (emmisionNode != nullptr)
 			{
 				float emmision = std::stof(emmisionNode->value());
-				newMesh->emmision = emmision;
+				newMesh->emmisionPower = emmision;
+
+				glm::vec3 colors;
+				colors.r = std::stof(emmisionNode->first_attribute("r")->value());
+				colors.g = std::stof(emmisionNode->first_attribute("g")->value());
+				colors.b = std::stof(emmisionNode->first_attribute("b")->value());
+
+				newMesh->emmisionDiffuse = colors;
 			}
 			xml_node<>* shadowBiasNode = miscNode->first_node("ShadowBias");
 			if (shadowBiasNode != nullptr)
@@ -205,14 +252,22 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 				newMesh->shadowBias = bias;
 			}
 
+			xml_node<>* brightnessNode = miscNode->first_node("Brightness");
+			if (brightnessNode != nullptr)
+			{
+				float brightness = std::stof(brightnessNode->value());
+				newMesh->diffuseBrightness = brightness;
+			}
+
 			xml_node<>* treeNode = miscNode->first_node("Instanced");
 			if (treeNode != nullptr)
 			{
+				std::string fileName = treeNode->value();
 				unsigned int amount = std::stoi(treeNode->first_attribute("Amount")->value());
 				float offset = std::stof(treeNode->first_attribute("Offset")->value());
 				float randomStrength = std::stof(treeNode->first_attribute("RandomStrength")->value());
 
-				cInstancedRenderer* instancedRenderer = new cInstancedRenderer(amount, offset, randomStrength);
+				cInstancedRenderer* instancedRenderer = new cInstancedRenderer(amount, offset, fileName, randomStrength);
 				newEntity->AddComponent<cInstancedRenderer>(instancedRenderer);
 			}
 

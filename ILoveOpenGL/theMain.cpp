@@ -57,11 +57,11 @@ struct PostProcessingInfo
 
     bool useExposureToneMapping = true;
 
-    float bloomThreshhold = 5.0f;
-    float bloomSize = 1.0f;
+    float bloomThreshhold = 5.18f;
+    float bloomSize = 1.75f;
     unsigned int bloomIterationAmount = 15;
 
-    float ambientPower = 0.1f;
+    float ambientPower = 0.05f;
 };
 
 struct WindInfo
@@ -610,6 +610,12 @@ int main(void)
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseHeightMap", glGetUniformLocation(program, "bUseHeightMap")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("heightMap", glGetUniformLocation(program, "heightMap")));
 
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseMetallicMap", glGetUniformLocation(program, "bUseMetallicMap")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("metallicMap", glGetUniformLocation(program, "metallicMap")));
+
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseRoughMap", glGetUniformLocation(program, "bUseRoughMap")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("roughMap", glGetUniformLocation(program, "roughMap")));
+
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkybox", glGetUniformLocation(program, "bUseSkybox")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("skyBox", glGetUniformLocation(program, "skyBox")));
 
@@ -627,7 +633,7 @@ int main(void)
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkyboxRefraction", glGetUniformLocation(program, "bUseSkyboxRefraction")));
 
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("postprocessingVariables", glGetUniformLocation(program, "postprocessingVariables")));
-    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("emmisionPower", glGetUniformLocation(program, "emmisionPower")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("emmision", glGetUniformLocation(program, "emmision")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bloomMapColorBuf", glGetUniformLocation(program, "bloomMapColorBuf")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("ambientPower", glGetUniformLocation(program, "ambientPower")));
 
@@ -644,6 +650,13 @@ int main(void)
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("windTime", glGetUniformLocation(program, "windTime")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("windStrength", glGetUniformLocation(program, "windStrength")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("windSize", glGetUniformLocation(program, "windSize")));
+
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("roughness", glGetUniformLocation(program, "roughness")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("metallic", glGetUniformLocation(program, "metallic")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_Emmision", glGetUniformLocation(program, "texture_Emmision")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("brightness", glGetUniformLocation(program, "brightness")));
+
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bIsPlane", glGetUniformLocation(program, "bIsPlane")));
 
     cShaderManager::cShaderProgram* pingPongShader = gShaderManager.pGetShaderProgramFromFriendlyName("PingPong");
 
@@ -685,6 +698,9 @@ int main(void)
     shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windTime", glGetUniformLocation(shadowShader->ID, "windTime")));
     shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windStrength", glGetUniformLocation(shadowShader->ID, "windStrength")));
     shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("windSize", glGetUniformLocation(shadowShader->ID, "windSize")));
+
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseAlphaMask", glGetUniformLocation(shadowShader->ID, "bUseAlphaMask")));
+    shadowShader->uniformLocations.insert(std::pair<std::string, GLint>("alphaMask", glGetUniformLocation(shadowShader->ID, "alphaMask")));
     
     //Setup instanced renderers;
     {
@@ -786,13 +802,14 @@ int main(void)
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         g_fbo->clearBuffers(true, true);
 
+       
+
         //Clear fbo buffers
         glBindFramebuffer(GL_FRAMEBUFFER, g_fbo->ID);
         g_fbo->clearBuffers(true, true);
-
         // Turn on the depth buffer
         glEnable(GL_DEPTH_TEST);    // Check if the pixel is already closer
-
+        //glShadeModel(GL_SMOOTH);
         // *******************************************************
         // Screen is cleared and we are ready to draw the scene...
         // *******************************************************
@@ -838,12 +855,12 @@ int main(void)
 
         glm::vec4 sunPos = gTheLights.theLights[8].position;
         glm::vec3 sunPosVec3 = glm::vec3(sunPos.x, sunPos.y, sunPos.z);
-        glm::vec4 sunDir = gTheLights.theLights[8].direction;
-        glm::vec3 sunDirVec3 = glm::vec3(sunDir.x, sunDir.y, sunDir.z);
-
-        glm::vec3 sunLookAtDir = sunPosVec3 + sunDirVec3;
+        //glm::vec4 sunDir = gTheLights.theLights[8].direction;
+        //glm::vec3 sunDirVec3 = glm::vec3(sunDir.x, sunDir.y, sunDir.z);
+        //
+        //glm::vec3 sunLookAtDir = sunPosVec3 + sunDirVec3;
                                     //look at center of scene
-        v = glm::lookAt(sunPosVec3, sunLookAtDir, glm::vec3(0.0f, 1.0f, 0.0f));
+        v = glm::lookAt(sunPosVec3, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
         glm::mat4 lightSpaceMat = p * v;
         //glm::mat4 lightSpaceMat = v * p;
@@ -852,9 +869,7 @@ int main(void)
         glUniformMatrix4fv(shadowShader->uniformLocations["matProjection"], 1, GL_FALSE, glm::value_ptr(p));
         glUniform1f(shadowShader->uniformLocations["bUseInstancedRendering"], (float)GL_FALSE);
         glUniform1f(shadowShader->uniformLocations["bUseHeightMap"], (float)GL_FALSE);
-
         Draw(&opaqueMeshes, &transparentMeshes, shadowShader, deltaTime);
-
         //Render normal scene
         //glCullFace(GL_BACK);
 
@@ -873,7 +888,6 @@ int main(void)
         float usedFov = fov;
 
         ratio = g_fbo->width / (float)g_fbo->height;
-
         p = glm::perspective(glm::radians(usedFov),
             ratio,
             0.1f,
@@ -890,8 +904,6 @@ int main(void)
         //Draw scene
         Draw(&opaqueMeshes, &transparentMeshes, normalShader, deltaTime);    
         //End of zeroth pass
-
-        
         //Lighting Pass
         glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_1_LIGHTING);
         glm::vec3 fullscreenPos = glm::vec3(0.f, 0.f, -10.f);
@@ -911,7 +923,6 @@ int main(void)
         fullscreenTransform->scale = glm::vec3(10.0f);
         fullscreenTransform->Rotate(glm::vec3(0.0f, glm::radians(180.0f), 0.0f));
        
-       
         v = glm::lookAt(fullscreenPos,     // "eye"
             fullscreenPos + glm::vec3(0.f, 0.f, 1.0f) ,  // "at"
             cameraUp);
@@ -919,7 +930,7 @@ int main(void)
         
         p = glm::ortho(0.0f, 1.0f / (float)width, 0.0f, 1.0f / (float)height, 0.01f, 1000.0f);
         glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
-        
+
         //Uploading textures to gpu
         GLint textureMatId = g_fbo->vertexMatColour_1_ID;
         if (textureMatId != 0)
@@ -957,6 +968,15 @@ int main(void)
             glUniform1i(normalShader->uniformLocations["texture_Specular"], unit);
         }
 
+        GLint textureEmmisionId = g_fbo->vertexEmmision_6_ID;
+        if (textureEmmisionId != 0)
+        {
+            GLint unit = 29;
+            glActiveTexture(unit + GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textureEmmisionId);
+            glUniform1i(normalShader->uniformLocations["texture_Emmision"], unit);
+        }
+
         GLint textureShadowId = shadowFBO->depthMap;
         if (textureShadowId != 0)
         {
@@ -974,7 +994,6 @@ int main(void)
             glBindTexture(GL_TEXTURE_2D, textureLightSpace);
             glUniform1i(normalShader->uniformLocations["texture_LightSpacePos"], unit);
         }
-
         g_fbo->clearColourBuffer(0);  
 
         //fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
@@ -1015,7 +1034,6 @@ int main(void)
 
         glfwGetFramebufferSize(window, &width, &height);
         ratio = width / (float)height;
-        
         glViewport(0, 0, width, height);
         
         glUniform2f(normalShader->uniformLocations["screenWidthHeight"], width, height);
@@ -1044,12 +1062,11 @@ int main(void)
             textureId = pingPongFBO->pingpongBuffer[!horizontal];
             break;
         case 6:
-            //This is the fbo object so that we can see the buffer later (it gets written to in the light pass)
-            textureId = g_fbo->dirShadow_6_ID;
+            textureId = g_fbo->vertexEmmision_6_ID;
             break;
         case 7:
             textureId = g_fbo->vertexLightSpacePos_7_ID;
-            break;
+            break;      
         }
         
         //Upload colour buffer
@@ -1150,7 +1167,6 @@ int main(void)
 void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparentMeshes, cShaderManager::cShaderProgram* program, float deltaTime)
 {
     GLenum err;
-
     //Upload wind map
     GLint windNoise = g_textureManager.getTextureIDFromName("noise.bmp");
     if (windNoise != 0)
@@ -1177,13 +1193,12 @@ void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparen
         {
             curEntity->GetComponent<cTransform>()->position = cameraEye;
         }
-
         DrawObject(curEntity, matModel, program, gVAOManager, g_textureManager, cameraEye);
+
     }//for (unsigned int index
 
     //glEnable(GL_BLEND);
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     //Draw transparent objects
     for (unsigned int index = 0; index != transparentMeshes->size(); index++)
     {
@@ -1201,31 +1216,6 @@ void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparen
 
         DrawObject(curEntity, matModel, program, gVAOManager, g_textureManager, cameraEye);
     }//for (unsigned int index
-   
-    //Render debug sphere
-    if (isDebugMode)
-    {
-        glUniform1f(program->uniformLocations["bDebugMode"], (float)GL_TRUE);
-
-        glUniform1f(program->uniformLocations["bDebugShowLighting"], (float)debugShowLighting);
-        glUniform1f(program->uniformLocations["bDebugShowNormals"], (float)debugShowNormals);
-
-        cMeshRenderer* debugSphereMesh = g_DebugSphere->GetComponent<cMeshRenderer>();
-        cTransform* debugSphereTransform = g_DebugSphere->GetComponent<cTransform>();
-
-        debugSphereTransform->position = gTheLights.theLights[g_selectedLight].position;
-        debugSphereTransform->scale = glm::vec3(0.01f);
-        debugSphereMesh->bDontLight = true;
-        debugSphereMesh->bUseObjectDebugColour = true;
-        debugSphereMesh->objectDebugColourRGBA = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-
-        glm::mat4 matModelDS = glm::mat4(1.0f);
-        DrawObject(g_DebugSphere, matModelDS, program, gVAOManager, g_textureManager, cameraEye);
-    }
-    else
-    {
-        glUniform1f(program->uniformLocations["bDebugMode"], (float)GL_FALSE);
-    }
 }
 
 void DrawGUI(float dt)
@@ -1278,10 +1268,8 @@ void DrawGUI(float dt)
                     showTextureIndex = 7;
                 if (ImGui::Selectable("Bright Colours"))
                     showTextureIndex = 5;
-                if (ImGui::Selectable("Shadow Map"))
+                if (ImGui::Selectable("Emmision"))
                     showTextureIndex = 6;
-                
-
                 ImGui::EndTabItem();
             }
             ImGui::EndTabBar();
@@ -1360,7 +1348,15 @@ void DrawGUI(float dt)
                                 renderer->wholeObjectDiffuseRGBA.z = colors[2];
                             }
 
-                            ImGui::DragFloat("Emmision", &renderer->emmision, 0.1f, 0.0f, 10000.0f);
+                            float emmisionColors[3] = { renderer->emmisionDiffuse.r, renderer->emmisionDiffuse.g, renderer->emmisionDiffuse.b };
+                            ImGui::ColorEdit3("Emmision Diffuse", emmisionColors);
+                            renderer->emmisionDiffuse.r = emmisionColors[0];
+                            renderer->emmisionDiffuse.g = emmisionColors[1];
+                            renderer->emmisionDiffuse.b = emmisionColors[2];
+                            ImGui::DragFloat("Emmision Power", &renderer->emmisionPower, 0.1f, 0.0f, 10000.0f);
+                            ImGui::DragFloat("Brightness", &renderer->diffuseBrightness, 0.1f, 0.0f, 10000.0f);
+                            ImGui::SliderFloat("Roughness", &renderer->roughness, 0.0f, 1.0f);
+                            ImGui::SliderFloat("Metallic", &renderer->metallic, 0.0f, 1.0f);
 
                             float** tiling = new float* [2];
                             tiling[0] = &renderer->tiling.x;
@@ -1393,6 +1389,11 @@ void DrawGUI(float dt)
                                 {
                                     brush.ChangeRenderer(instancedRenderer);
                                     std::cout << "Set Brush Entity to \"" << curEntity->name << "\"" << std::endl;
+                                }
+                                if (ImGui::Button("Save Offsets"))
+                                {
+                                    instancedRenderer->SaveOffsets();
+                                    std::cout << "Saved to file" << std::endl;
                                 }
                                 ImGui::EndTabItem();
                             }
@@ -1553,6 +1554,7 @@ void SetUpLights()
     //gTheLights.theLights[0].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[0].param1.x = 0;
+    gTheLights.theLights[0].power = 38.0f;
     gTheLights.TurnOnLight(0);  // Or this!
     gTheLights.SetUpUniformLocations(program, 0);
 
@@ -1563,6 +1565,7 @@ void SetUpLights()
     // gTheLights.theLights[1].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
      //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[1].param1.x = 0;
+    gTheLights.theLights[1].power = 38.0f;
     gTheLights.TurnOnLight(1);  // Or this!
     gTheLights.SetUpUniformLocations(program, 1);
 
@@ -1573,6 +1576,7 @@ void SetUpLights()
     //gTheLights.theLights[2].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[2].param1.x = 0;
+    gTheLights.theLights[2].power = 38.0f;
     gTheLights.TurnOnLight(2);  // Or this!
     gTheLights.SetUpUniformLocations(program, 2);
 
@@ -1583,6 +1587,7 @@ void SetUpLights()
     //gTheLights.theLights[3].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[3].param1.x = 0;
+    gTheLights.theLights[3].power = 38.0f;
     gTheLights.TurnOnLight(3);  // Or this!
     gTheLights.SetUpUniformLocations(program, 3);
 
@@ -1593,6 +1598,7 @@ void SetUpLights()
     //gTheLights.theLights[3].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[6].param1.x = 0;
+    gTheLights.theLights[6].power = 38.0f;
     gTheLights.TurnOnLight(6);  // Or this!
     gTheLights.SetUpUniformLocations(program, 6);
 
@@ -1603,6 +1609,7 @@ void SetUpLights()
     //gTheLights.theLights[3].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[7].param1.x = 0;
+    gTheLights.theLights[7].power = 38.0f;
     gTheLights.TurnOnLight(7);  // Or this!
     gTheLights.SetUpUniformLocations(program, 7);
 
@@ -1613,6 +1620,7 @@ void SetUpLights()
     //gTheLights.theLights[0].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[9].param1.x = 0;
+    gTheLights.theLights[9].power = 38.0f;
     gTheLights.TurnOnLight(9);  // Or this!
     gTheLights.SetUpUniformLocations(program, 9);
 
@@ -1652,7 +1660,7 @@ void SetUpLights()
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[8].param1.x = 2;
 
-    gTheLights.theLights[8].power = 2.36;
+    gTheLights.theLights[8].power = 7.36;
     gTheLights.TurnOnLight(8);  // Or this!
     gTheLights.SetUpUniformLocations(program, 8);
 

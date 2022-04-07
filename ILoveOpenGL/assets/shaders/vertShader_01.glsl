@@ -47,7 +47,10 @@ void main()
 	//mvp = p * v * matModel; from C++ code
 	
 	mat4 MVP = matProjection * matView * matModel;
+
+	//vec3 modelPos = vec3(matModel[3][0], matModel[3][1], matModel[3][2]);
 			
+	vec4 vertNormal = vNormal;
 	vec4 vertPosition = vPosition;
 
 	if (bUseHeightMap)
@@ -93,7 +96,7 @@ void main()
 	// Calculate the normal based on any rotation we've applied.
 	// This inverse transpose removes scaling and tranlation (movement) 
 	// 	from the matrix.
-	fNormal = matModelInverseTranspose * normalize(vNormal);
+	fNormal = matModelInverseTranspose * normalize(vertNormal);
 	fNormal = normalize(fNormal);
 	
 	// Copy the rest of the vertex values:
@@ -103,7 +106,7 @@ void main()
 
 	vec3 T = normalize(mVector * vTangent.xyz);
 	vec3 B = normalize(mVector * vBiNormal.xyz);
-	vec3 N = normalize(mVector * vNormal.xyz);
+	vec3 N = normalize(mVector * vertNormal.xyz);
 
 	TBN = mat3(T, B, N);
 };

@@ -21,6 +21,7 @@ void cInstancedBrush::AddOffset(glm::vec3 pos)
 		}
 	}
 }
+
 void cInstancedBrush::ChangeRenderer(cInstancedRenderer* renderer)
 {
 	this->renderer = renderer;

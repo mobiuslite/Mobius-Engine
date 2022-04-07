@@ -23,6 +23,7 @@ bool cFBO::shutdown(void)
 	glDeleteTextures( 1, &(this->vertexSpecular_4_ID) );
 
 	glDeleteTextures( 1, &(this->brightColour_5_ID) );
+	glDeleteTextures( 1, &(this->vertexLightSpacePos_7_ID) );
 
 	glDeleteTextures( 1, &(this->depthTexture_ID) );
 
@@ -95,9 +96,9 @@ bool cFBO::init( int width, int height, std::string &error )
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	glGenTextures(1, &(this->dirShadow_6_ID));
-	glBindTexture(GL_TEXTURE_2D, this->dirShadow_6_ID);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB16F, this->width, this->height);
+	glGenTextures(1, &(this->vertexEmmision_6_ID));
+	glBindTexture(GL_TEXTURE_2D, this->vertexEmmision_6_ID);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, this->width, this->height);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -146,11 +147,12 @@ bool cFBO::init( int width, int height, std::string &error )
 
 	glFramebufferTexture(GL_FRAMEBUFFER,
 						 GL_COLOR_ATTACHMENT6,
-						 this->dirShadow_6_ID, 0);
+						 this->vertexEmmision_6_ID, 0);
 
 	glFramebufferTexture(GL_FRAMEBUFFER,
 		GL_COLOR_ATTACHMENT7,
 		this->vertexLightSpacePos_7_ID, 0);
+
 
 //	glFramebufferTexture(GL_FRAMEBUFFER,
 //						 GL_DEPTH_ATTACHMENT,
@@ -168,7 +170,7 @@ bool cFBO::init( int width, int height, std::string &error )
 		GL_COLOR_ATTACHMENT4,
 		GL_COLOR_ATTACHMENT5,
 		GL_COLOR_ATTACHMENT6,
-		GL_COLOR_ATTACHMENT7
+		GL_COLOR_ATTACHMENT7,
 	};
 	glDrawBuffers(8, draw_bufers);		// There are 4 outputs now
 
@@ -245,9 +247,10 @@ void cFBO::clearBuffers(bool bClearColour, bool bClearDepth)
 	glClearBufferfv(GL_COLOR, 3, &zero);
 	glClearBufferfv(GL_COLOR, 4, rgbBlack);
 	glClearBufferfv(GL_COLOR, 5, rgbBlack);
-
 	glClearBufferfv(GL_COLOR, 6, rgbBlack);
 	glClearBufferfv(GL_COLOR, 7, rgbBlack);
+
+
 	// If buffer is GL_STENCIL, drawbuffer must be zero, and value points to a 
 	//  single value to clear the stencil buffer to. Masking is performed in the 
 	//  same fashion as for glClearStencil. Only the *iv forms of these commands 
@@ -265,7 +268,6 @@ void cFBO::clearBuffers(bool bClearColour, bool bClearDepth)
 						 1.0f,	// Clear value for depth
 						 0 );	// Clear value for stencil
 	}
-
 	return;
 }
 
