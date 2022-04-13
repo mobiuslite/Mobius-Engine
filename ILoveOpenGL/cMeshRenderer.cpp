@@ -52,8 +52,6 @@ cMeshRenderer::cMeshRenderer()
 	this->useMetallicMap = false;
 	this->useRoughnessMap = false;
 
-	this->normalOffset = glm::vec2(0.0f);
-
 	bIsSceneObject = false;
 	bUseSkyboxReflection = false;
 	bUseSkyboxRefraction = false;

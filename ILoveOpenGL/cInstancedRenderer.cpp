@@ -30,24 +30,26 @@ cInstancedRenderer::cInstancedRenderer(unsigned int amount, float offset, std::s
             glm::vec4 newTranslation = glm::vec4(std::stof(xOffset), std::stof(yOffset), std::stof(zOffset), 1.0f);
             translations.push_back(newTranslation);
         }
+        inputFile.close();
     }
-    inputFile.close();
-
-    for (int y = -eachAmount; totalAmount < amount; y += 2)
+    else
     {
-        for (int x = -eachAmount; x < eachAmount; x += 2)
+        for (int y = -eachAmount; totalAmount < amount; y += 2)
         {
-            if (totalAmount >= amount)
+            for (int x = -eachAmount; x < eachAmount; x += 2)
             {
-                break;
-            }
-            else
-            {
-                int randomXOffset = (rand() % 200) * randomAmount;
-                int randomZOffset = (rand() % 200) * randomAmount;
+                if (totalAmount >= amount)
+                {
+                    break;
+                }
+                else
+                {
+                    int randomXOffset = (rand() % 200) * randomAmount;
+                    int randomZOffset = (rand() % 200) * randomAmount;
 
-                translations.push_back( glm::vec4(x * offset + (randomXOffset / 100.0f), 0.0f, y * offset + (randomZOffset / 100.0f), 1.0f));
-                totalAmount++;
+                    translations.push_back(glm::vec4(x * offset + (randomXOffset / 100.0f), 0.0f, y * offset + (randomZOffset / 100.0f), 1.0f));
+                    totalAmount++;
+                }
             }
         }
     } 

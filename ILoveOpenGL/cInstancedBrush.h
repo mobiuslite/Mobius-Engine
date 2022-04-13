@@ -9,12 +9,16 @@ public:
 	~cInstancedBrush();
 
 	void AddOffset(glm::vec3 pos);
-	void SaveOffset();
 	void ChangeRenderer(cInstancedRenderer* renderer);
 
 	bool HasRenderer() { return this->renderer != nullptr; }
 
+	void SetActive(bool state);
+	bool IsActive();
+
 private:
+	bool enabled;
+
 	cInstancedRenderer* renderer;
 	glm::vec3 lastPosAdded;
 

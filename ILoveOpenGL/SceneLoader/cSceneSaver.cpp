@@ -76,8 +76,13 @@ bool cSceneLoader::SaveScene(std::string sceneName, glm::vec3 cameraPos, cEntity
 
 			xml_node<>* scaleNode = doc->allocate_node(rapidxml::node_element, "Scale");
 
-			std::string scaleString = std::to_string(glm::length(meshTransform->scale));
-			scaleNode->value(doc->allocate_string(scaleString.c_str()));
+			char* xScaleString = doc->allocate_string(std::to_string(meshTransform->scale.x).c_str());
+			char* yScaleString = doc->allocate_string(std::to_string(meshTransform->scale.y).c_str());
+			char* zScaleString = doc->allocate_string(std::to_string(meshTransform->scale.z).c_str());
+
+			scaleNode->append_attribute(doc->allocate_attribute("x", xScaleString));
+			scaleNode->append_attribute(doc->allocate_attribute("y", yScaleString));
+			scaleNode->append_attribute(doc->allocate_attribute("z", zScaleString));
 
 			transformNode->append_node(posNode);
 			transformNode->append_node(rotNode);
@@ -145,6 +150,36 @@ bool cSceneLoader::SaveScene(std::string sceneName, glm::vec3 cameraPos, cEntity
 					texturesNode->append_node(textureNode);
 				}
 				miscNode->append_node(texturesNode);
+			}
+
+			{
+				xml_node<>* metallicNode = doc->allocate_node(rapidxml::node_element, "Metallic");
+				metallicNode->value(doc->allocate_string(std::to_string(mesh->metallic).c_str()));
+
+				miscNode->append_node(metallicNode);
+			}
+
+			if (mesh->useMetallicMap)
+			{
+				xml_node<>* metallicMapNode = doc->allocate_node(rapidxml::node_element, "MetallicMap");
+				metallicMapNode->value(doc->allocate_string(mesh->metallicMapName.c_str()));
+
+				miscNode->append_node(metallicMapNode);
+			}
+
+			{
+				xml_node<>* roughNode = doc->allocate_node(rapidxml::node_element, "Roughness");
+				roughNode->value(doc->allocate_string(std::to_string(mesh->roughness).c_str()));
+
+				miscNode->append_node(roughNode);
+			}
+
+			if (mesh->useRoughnessMap)
+			{
+				xml_node<>* roughMapNode = doc->allocate_node(rapidxml::node_element, "RoughnessMap");
+				roughMapNode->value(doc->allocate_string(mesh->roughnessMapName.c_str()));
+
+				miscNode->append_node(roughMapNode);
 			}
 
 			if (mesh->bUseAlphaMask)
@@ -257,14 +292,19 @@ bool cSceneLoader::SaveScene(std::string sceneName, glm::vec3 cameraPos, cEntity
 	if (!sceneFile.is_open())
 	{
 		std::cout << "ERROR could not open sceneFile file from scene saver" << std::endl;
+		return false;
 	}
+	else
+	{
+		sceneFile << *doc;
 
-	sceneFile << *doc;
+		sceneFile.close();
 
-	sceneFile.close();
+		doc->clear();
+		delete doc;
 
-	doc->clear();
-	delete doc;
+		std::cout << "Saved scene!" << std::endl;
 
-	return true;
+		return true;
+	}	
 }

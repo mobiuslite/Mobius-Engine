@@ -17,9 +17,6 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
     cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
     cTextureViewer* curTextureViewer = curEntity->GetComponent<cTextureViewer>();
 
-    
-    GLenum err;
-
     float ratioOne = curMesh->textures[0].ratio;
     float ratioTwo = curMesh->textures[1].ratio;
     float ratioThree = curMesh->textures[2].ratio;
@@ -31,7 +28,7 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
     }
 
     glUniform4f(uniformLocations->at("textureRatios"),
-        ratioOne, ratioTwo, ratioThree, ratioFour);
+        curMesh->useAlbedoMap ? 1.0f : 0.0f, ratioTwo, ratioThree, ratioFour);
     glUniform4f(uniformLocations->at("tilingAndOffset"), curMesh->tiling.x, curMesh->tiling.y, curMesh->offset.x, curMesh->offset.y);
 
     if (curMesh->bUseAlphaMask)
@@ -100,7 +97,6 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
             glBindTexture(GL_TEXTURE_2D, textureId);
 
             glUniform1i(uniformLocations->at("normalMap"), unit);
-            glUniform2f(uniformLocations->at("normalOffset"), curMesh->normalOffset.x, curMesh->normalOffset.y);
         }
     }
     else
@@ -211,12 +207,13 @@ void Render(sModelDrawInfo* modelInfo, cEntity* curEntity, cShaderManager::cShad
 void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderProgram* shader, cVAOManager* VAOManager,
     cBasicTextureManager textureManager,  glm::vec3 eyeLocation)
 {
-    GLenum err;
     cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
     cTransform* curTransform = curEntity->GetComponent<cTransform>();
 
     if (shader->type == RenderType::Normal)
+    {
         SetUpTextures(curEntity, textureManager, &shader->uniformLocations);
+    }
     // *****************************************************
             // Translate or "move" the object somewhere
     glm::mat4 matTranslate = glm::translate(glm::mat4(1.0f),

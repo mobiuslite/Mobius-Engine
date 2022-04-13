@@ -48,6 +48,7 @@
 #include "RenderType.h"
 #include "cInstancedRenderer.h"
 #include "cInstancedBrush.h"
+#include <chrono>
 
 struct PostProcessingInfo
 {
@@ -125,6 +126,9 @@ size_t selectedLightDebug = 0;
 
 size_t selectedModelDebug = 0;
 size_t selectedTexture = 0;
+size_t selectedNormal = 0;
+size_t selectedMetallic = 0;
+size_t selectedRough = 0;
 
 float fov = 70.0f;
 float mouseSense = 0.1f;
@@ -145,7 +149,7 @@ bool g_MouseIsInsideWindow = false;
 void extern DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderProgram* shader, cVAOManager* VAOManager,
     cBasicTextureManager textureManager, glm::vec3 eyeLocation);
 
-void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparentMeshes, cShaderManager::cShaderProgram* program, float deltaTime);
+void Draw(std::vector<cEntity*>* meshes, cShaderManager::cShaderProgram* program, float deltaTime);
 void DrawGUI(float dt);
 void SetUpLights();
 
@@ -227,19 +231,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     }
     return;
 }
-
-bool DistanceToCameraPredicate(cEntity* a, cEntity* b)
-{
-    if (glm::distance(a->GetComponent<cTransform>()->position, cameraEye) > glm::distance(b->GetComponent<cTransform>()->position, cameraEye))
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
 // We call these every frame
 void ProcessAsyncMouse(GLFWwindow* window, float deltaTime)
 {
@@ -286,10 +277,9 @@ void ProcessAsyncMouse(GLFWwindow* window, float deltaTime)
             cameraRight = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), cameraDir));
             cameraUp = glm::cross(cameraDir, cameraRight);
         }
-        else if ((glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-            && g_MouseIsInsideWindow)
+        else if ((glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) && g_MouseIsInsideWindow)
         {
-            if (brush.HasRenderer())
+            if (brush.HasRenderer() && brush.IsActive())
             {
                 glBindFramebuffer(GL_FRAMEBUFFER, g_fbo->ID);
 
@@ -298,7 +288,7 @@ void ProcessAsyncMouse(GLFWwindow* window, float deltaTime)
 
                 float fixedYValue = (float)abs(y - (double)windowHeight);
 
-                float widthRatio = x / windowWidth;
+                float widthRatio = (float)(x / windowWidth);
                 float heightRatio = fixedYValue / windowHeight;
 
                 glm::vec2 curPixelPos = glm::vec2(g_fbo->width * widthRatio, g_fbo->height * heightRatio);
@@ -307,7 +297,7 @@ void ProcessAsyncMouse(GLFWwindow* window, float deltaTime)
 
                 //world pos buffer
                 glReadBuffer(GL_COLOR_ATTACHMENT3);
-                glReadPixels(curPixelPos.x, curPixelPos.y, 1, 1, GL_RGBA, GL_FLOAT, pixel);
+                glReadPixels((GLint)curPixelPos.x, (GLint)curPixelPos.y, 1, 1, GL_RGBA, GL_FLOAT, pixel);
 
                 //std::cout << "x: " << g_fbo->width * widthRatio << " | y: " << g_fbo->height * heightRatio << std::endl;
                 //std::cout << "r: " << pixel[0] << " | g: " << pixel[1] << " | b: " << pixel[2] << " | a: " << pixel[3] << std::endl;
@@ -606,7 +596,6 @@ int main(void)
 
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseNormalMap", glGetUniformLocation(program, "bUseNormalMap")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("normalMap", glGetUniformLocation(program, "normalMap")));
-    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("normalOffset", glGetUniformLocation(program, "normalOffset")));
 
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseHeightMap", glGetUniformLocation(program, "bUseHeightMap")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("heightMap", glGetUniformLocation(program, "heightMap")));
@@ -749,7 +738,7 @@ int main(void)
     glfwGetFramebufferSize(window, &width, &height);
     ratio = width / (float)height;
 
-    int screenPixelDensity = 1250;
+    int screenPixelDensity = 1280;
 
     g_fbo = new cFBO();
     if (!g_fbo->init((int)(screenPixelDensity * ratio), screenPixelDensity, errorString))
@@ -789,7 +778,6 @@ int main(void)
 
     while (!glfwWindowShouldClose(window))
     {
-        GLenum err;
 
         float useExposure = postProcessing.useExposureToneMapping ? 0.0f : 1.0f;
         glUniform4f(normalShader->uniformLocations["postprocessingVariables"], postProcessing.gamma, postProcessing.exposure, useExposure, postProcessing.bloomThreshhold);
@@ -812,8 +800,6 @@ int main(void)
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         g_fbo->clearBuffers(true, true);
 
-       
-
         //Clear fbo buffers
         glBindFramebuffer(GL_FRAMEBUFFER, g_fbo->ID);
         g_fbo->clearBuffers(true, true);
@@ -824,28 +810,7 @@ int main(void)
         // Screen is cleared and we are ready to draw the scene...
         // *******************************************************
 
-                //Sort based on transparency
-        std::vector<cEntity*> transparentMeshes;
-        std::vector<cEntity*> opaqueMeshes;
 
-        std::vector<cEntity*> entityVector = g_entityManager.GetEntities();
-        for (unsigned int index = 0; index != entityVector.size(); index++)
-        {
-            cEntity* curEntity = entityVector.at(index);
-
-            cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
-
-            if (curMesh->wholeObjectDiffuseRGBA.a < 1.0f)
-            {
-                transparentMeshes.push_back(entityVector.at(index));
-            }
-            else
-            {
-                opaqueMeshes.push_back(curEntity);
-            }
-        }
-        //Sort transparent objects.
-        std::sort(transparentMeshes.begin(), transparentMeshes.end(), DistanceToCameraPredicate);
         // Copy the light information into the shader to draw the scene
         gTheLights.CopyLightInfoToShader();
 
@@ -879,7 +844,10 @@ int main(void)
         glUniformMatrix4fv(shadowShader->uniformLocations["matProjection"], 1, GL_FALSE, glm::value_ptr(p));
         glUniform1f(shadowShader->uniformLocations["bUseInstancedRendering"], (float)GL_FALSE);
         glUniform1f(shadowShader->uniformLocations["bUseHeightMap"], (float)GL_FALSE);
-        Draw(&opaqueMeshes, &transparentMeshes, shadowShader, deltaTime);
+
+        std::vector<cEntity*> entityVector = g_entityManager.GetEntities();
+        Draw(&entityVector, shadowShader, deltaTime);
+
         //Render normal scene
         //glCullFace(GL_BACK);
 
@@ -901,7 +869,7 @@ int main(void)
         p = glm::perspective(glm::radians(usedFov),
             ratio,
             0.1f,
-            1000.0f);     
+            300.0f);     
         glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
         //glm::vec3 cameraEye = glm::vec3(0.0, 0.0, -4.0f);
         glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -912,7 +880,8 @@ int main(void)
             cameraUp);
         glUniformMatrix4fv(matView_Location, 1, GL_FALSE, glm::value_ptr(v)); 
         //Draw scene
-        Draw(&opaqueMeshes, &transparentMeshes, normalShader, deltaTime);    
+        Draw(&entityVector, normalShader, deltaTime);
+
         //End of zeroth pass
         //Lighting Pass
         glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_1_LIGHTING);
@@ -938,7 +907,7 @@ int main(void)
             cameraUp);
         glUniformMatrix4fv(matView_Location, 1, GL_FALSE, glm::value_ptr(v));
         
-        p = glm::ortho(0.0f, 1.0f / (float)width, 0.0f, 1.0f / (float)height, 0.01f, 1000.0f);
+        p = glm::ortho(0.0f, 1.0f / (float)width, 0.0f, 1.0f / (float)height, 0.01f, 100.0f);
         glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
 
         //Uploading textures to gpu
@@ -1008,6 +977,7 @@ int main(void)
 
         //fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
         DrawObject(fullscreenEntity, glm::mat4(1.0f), normalShader, gVAOManager, g_textureManager, fullscreenPos);
+
         //DONE 1ST PASS (Lighting)
         
         bool horizontal = true;
@@ -1033,7 +1003,7 @@ int main(void)
                 pingPongFBO->BlurBuffer(false, horizontal);
             }
         
-            fullscreenEntity->GetComponent<cTransform>()->position.z -= .01f;
+            //fullscreenEntity->GetComponent<cTransform>()->position.z -= .01f;
             DrawObject(fullscreenEntity, glm::mat4(1.0f), pingPongShader, gVAOManager, g_textureManager, fullscreenPos);
             horizontal = !horizontal;
         }
@@ -1046,7 +1016,7 @@ int main(void)
         ratio = width / (float)height;
         glViewport(0, 0, width, height);
         
-        glUniform2f(normalShader->uniformLocations["screenWidthHeight"], width, height);
+        glUniform2f(normalShader->uniformLocations["screenWidthHeight"], (GLfloat)width, (GLfloat)height);
         glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_2_EFFECTS);
         
         GLint textureId = 0;
@@ -1103,12 +1073,16 @@ int main(void)
         DrawObject(fullscreenEntity, glm::mat4(1.0f), normalShader, gVAOManager, g_textureManager, fullscreenPos);
         //END OF FINAL PASS
 
-        if(showDebugGui)
+        if (showDebugGui)
+        {
             DrawGUI(deltaTime);
+            brush.SetActive(true);
+        }
         else
         {
             io->WantCaptureKeyboard = false;
             io->WantCaptureMouse = false;
+            brush.SetActive(false);
         }
 
         //glEnable(GL_CULL_FACE);
@@ -1122,10 +1096,11 @@ int main(void)
         ProcessAsyncMouse(window, (float)deltaTime);
         ProcessAsyncKeyboard(window, (float)deltaTime);
 
-        //while ((err = glGetError()) != GL_NO_ERROR)
-        //{
-          //  std::cout << "WARNING: OpenGL errors found!: " << err << std::endl;
-        //}
+        GLenum err;
+        while ((err = glGetError()) != GL_NO_ERROR)
+        {
+            std::cout << "WARNING: OpenGL errors found!: " << err << std::endl;
+        }
     }
 
     GLenum err;
@@ -1179,9 +1154,8 @@ int main(void)
     exit(EXIT_SUCCESS);
 }
 
-void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparentMeshes, cShaderManager::cShaderProgram* program, float deltaTime)
+void Draw(std::vector<cEntity*>* meshes, cShaderManager::cShaderProgram* program, float deltaTime)
 {
-    GLenum err;
     //Upload wind map
     GLint windNoise = g_textureManager.getTextureIDFromName("noise.bmp");
     if (windNoise != 0)
@@ -1197,40 +1171,58 @@ void Draw(std::vector<cEntity*>* opaqueMeshes, std::vector<cEntity*>* transparen
     glUniform1f(program->uniformLocations["windStrength"], windInfo.strength);
     glUniform1f(program->uniformLocations["windSize"], windInfo.size);
 
-    //Draw non transparent objects
-    for (unsigned int index = 0; index != opaqueMeshes->size(); index++)
+    //Draw objects
+    for (unsigned int index = 0; index != meshes->size(); index++)
     {
-        cEntity* curEntity = opaqueMeshes->at(index);
-        glm::mat4 matModel = glm::mat4(1.0f);  // "Identity" ("do nothing", like x1)
-        //mat4x4_identity(m);
-
-        if (curEntity->GetComponent<cMeshRenderer>()->friendlyName == "Sky")
-        {
-            curEntity->GetComponent<cTransform>()->position = cameraEye;
-        }
-        DrawObject(curEntity, matModel, program, gVAOManager, g_textureManager, cameraEye);
-
-    }//for (unsigned int index
-
-    //glEnable(GL_BLEND);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    //Draw transparent objects
-    for (unsigned int index = 0; index != transparentMeshes->size(); index++)
-    {
-        cEntity* curEntity = transparentMeshes->at(index);
+        cEntity* curEntity = meshes->at(index);
         cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
         glm::mat4 matModel = glm::mat4(1.0f);  // "Identity" ("do nothing", like x1)
         //mat4x4_identity(m);
 
+        if (curMesh->friendlyName == "Sky")
+        {
+            curEntity->GetComponent<cTransform>()->position = cameraEye;
+        }
+
         //Scroll pool normal effect
         if (curMesh->friendlyName == "poolwater")
         {
-            curMesh->normalOffset.x += (float)deltaTime / 70.0f;
-            curMesh->normalOffset.y += (float)deltaTime / 100.0f;
+            curMesh->offset.x += (float)deltaTime / 70.0f;
+            curMesh->offset.y += (float)deltaTime / 100.0f;
         }
 
         DrawObject(curEntity, matModel, program, gVAOManager, g_textureManager, cameraEye);
+
     }//for (unsigned int index
+}
+
+void TextureSelection(std::string name, size_t* selectedIndex, std::string* textureName, bool* usingTexture)
+{ 
+    ImGui::Separator();
+    ImGui::Text(name.c_str());
+    
+    ImGui::Text(std::string("Current " + name + " Map" + (usingTexture ? textureName->c_str() : "No " + name + " Map")).c_str());
+    
+    if (usingTexture)
+    {
+        GLint textureId = g_textureManager.getTextureIDFromName(textureName->c_str());
+        ImGui::Image((void*)(intptr_t)textureId, ImVec2(150, 150));
+    }
+    std::vector<std::string> textureVec = g_textureManager.getAllTextures();
+    if (ImGui::BeginCombo(std::string(name + " Textures").c_str(), textureVec[*selectedIndex].c_str()))
+    {
+        for (size_t i = 0; i < textureVec.size(); i++)
+        {
+            if (ImGui::Selectable(std::string(textureVec[i] + ": " + std::to_string(i)).c_str(), *selectedIndex == i))
+                *selectedIndex = i;
+        }
+        ImGui::EndCombo();
+    }
+    
+    if (ImGui::Button(std::string("Set " + name).c_str()))
+    {
+        *textureName = textureVec[*selectedIndex];
+    }   
 }
 
 void DrawGUI(float dt)
@@ -1353,7 +1345,7 @@ void DrawGUI(float dt)
                         {
                             cMeshRenderer* renderer = curEntity->GetComponent<cMeshRenderer>();
 
-                            ImGui::Checkbox("Use Diffuse", &renderer->bUseWholeObjectDiffuseColour);
+                            ImGui::Checkbox("Use Material", &renderer->bUseWholeObjectDiffuseColour);
                             if (renderer->bUseWholeObjectDiffuseColour)
                             {
                                 float colors[3] = { renderer->wholeObjectDiffuseRGBA.x, renderer->wholeObjectDiffuseRGBA.y, renderer->wholeObjectDiffuseRGBA.z };
@@ -1364,24 +1356,11 @@ void DrawGUI(float dt)
                             }
                             else
                             {
-                                ImGui::Text(std::string("Current Texture: " + (renderer->textures[0].name == "" ? "No Texture" : renderer->textures[0].name)).c_str());
-
-                                std::vector<std::string> textureVec = g_textureManager.getAllTextures();
-                                if (ImGui::BeginCombo("Textures", textureVec[selectedTexture].c_str()))
-                                {                              
-                                    for (size_t i = 0; i < textureVec.size(); i++)
-                                    {
-                                        if (ImGui::Selectable(std::string(textureVec[i] + ": " + std::to_string(i)).c_str(), selectedTexture == i))
-                                            selectedTexture = i;
-                                    }
-                                    ImGui::EndCombo();
-                                }
-                                
-                                if(ImGui::Button("Set Texture"))
-                                {
-                                    renderer->textures[0].name = textureVec[selectedTexture];
-                                    renderer->textures[0].ratio = 1.0f;
-                                }
+                                //Show textures
+                                TextureSelection("Albedo", &selectedTexture, &renderer->textures[0].name, &renderer->useAlbedoMap);
+                                TextureSelection("Normal", &selectedNormal, &renderer->normalMapName, &renderer->bUseNormalMap);
+                                TextureSelection("Metallic", &selectedMetallic, &renderer->metallicMapName, &renderer->useMetallicMap);
+                                TextureSelection("Roughness", &selectedRough, &renderer->roughnessMapName, &renderer->useRoughnessMap);
                             }
 
                             ImGui::Spacing();
@@ -1453,6 +1432,13 @@ void DrawGUI(float dt)
                 ImGui::EndTabItem();
             }
 
+            ImGui::Separator();
+            ImGui::Spacing();
+            if (ImGui::Button("Save Entities"))
+            {
+                sceneLoader->SaveScene("project2", cameraEye, &g_entityManager);
+            }
+
             if (ImGui::BeginTabItem("Add an Entity"))
             {
                 std::vector<sModelDrawInfo> models = gVAOManager->GetLoadedModels();
@@ -1481,10 +1467,24 @@ void DrawGUI(float dt)
                 
                 ImGui::EndTabItem();
             }
+
+            if (ImGui::BeginTabItem("Add a Texture"))
+            {
+                static char nameBuf[64] = ""; ImGui::InputText("Texture name", nameBuf, 64);
+
+                ImGui::Separator();
+                if (ImGui::Button("Add texture"))
+                {
+                    if (!g_textureManager.Create2DTextureFromBMPFile(nameBuf, true))
+                    {
+                        std::cout << "Could not add texture!" << std::endl;
+                    }
+                }
+
+                ImGui::EndTabItem();
+            }
             ImGui::EndTabBar();
         }
-        
-
         ImGui::End();
     }
 
@@ -1700,15 +1700,7 @@ void SetUpLights()
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[8].param1.x = 2;
 
-    gTheLights.theLights[8].power = 7.36;
+    gTheLights.theLights[8].power = 7.36f;
     gTheLights.TurnOnLight(8);  // Or this!
     gTheLights.SetUpUniformLocations(program, 8);
-
-    gTheLights.theLights[12].position = glm::vec4(0.f, 0.f, 0.f, 1.0f);
-    gTheLights.theLights[12].diffuse = glm::vec4(.5f, 0.5f, .5f, 1.0f);
-    gTheLights.theLights[12].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100.0f);
-    gTheLights.theLights[12].direction = glm::vec4(0.0f, .9f, .4f, 1.0f);
-    gTheLights.theLights[12].param1.x = 2;
-    gTheLights.TurnOffLight(12);  // Or this!
-    gTheLights.SetUpUniformLocations(program, 12);
 }

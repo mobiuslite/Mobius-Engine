@@ -78,7 +78,22 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 		rot.z = glm::radians(std::stof(transformNode->first_node("Rotation")->first_attribute("z")->value()));
 		newTransform.SetRotation(rot);
 
-		newTransform.scale = glm::vec3(std::stof(transformNode->first_node("Scale")->value()));
+		xml_node<>* scaleNode = transformNode->first_node("Scale");
+		std::string scaleString = scaleNode->value();
+
+		if (scaleString != "")
+		{
+			newTransform.scale = glm::vec3(std::stof(scaleString));
+		}
+		else
+		{
+			glm::vec3 scale;
+			scale.x = std::stof(scaleNode->first_attribute("x")->value());
+			scale.y = std::stof(scaleNode->first_attribute("y")->value());
+			scale.z = std::stof(scaleNode->first_attribute("z")->value());
+			newTransform.scale = scale;
+		}
+		
 		xml_node<>* colorNode = meshNode->first_node("Colors");
 		if (colorNode != nullptr)
 		{
@@ -118,6 +133,11 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 				{
 					Texture newTexture;
 					newTexture.name = textureNode->value();
+					if (newTexture.name != "")
+					{
+						newMesh->useAlbedoMap = true;
+					}
+
 					newTexture.ratio = std::stof(textureNode->first_attribute("Ratio")->value());
 
 					if (textureNode->first_attribute("Type") != nullptr)
@@ -136,7 +156,7 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 
 					newMesh->textures[index] = newTexture;
 
-					if (textureManager->getTextureIDFromName(newTexture.name) == 0)
+					if (!newMesh->bUseSkybox && textureManager->getTextureIDFromName(newTexture.name) == 0)
 					{
 						if (newTexture.name != "" && !textureManager->Create2DTextureFromBMPFile(newTexture.name, true))
 						{
@@ -302,8 +322,6 @@ bool cSceneLoader::LoadIntoVAO(cVAOManager* vao, GLuint program)
 		if (vao->LoadModelIntoVAO(models[i].fileName, modelInfo, program))
 		{
 			std::cout << "\tLoaded model: " << models[i].fileName << std::endl;
-		
-			models[i].defaultScale = modelInfo.defaultScale;
 		}
 		else
 		{

@@ -108,7 +108,6 @@ uniform sampler2D roughMap;
 
 uniform bool bUseNormalMap;
 uniform sampler2D normalMap;
-uniform vec2 normalOffset;
 
 uniform bool bUseSkybox;
 uniform bool bShowBloom;
@@ -282,14 +281,6 @@ void main()
 	
 	}
 
-	if (bIsPlane)
-	{
-		if (!gl_FrontFacing)
-		{
-			normals = -normals;
-		}
-	}
-
 	if(bUseSkybox)
 	{	
 		vec4 skyBoxTexture = texture(skyBox, fVertPosition.xyz);
@@ -306,7 +297,7 @@ void main()
 
 	if(bUseAlphaMask)
 	{
-		vec3 alphaMaskTexture = texture(alphaMask, fUVx2.xy).rgb;
+		vec3 alphaMaskTexture = texture(alphaMask, vec2((fUVx2.x * tilingAndOffset.x) + tilingAndOffset.z, (fUVx2.y * tilingAndOffset.y) + tilingAndOffset.w)).rgb;
 
 		float alphaValue = alphaMaskTexture.r;
 		//pixelColour.a = alphaValue;
@@ -319,21 +310,29 @@ void main()
 
 	if(bUseNormalMap)
 	{
-		vec3 normalMapTexture = texture(normalMap, vec2(fUVx2.x + normalOffset.x, fUVx2.y + normalOffset.y)).rgb;
+		vec3 normalMapTexture = texture(normalMap, vec2((fUVx2.x * tilingAndOffset.x) + tilingAndOffset.z, (fUVx2.y * tilingAndOffset.y) + tilingAndOffset.w)).rgb;
 		normalMapTexture = normalMapTexture * 2.0f - 1.0f;
 
 		normals.xyz = normalize(TBN * normalMapTexture);
 	}
 
+	if (bIsPlane)
+	{
+		if (!gl_FrontFacing)
+		{
+			normals = -normals;
+		}
+	}
+
 	if (bUseMetallicMap)
 	{
-		float mapTexture = texture(metallicMap, fUVx2.xy).r;
+		float mapTexture = texture(metallicMap, vec2((fUVx2.x * tilingAndOffset.x) + tilingAndOffset.z, (fUVx2.y * tilingAndOffset.y) + tilingAndOffset.w)).r;
 		pixelMetallic = mapTexture * metallic;
 	}
 
 	if (bUseRoughMap)
 	{
-		float mapTexture = texture(roughMap, fUVx2.xy).r;
+		float mapTexture = texture(roughMap, vec2((fUVx2.x * tilingAndOffset.x) + tilingAndOffset.z, (fUVx2.y * tilingAndOffset.y) + tilingAndOffset.w)).r;
 		pixelRoughness = mapTexture * roughness;
 	}
 
@@ -346,7 +345,7 @@ void main()
 	//ST = UV
 	if(textureRatios.x >  0.0f)
 	{
-		vec3 textureColour = (texture(texture_00, vec2(fUVx2.x * tilingAndOffset.x, fUVx2.y * tilingAndOffset.y)).rgb * textureRatios.x) + (texture(texture_01, fUVx2.xy).rgb * textureRatios.y);
+		vec3 textureColour = (texture(texture_00, vec2((fUVx2.x * tilingAndOffset.x) + tilingAndOffset.z, (fUVx2.y * tilingAndOffset.y) + tilingAndOffset.w)).rgb * textureRatios.x) + (texture(texture_01, fUVx2.xy).rgb * textureRatios.y);
 
 		vertexDiffuseColour = vec4(textureColour, 1.0f);
 	}

@@ -18,7 +18,6 @@ sModelDrawInfo::sModelDrawInfo()
 {
 
 	this->VAO_ID = 0;
-    this->defaultScale = 1.0;
 
 	this->VertexBufferID = 0;
 	this->VertexBuffer_Start_Index = 0;
@@ -389,9 +388,6 @@ bool cVAOManager::LoadFBXModelFromFile(std::string fileName, sModelDrawInfo& dra
     }
     float thisBiggestVertex = glm::distance(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z));
 
-    drawInfo.defaultScale = 1.0f / biggestVertex;
-
-
     // Allocate the amount of space we need for the GPU side arrays
     drawInfo.pVertices = new sVertex_XYZW_RGBA_N_UV_T_B[drawInfo.numberOfVertices];
     drawInfo.pIndices = new unsigned int[drawInfo.numberOfIndices];
@@ -648,8 +644,6 @@ bool LoadPLYModelFromFile(std::string fileName, sModelDrawInfo& drawInfo)
         vecVertexArray.push_back(tempVertex);       // Add thing at end of smart array
 
     }
-
-    drawInfo.defaultScale = 1.0f / biggestVertex;
 
     std::vector<sTriangle> vecTriagleArray;    // aka "smart array"
 

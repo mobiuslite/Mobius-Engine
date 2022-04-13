@@ -50,6 +50,11 @@ GLuint cBasicTextureManager::getTextureIDFromName( std::string textureFileName )
 		return 0;
 	}
 	// Reutrn texture number (from OpenGL genTexture)
+
+	if (itTexture->second->getIsCubeMap())
+	{
+		return 0;
+	}
 	return itTexture->second->getTextureNumber();
 }
 

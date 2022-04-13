@@ -78,6 +78,7 @@ public:
 	bool bIsImposter = false;
 	bool useWind = false;
 
+	bool useAlbedoMap = false;
 	std::vector<Texture> textures;
 	glm::vec2 tiling;
 	glm::vec2 offset;
@@ -85,8 +86,6 @@ public:
 	std::string alphaMaskName;
 	std::string normalMapName;
 	std::string heightMapName;
-
-	glm::vec2 normalOffset;
 
 	const unsigned int MAX_TEXTURES = 4;
 

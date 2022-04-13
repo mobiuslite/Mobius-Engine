@@ -25,13 +25,14 @@
 		<Model>grass.ply</Model>
 		<Model>monkey.fbx</Model>
 		<Model>sphere.fbx</Model>
+		<Model>grass.fbx</Model>
 	</Models>
 	<Description>
 		<Mesh FriendlyName="Sky" MeshName="SkyBoxUV.ply">
 			<Transform>
 				<Position x="-4.248472" y="12.637508" z="-28.320147"/>
 				<Rotation x="0.000000" y="0.000000" z="0.000000"/>
-				<Scale>200.000000</Scale>
+				<Scale>150.000000</Scale>
 			</Transform>
 			<Misc>
 				<UseLighting>false</UseLighting>
@@ -109,6 +110,7 @@
 					<Texture Ratio="0.000000"/>
 				</Textures>
 				<AlphaMask>grassAlpha.bmp</AlphaMask>
+				<NormalMap>grassNormal.bmp</NormalMap>	
 				<Instanced Amount="0" Offset="1.25" RandomStrength="0.78">assets/scenes/grassOffsets.txt</Instanced>
         <UseWind></UseWind>
         <ShadowBias>0.005</ShadowBias>

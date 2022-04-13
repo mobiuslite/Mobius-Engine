@@ -40,8 +40,6 @@ struct sModelDrawInfo
 	unsigned int numberOfIndices;
 	unsigned int numberOfTriangles;
 
-	float defaultScale;
-
 	// The "local" (i.e. "CPU side" temporary array)
 	sVertex_XYZW_RGBA_N_UV_T_B* pVertices;	//  = 0;
 	// The index buffer (CPU side)
