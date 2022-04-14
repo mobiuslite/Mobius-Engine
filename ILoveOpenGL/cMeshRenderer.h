@@ -38,8 +38,6 @@ public:
 	bool bIsWireframe;
 	// Turns of the depth buffer check when drawn
 	bool bDisableDepthBufferCheck;
-
-	bool bIsDebugObject;
 	// These are for colouring the ENTIRE object as one colour.
 	// Later, these will be replaced:
 	// * The diffuse will be replaced by textures
@@ -75,6 +73,9 @@ public:
 	bool useMetallicMap;
 	std::string metallicMapName;
 
+	bool useAOMap;
+	std::string AOMapName;
+
 	bool bIsImposter = false;
 	bool useWind = false;
 
@@ -87,7 +88,5 @@ public:
 	std::string normalMapName;
 	std::string heightMapName;
 
-	const unsigned int MAX_TEXTURES = 4;
-
-	bool bIsSceneObject;
+	const unsigned int MAX_TEXTURES = 1;
 };

@@ -119,12 +119,6 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 			std::string useLighting = miscNode->first_node("UseLighting")->value();
 			newMesh->bDontLight = useLighting == "true" ? false : true;
 
-			xml_node<>* useSpecular = miscNode->first_node("UseSpecular");
-			if (useSpecular != nullptr)
-			{
-				newMesh->bUseSpecular = true;
-			}
-
 			xml_node<>* texturesNode = miscNode->first_node("Textures");
 			if (texturesNode != nullptr)
 			{
@@ -167,6 +161,11 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 					index++;
 				}
 			}
+			else
+			{
+				newMesh->useAlbedoMap = false;
+			}
+
 			xml_node<>* alphaMaskNode = miscNode->first_node("AlphaMask");
 			if (alphaMaskNode != nullptr)
 			{
@@ -252,6 +251,31 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 				}
 			}
 
+			xml_node<>* aoMapNode = miscNode->first_node("AOMap");
+			if (aoMapNode != nullptr)
+			{
+				newMesh->useAOMap = true;
+				newMesh->AOMapName = aoMapNode->value();
+
+				if (textureManager->getTextureIDFromName(newMesh->AOMapName) == 0)
+				{
+					if (!textureManager->Create2DTextureFromBMPFile(newMesh->AOMapName, true))
+					{
+						std::cout << "ERROR! Could not add AO map to manager: " << newMesh->AOMapName << std::endl;
+					}
+				}
+			}
+
+			xml_node<>* tilingOffsetNode = miscNode->first_node("TilingOffset");
+			if(tilingOffsetNode != nullptr)
+			{
+				newMesh->tiling.x = std::stof(tilingOffsetNode->first_attribute("TilingX")->value());
+				newMesh->tiling.y = std::stof(tilingOffsetNode->first_attribute("TilingY")->value());
+
+				newMesh->offset.x = std::stof(tilingOffsetNode->first_attribute("OffsetX")->value());
+				newMesh->offset.y = std::stof(tilingOffsetNode->first_attribute("OffsetY")->value());
+			}
+
 			xml_node<>* emmisionNode = miscNode->first_node("Emmision");
 			if (emmisionNode != nullptr)
 			{
@@ -295,7 +319,6 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 			newMesh->useWind = windNode != nullptr;
 		}
 
-		newMesh->bIsSceneObject = true;	
 		newEntity->name = newMesh->friendlyName;
 		newEntity->AddComponent<cMeshRenderer>(newMesh);
 		*newEntity->GetComponent<cTransform>() = newTransform;

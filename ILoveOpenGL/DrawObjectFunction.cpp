@@ -18,9 +18,6 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
     cTextureViewer* curTextureViewer = curEntity->GetComponent<cTextureViewer>();
 
     float ratioOne = curMesh->textures[0].ratio;
-    float ratioTwo = curMesh->textures[1].ratio;
-    float ratioThree = curMesh->textures[2].ratio;
-    float ratioFour = curMesh->textures[3].ratio;
 
     if (curTextureViewer != nullptr)
     {
@@ -28,7 +25,7 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
     }
 
     glUniform4f(uniformLocations->at("textureRatios"),
-        curMesh->useAlbedoMap ? 1.0f : 0.0f, ratioTwo, ratioThree, ratioFour);
+        curMesh->useAlbedoMap ? 1.0f : 0.0f, 0.0f, 0.0f, 0.0f);
     glUniform4f(uniformLocations->at("tilingAndOffset"), curMesh->tiling.x, curMesh->tiling.y, curMesh->offset.x, curMesh->offset.y);
 
     if (curMesh->bUseAlphaMask)
@@ -65,6 +62,24 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
     else
     {
         glUniform1f(uniformLocations->at("bUseMetallicMap"), (float)GL_FALSE);
+    }
+
+    if (curMesh->useAOMap)
+    {
+        glUniform1f(uniformLocations->at("bUseAO"), (float)GL_TRUE);
+
+        GLint textureId = textureManager.getTextureIDFromName(curMesh->AOMapName);
+        if (textureId != 0)
+        {
+            GLint unit = 1;
+            glActiveTexture(unit + GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textureId);
+            glUniform1i(uniformLocations->at("AOMap"), unit);
+        }
+    }
+    else
+    {
+        glUniform1f(uniformLocations->at("bUseAO"), (float)GL_FALSE);
     }
 
     if (curMesh->useRoughnessMap)
@@ -162,16 +177,6 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
                 glUniform1i(uniformLocations->at("texture_00"), unit);
             }
         }
-
-        if (ratioTwo > 0.0f)
-        {
-            GLint textureId = textureManager.getTextureIDFromName(curMesh->textures[1].name);
-            GLint unit = 6;
-            glActiveTexture(unit + GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, textureId);
-            glUniform1i(uniformLocations->at("texture_01"), unit);
-        }
-
         /*if (ratioFour > 0.0f)
         {
 
@@ -181,11 +186,12 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
 
 void Render(sModelDrawInfo* modelInfo, cEntity* curEntity, cShaderManager::cShaderProgram* shader)
 {
+    GLenum err;
     glBindVertexArray(modelInfo->VAO_ID);
-
     cInstancedRenderer* instancedRenderer = curEntity->GetComponent<cInstancedRenderer>();
     if (instancedRenderer == nullptr)
     {
+        //err = glGetError();
         glUniform1f(shader->uniformLocations["bUseInstancedRendering"], (float)GL_FALSE);
         glDrawElements(GL_TRIANGLES,
             modelInfo->numberOfIndices,
@@ -199,6 +205,7 @@ void Render(sModelDrawInfo* modelInfo, cEntity* curEntity, cShaderManager::cShad
             modelInfo->numberOfIndices,
             GL_UNSIGNED_INT,
             (void*)0, (GLsizei)instancedRenderer->GetCount());
+
     }
 
     glBindVertexArray(0);
@@ -207,9 +214,9 @@ void Render(sModelDrawInfo* modelInfo, cEntity* curEntity, cShaderManager::cShad
 void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderProgram* shader, cVAOManager* VAOManager,
     cBasicTextureManager textureManager,  glm::vec3 eyeLocation)
 {
+    GLenum err;
     cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
     cTransform* curTransform = curEntity->GetComponent<cTransform>();
-
     if (shader->type == RenderType::Normal)
     {
         SetUpTextures(curEntity, textureManager, &shader->uniformLocations);
@@ -229,7 +236,6 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
 
     //matModel = matModel * rotateX;
     // *****************************************************
-
 
     // *****************************************************
     // Scale the model
@@ -256,7 +262,6 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
     else if (shader->type == RenderType::Shadow)
     {
         glUniform1f(shader->uniformLocations["bUseWind"], curMesh->useWind ? (float)GL_TRUE : (float)GL_FALSE);
-
         if (curMesh->bUseAlphaMask)
         {
             glUniform1f(shader->uniformLocations.at("bUseAlphaMask"), (float)GL_TRUE);
@@ -275,7 +280,6 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
             glUniform1f(shader->uniformLocations.at("bUseAlphaMask"), (float)GL_FALSE);
         }
     }
-
 
     if (shader->type == RenderType::PingPong || shader->type == RenderType::Shadow)
     {
@@ -340,7 +344,6 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
         // DON'T override the colour
         glUniform1f(shader->uniformLocations["bUseDebugColour"], (float)GL_FALSE);
     }
- 
 
     // See if mesh is wanting the vertex colour override (HACK) to be used?
     if (curMesh->bDontLight)
@@ -397,7 +400,6 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
     {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
-
     sModelDrawInfo modelInfo;
     //        if (gVAOManager.FindDrawInfoByModelName("bun_zipper_res2 (justXYZ).ply", modelInfo))
     //        if (gVAOManager.FindDrawInfoByModelName("Assembled_ISS.ply", modelInfo))

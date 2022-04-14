@@ -35,7 +35,6 @@ uniform vec4 objectDebugColour;
 // i.e. shows object colour "as is". 
 // Used for wireframe or debug type objects
 uniform bool bDontLightObject;			// 1 if you want to AVOID lighting
-uniform bool bUseSpecular;
 // This is the camera eye location (update every frame)
 uniform vec4 eyeLocation;
 
@@ -90,7 +89,6 @@ uniform sampler2D texture_MatColor;
 uniform sampler2D texture_Normal;
 uniform sampler2D texture_WorldPos;
 uniform sampler2D texture_LightSpacePos;
-//uniform sampler2D texture_Specular;
 uniform sampler2D texture_Emmision;
 
 uniform sampler2D texLightpassColorBuf;
@@ -108,6 +106,9 @@ uniform sampler2D roughMap;
 
 uniform bool bUseNormalMap;
 uniform sampler2D normalMap;
+
+uniform bool bUseAO;
+uniform sampler2D AOMap;
 
 uniform bool bUseSkybox;
 uniform bool bShowBloom;
@@ -224,16 +225,23 @@ void main()
 		UVLookup.y = gl_FragCoord.y / screenWidthHeight.y;
 
 		//Sends the textures back to their fbo buffers, so we can display them for debugging purposes
+		
+		//w value = ao
 		pixelMatColor = texture(texture_MatColor, UVLookup).rgba;
+		float ao = pixelMatColor.w;
 
 		//w value = roughness
 		pixelNormal = texture(texture_Normal, UVLookup).rgba;
 		float lightingRoughness = pixelNormal.w;
 
+		//w value = is lit
 		pixelWorldPos = texture(texture_WorldPos, UVLookup).rgba;
+
+		//w value used for perspective divide
 		pixelLightSpacePos = texture(texture_LightSpacePos, UVLookup).rgba;
 		//pixelSpecular = texture(texture_Specular, UVLookup).rgba;
 
+		//w value too metallic
 		pixelEmmision = texture(texture_Emmision, UVLookup).rgba;
 		float lightingMetallic = pixelEmmision.w;
 
@@ -241,7 +249,7 @@ void main()
 
 		pixelSpecular = vec4(depthValue, depthValue, depthValue, 1.0f);
 		//If not lit
-		if(pixelWorldPos.w == 0.0f)
+		if(pixelWorldPos.w <= 0.1f)
 		{
 			pixelColour.rgb = pixelMatColor.rgb;
 		}
@@ -253,7 +261,7 @@ void main()
 			vec3 pbrColor = PBR(pixelMatColor.rgb, pixelNormal.xyz, pixelWorldPos.xyz, pixelLightSpacePos, lightingRoughness, lightingMetallic);
 			
 			
-			vec3 ambient = ambientPower * pixelMatColor.rgb;
+			vec3 ambient = ambientPower * pixelMatColor.rgb * ao;
 			vec3 color = ambient + pbrColor;
 			
 			pixelColour = vec4(color, 1.0);
@@ -302,7 +310,7 @@ void main()
 		float alphaValue = alphaMaskTexture.r;
 		//pixelColour.a = alphaValue;
 
-		if(alphaValue < 0.001f)
+		if(alphaValue < 0.1f)
 		{
 			discard;
 		}
@@ -320,7 +328,7 @@ void main()
 	{
 		if (!gl_FrontFacing)
 		{
-			normals = -normals;
+			normals.xyz = normals.xyz * -1.0f;
 		}
 	}
 
@@ -343,9 +351,9 @@ void main()
 	}
 
 	//ST = UV
-	if(textureRatios.x >  0.0f)
+	if(textureRatios.x >  0.1f)
 	{
-		vec3 textureColour = (texture(texture_00, vec2((fUVx2.x * tilingAndOffset.x) + tilingAndOffset.z, (fUVx2.y * tilingAndOffset.y) + tilingAndOffset.w)).rgb * textureRatios.x) + (texture(texture_01, fUVx2.xy).rgb * textureRatios.y);
+		vec3 textureColour = (texture(texture_00, vec2((fUVx2.x * tilingAndOffset.x) + tilingAndOffset.z, (fUVx2.y * tilingAndOffset.y) + tilingAndOffset.w)).rgb * textureRatios.x);
 
 		vertexDiffuseColour = vec4(textureColour, 1.0f);
 	}
@@ -387,7 +395,14 @@ void main()
 	//and monitors are already corrected
 	//So using gamma correction again would correct them twice
 	pixelMatColor = pow(vec4(vertexDiffuseColour.rgb * brightness, 1.0f), vec4(postprocessingVariables.x));
-	pixelMatColor.w = 1.0f;
+
+	float aoValue = 1.0f;
+	if (bUseAO)
+	{
+		aoValue = texture(AOMap, vec2((fUVx2.x * tilingAndOffset.x) + tilingAndOffset.z, (fUVx2.y * tilingAndOffset.y) + tilingAndOffset.w)).r;
+	}
+
+	pixelMatColor.w = aoValue;
 
 	pixelNormal = vec4(normalize(normals.xyz), pixelRoughness);
 

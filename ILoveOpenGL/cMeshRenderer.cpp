@@ -10,7 +10,6 @@ cMeshRenderer::cMeshRenderer()
 	this->bUseObjectDebugColour = false;
 	this->bDontLight = false;
 
-	this->bIsDebugObject = false;
 	this->emmisionPower = 0.0f;
 	this->emmisionDiffuse = glm::vec3(1.0f);
 	this->shadowBias = 0.005f;
@@ -48,11 +47,11 @@ cMeshRenderer::cMeshRenderer()
 	this->bUseSkybox = false;
 	this->bUseNormalMap = false;
 	this->bUseHeightMap = false;
+	this->useAOMap = false;
 
 	this->useMetallicMap = false;
 	this->useRoughnessMap = false;
 
-	bIsSceneObject = false;
 	bUseSkyboxReflection = false;
 	bUseSkyboxRefraction = false;
 }

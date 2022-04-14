@@ -19,7 +19,7 @@ void main()
 		float alphaValue = alphaMaskTexture.r;
 		//pixelColour.a = alphaValue;
 
-		if (alphaValue < 0.001f)
+		if (alphaValue < 0.1f)
 		{
 			discard;
 		}

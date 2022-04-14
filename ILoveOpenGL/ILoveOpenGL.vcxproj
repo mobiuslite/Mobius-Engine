@@ -157,6 +157,7 @@
     <ClCompile Include="cBasicTextureManager\C24BitBMPpixel.cpp" />
     <ClCompile Include="cBasicTextureManager\cBasicTextureManager.cpp" />
     <ClCompile Include="cBasicTextureManager\CTextureFromBMP.cpp" />
+    <ClCompile Include="cBowComponent.cpp" />
     <ClCompile Include="cEmitter.cpp" />
     <ClCompile Include="cEntity.cpp" />
     <ClCompile Include="cEntityManager.cpp" />
@@ -166,6 +167,7 @@
     <ClCompile Include="cLightManager.cpp" />
     <ClCompile Include="cMeshRenderer.cpp" />
     <ClCompile Include="cPingPongFBOs.cpp" />
+    <ClCompile Include="cProjectile.cpp" />
     <ClCompile Include="cShader.cpp" />
     <ClCompile Include="cShaderManager.cpp" />
     <ClCompile Include="cShadowDepthFBO.cpp" />
@@ -199,6 +201,7 @@
     <ClInclude Include="cBasicTextureManager\C24BitBMPpixel.h" />
     <ClInclude Include="cBasicTextureManager\cBasicTextureManager.h" />
     <ClInclude Include="cBasicTextureManager\CTextureFromBMP.h" />
+    <ClInclude Include="cBowComponent.h" />
     <ClInclude Include="cComponent.h" />
     <ClInclude Include="cEmitter.h" />
     <ClInclude Include="cEmitters.h" />
@@ -211,6 +214,7 @@
     <ClInclude Include="cLightManager.h" />
     <ClInclude Include="cMeshRenderer.h" />
     <ClInclude Include="cPingPongFBOs.h" />
+    <ClInclude Include="cProjectile.h" />
     <ClInclude Include="cShaderManager.h" />
     <ClInclude Include="cTextureViewer.h" />
     <ClInclude Include="cTransform.h" />

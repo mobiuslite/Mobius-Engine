@@ -49,12 +49,14 @@
 #include "cInstancedRenderer.h"
 #include "cInstancedBrush.h"
 #include <chrono>
+#include "cBowComponent.h"
+#include "cProjectile.h"
 
 struct PostProcessingInfo
 {
     float gamma = 1.85f;
     float exposure = 0.631f;
-    float shadowBias = 0.00124f;
+    float shadowBias = 0.0055f;
 
     bool useExposureToneMapping = true;
 
@@ -111,13 +113,10 @@ unsigned int g_selectedLight = 0;
 cSceneLoader* sceneLoader;
 std::string sceneName = "project2";
 
-bool isDebugMode = false;
-bool debugShowLighting = true;
-bool debugShowNormals = false;
-
 int showTextureIndex = 0;
 
 cEntity* g_skyBox;
+cEntity* g_bow;
 
 bool showDebugGui = true;
 ImGuiIO* io = nullptr;
@@ -129,6 +128,7 @@ size_t selectedTexture = 0;
 size_t selectedNormal = 0;
 size_t selectedMetallic = 0;
 size_t selectedRough = 0;
+size_t selectedAO = 0;
 
 float fov = 70.0f;
 float mouseSense = 0.1f;
@@ -144,6 +144,12 @@ cShadowDepthFBO* shadowFBO;
 int instancedRenderOffsetAmount = 10;
 
 bool g_MouseIsInsideWindow = false;
+
+bool aiming = false;
+float aimingValue = 0.0f;
+float aimingSpeed = 0.5f;
+
+float fovChangeAmount = 30.0f;
 
 //Method in DrawObjectFunction
 void extern DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderProgram* shader, cVAOManager* VAOManager,
@@ -179,58 +185,47 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     {
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         {
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
         else if (key == GLFW_KEY_GRAVE_ACCENT && action == GLFW_PRESS)
         {
             showDebugGui = !showDebugGui;
         }
-        else if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
-        {
-            isDebugMode = !isDebugMode;
-
-            if (isDebugMode)
-            {
-                std::cout << "Debug mode: ENABLED" << std::endl;
-            }
-            else
-            {
-                std::cout << "Debug mode: DISABLED" << std::endl;
-            }
-        }
-        else if (key == GLFW_KEY_F3 && action == GLFW_PRESS)
-        {
-            debugShowLighting = !debugShowLighting;
-        }
-        else if (key == GLFW_KEY_F4 && action == GLFW_PRESS)
-        {
-            debugShowNormals = !debugShowNormals;
-        }
-        else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-        {
-            //if (sceneLoader->SaveScene(sceneName, g_FlyCamera->getEye(), &g_entityManager))
-            //{
-            //    std::cout << "Saved scene: " << sceneName << std::endl;
-            //}
-        }
-        else if (key == GLFW_KEY_C && action == GLFW_PRESS)
-        {
-            cEntity* cloneMesh = g_entityManager.GetEntities().at(g_selectedObject)->clone();
-            cloneMesh->GetComponent<cMeshRenderer>()->friendlyName += "Clone";
-
-            cEntity* newEntity = g_entityManager.CreateEntity();
-            *newEntity = *cloneMesh;
-
-            g_entityManager.DeleteEntity(cloneMesh);
-
-            g_selectedObject = (int)g_entityManager.GetEntities().size() - 1;
-
-            std::cout << "Cloned mesh!" << std::endl;
-
-        }
     }
     return;
 }
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+    {
+        aiming = true;
+    }
+    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE && aiming)
+    {
+        cEntity* newProj = g_entityManager.CreateEntity();
+        newProj->name = "Projectile";
+        newProj->isGameplayEntity = true;
+
+        cMeshRenderer* mesh = newProj->AddComponent<cMeshRenderer>();
+        mesh->meshName = "ISO.ply";
+        mesh->wholeObjectDiffuseRGBA = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+        mesh->bUseWholeObjectDiffuseColour = true;
+
+        cTransform* trans = newProj->GetComponent<cTransform>();
+        trans->position = cameraEye;
+        trans->scale = glm::vec3(0.2f);
+
+        cProjectile* proj = new cProjectile(trans, cameraDir, 50.0f * aimingValue + 10.0f);
+
+        newProj->AddComponent(proj);
+
+        aiming = false;
+        aimingValue = 0.0f;
+    }
+        
+}
+
 // We call these every frame
 void ProcessAsyncMouse(GLFWwindow* window, float deltaTime)
 {
@@ -254,7 +249,7 @@ void ProcessAsyncMouse(GLFWwindow* window, float deltaTime)
 
 
         if ((glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
-            && g_MouseIsInsideWindow)
+            && g_MouseIsInsideWindow || !showDebugGui)
         {
 
             xDelta *= mouseSense;
@@ -277,7 +272,7 @@ void ProcessAsyncMouse(GLFWwindow* window, float deltaTime)
             cameraRight = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), cameraDir));
             cameraUp = glm::cross(cameraDir, cameraRight);
         }
-        else if ((glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) && g_MouseIsInsideWindow)
+        else if ((glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) && g_MouseIsInsideWindow && showDebugGui)
         {
             if (brush.HasRenderer() && brush.IsActive())
             {
@@ -361,6 +356,20 @@ void ProcessAsyncKeyboard(GLFWwindow* window, float deltaTime)
     }
 }
 
+void GLAPIENTRY
+MessageCallback(GLenum source,
+    GLenum type,
+    GLuint id,
+    GLenum severity,
+    GLsizei length,
+    const GLchar* message,
+    const void* userParam)
+{
+    fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+        (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+        type, severity, message);
+}
+
 int main(void)
 {
     GLFWwindow* window;
@@ -376,7 +385,7 @@ int main(void)
 
     glfwSetErrorCallback(error_callback);
 
-
+  
     if ( ! glfwInit() )
     {
         return -1;
@@ -386,6 +395,10 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+
+
+
     window = glfwCreateWindow(1800, 1000, "Ethan's Engine", NULL, NULL);
 
     if (!window)
@@ -394,7 +407,11 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     glfwSetKeyCallback(window, key_callback);	// was “key_callback”
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+
     // These are new:
     glfwSetCursorEnterCallback(window, GLFW_cursor_enter_callback);
     glfwMakeContextCurrent(window);
@@ -466,6 +483,11 @@ int main(void)
     }
 
     glUseProgram(program);
+
+    // During init, enable debug output
+   //glEnable(GL_DEBUG_OUTPUT);
+   //glDebugMessageCallback(MessageCallback, 0);
+
 
     mvp_location = glGetUniformLocation(program, "MVP");
 
@@ -551,8 +573,12 @@ int main(void)
 
     //gets the sky box model so we can change the skybox texture
     g_skyBox = g_entityManager.GetEntityByName("Sky");
+    g_bow = g_entityManager.GetEntityByName("bow");
+    
+    cBowComponent* bowComp = new cBowComponent(g_bow->GetComponent<cTransform>(), &cameraEye);
+    g_bow->AddComponent(bowComp);
 
-    g_entityManager.GetEntityByName("poolwater")->GetComponent<cMeshRenderer>()->bUseSkyboxReflection = true;
+    //g_entityManager.GetEntityByName("poolwater")->GetComponent<cMeshRenderer>()->bUseSkyboxReflection = true;
 
     cShaderManager::cShaderProgram* normalShader = gShaderManager.pGetShaderProgramFromFriendlyName("Shader#1");
 
@@ -586,7 +612,6 @@ int main(void)
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_MatColor", glGetUniformLocation(program, "texture_MatColor")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_Normal", glGetUniformLocation(program, "texture_Normal")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_WorldPos", glGetUniformLocation(program, "texture_WorldPos")));
-    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_Specular", glGetUniformLocation(program, "texture_Specular")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("texture_LightSpacePos", glGetUniformLocation(program, "texture_LightSpacePos")));
 
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("textureRatios", glGetUniformLocation(program, "textureRatios")));
@@ -605,6 +630,9 @@ int main(void)
 
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseRoughMap", glGetUniformLocation(program, "bUseRoughMap")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("roughMap", glGetUniformLocation(program, "roughMap")));
+
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseAO", glGetUniformLocation(program, "bUseAO")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("AOMap", glGetUniformLocation(program, "AOMap")));
 
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bUseSkybox", glGetUniformLocation(program, "bUseSkybox")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("skyBox", glGetUniformLocation(program, "skyBox")));
@@ -720,15 +748,6 @@ int main(void)
         }
     }
 
-
-
-    g_DebugSphere = g_entityManager.CreateEntity(false);
-
-    cMeshRenderer* debugMesh = new cMeshRenderer();
-    debugMesh->meshName = "Beachball.ply";
-    debugMesh->bIsWireframe = true;
-    g_DebugSphere->AddComponent<cMeshRenderer>(debugMesh);
-
     const float MAX_DELTA_TIME = 0.1f;	// 100 ms
     float previousTime = (float)glfwGetTime();
 
@@ -778,6 +797,8 @@ int main(void)
 
     while (!glfwWindowShouldClose(window))
     {
+        GLenum err;
+
 
         float useExposure = postProcessing.useExposureToneMapping ? 0.0f : 1.0f;
         glUniform4f(normalShader->uniformLocations["postprocessingVariables"], postProcessing.gamma, postProcessing.exposure, useExposure, postProcessing.bloomThreshhold);
@@ -811,11 +832,9 @@ int main(void)
         // *******************************************************
 
 
+
         // Copy the light information into the shader to draw the scene
         gTheLights.CopyLightInfoToShader();
-
-        //glEnable(GL_CULL_FACE);
-        //glCullFace(GL_FRONT);
 
         //RENDER SHADOW
         glUseProgram(shadowShader->ID);
@@ -845,11 +864,12 @@ int main(void)
         glUniform1f(shadowShader->uniformLocations["bUseInstancedRendering"], (float)GL_FALSE);
         glUniform1f(shadowShader->uniformLocations["bUseHeightMap"], (float)GL_FALSE);
 
-        std::vector<cEntity*> entityVector = g_entityManager.GetEntities();
+        std::vector<cEntity*> entityVector = g_entityManager.GetEntities();    
         Draw(&entityVector, shadowShader, deltaTime);
+        
 
         //Render normal scene
-        //glCullFace(GL_BACK);
+        
 
         glUseProgram(normalShader->ID);
         glBindFramebuffer(GL_FRAMEBUFFER, g_fbo->ID);
@@ -863,7 +883,7 @@ int main(void)
         //RENDER SCENE
         glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_0_G_BUFFER);
         //Draw scene
-        float usedFov = fov;
+        float usedFov = fov - (aimingValue * fovChangeAmount);
 
         ratio = g_fbo->width / (float)g_fbo->height;
         p = glm::perspective(glm::radians(usedFov),
@@ -879,6 +899,7 @@ int main(void)
             cameraEye + cameraDir,  // "at"
             cameraUp);
         glUniformMatrix4fv(matView_Location, 1, GL_FALSE, glm::value_ptr(v)); 
+
         //Draw scene
         Draw(&entityVector, normalShader, deltaTime);
 
@@ -886,7 +907,6 @@ int main(void)
         //Lighting Pass
         glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_1_LIGHTING);
         glm::vec3 fullscreenPos = glm::vec3(0.f, 0.f, -10.f);
-        
         cMeshRenderer* fullscreenMesh = new cMeshRenderer();
         fullscreenMesh->meshName = "fullscreenquad.ply";
         fullscreenMesh->friendlyName = "Fullscreen Quad";
@@ -979,7 +999,8 @@ int main(void)
         DrawObject(fullscreenEntity, glm::mat4(1.0f), normalShader, gVAOManager, g_textureManager, fullscreenPos);
 
         //DONE 1ST PASS (Lighting)
-        
+
+
         bool horizontal = true;
         bool firstIteration = true;
 
@@ -1096,7 +1117,16 @@ int main(void)
         ProcessAsyncMouse(window, (float)deltaTime);
         ProcessAsyncKeyboard(window, (float)deltaTime);
 
-        GLenum err;
+        for (cEntity* entity : entityVector)
+        {
+            entity->Update(deltaTime);
+        }
+
+        if (aiming && aimingValue < 1.0f)
+        {
+            aimingValue += aimingSpeed * deltaTime;
+        }
+        
         while ((err = glGetError()) != GL_NO_ERROR)
         {
             std::cout << "WARNING: OpenGL errors found!: " << err << std::endl;
@@ -1156,6 +1186,7 @@ int main(void)
 
 void Draw(std::vector<cEntity*>* meshes, cShaderManager::cShaderProgram* program, float deltaTime)
 {
+    GLenum err;
     //Upload wind map
     GLint windNoise = g_textureManager.getTextureIDFromName("noise.bmp");
     if (windNoise != 0)
@@ -1190,9 +1221,7 @@ void Draw(std::vector<cEntity*>* meshes, cShaderManager::cShaderProgram* program
             curMesh->offset.x += (float)deltaTime / 70.0f;
             curMesh->offset.y += (float)deltaTime / 100.0f;
         }
-
         DrawObject(curEntity, matModel, program, gVAOManager, g_textureManager, cameraEye);
-
     }//for (unsigned int index
 }
 
@@ -1201,28 +1230,31 @@ void TextureSelection(std::string name, size_t* selectedIndex, std::string* text
     ImGui::Separator();
     ImGui::Text(name.c_str());
     
-    ImGui::Text(std::string("Current " + name + " Map" + (usingTexture ? textureName->c_str() : "No " + name + " Map")).c_str());
+    ImGui::Checkbox(std::string("Use " + name).c_str(), usingTexture);
+    ImGui::Text(std::string("Current " + name + " Map: " + (*usingTexture ? textureName->c_str() : "No " + name + " Map")).c_str());
     
-    if (usingTexture)
+
+    if (*usingTexture)
     {
         GLint textureId = g_textureManager.getTextureIDFromName(textureName->c_str());
         ImGui::Image((void*)(intptr_t)textureId, ImVec2(150, 150));
-    }
-    std::vector<std::string> textureVec = g_textureManager.getAllTextures();
-    if (ImGui::BeginCombo(std::string(name + " Textures").c_str(), textureVec[*selectedIndex].c_str()))
-    {
-        for (size_t i = 0; i < textureVec.size(); i++)
+
+        std::vector<std::string> textureVec = g_textureManager.getAllTextures();
+        if (ImGui::BeginCombo(std::string(name + " Textures").c_str(), textureVec[*selectedIndex].c_str()))
         {
-            if (ImGui::Selectable(std::string(textureVec[i] + ": " + std::to_string(i)).c_str(), *selectedIndex == i))
-                *selectedIndex = i;
+            for (size_t i = 0; i < textureVec.size(); i++)
+            {
+                if (ImGui::Selectable(std::string(textureVec[i] + ": " + std::to_string(i)).c_str(), *selectedIndex == i))
+                    *selectedIndex = i;
+            }
+            ImGui::EndCombo();
         }
-        ImGui::EndCombo();
-    }
-    
-    if (ImGui::Button(std::string("Set " + name).c_str()))
-    {
-        *textureName = textureVec[*selectedIndex];
-    }   
+
+        if (ImGui::Button(std::string("Set " + name).c_str()))
+        {
+            *textureName = textureVec[*selectedIndex];
+        }
+    }     
 }
 
 void DrawGUI(float dt)
@@ -1345,7 +1377,7 @@ void DrawGUI(float dt)
                         {
                             cMeshRenderer* renderer = curEntity->GetComponent<cMeshRenderer>();
 
-                            ImGui::Checkbox("Use Material", &renderer->bUseWholeObjectDiffuseColour);
+                            ImGui::Checkbox("Manual Color Selection", &renderer->bUseWholeObjectDiffuseColour);
                             if (renderer->bUseWholeObjectDiffuseColour)
                             {
                                 float colors[3] = { renderer->wholeObjectDiffuseRGBA.x, renderer->wholeObjectDiffuseRGBA.y, renderer->wholeObjectDiffuseRGBA.z };
@@ -1361,6 +1393,7 @@ void DrawGUI(float dt)
                                 TextureSelection("Normal", &selectedNormal, &renderer->normalMapName, &renderer->bUseNormalMap);
                                 TextureSelection("Metallic", &selectedMetallic, &renderer->metallicMapName, &renderer->useMetallicMap);
                                 TextureSelection("Roughness", &selectedRough, &renderer->roughnessMapName, &renderer->useRoughnessMap);
+                                TextureSelection("AO", &selectedAO, &renderer->AOMapName, &renderer->useAOMap);
                             }
 
                             ImGui::Spacing();
@@ -1693,7 +1726,7 @@ void SetUpLights()
     //SUN
 
     gTheLights.theLights[8].name = "Sun light";
-    gTheLights.theLights[8].position = glm::vec4(-12.f, 25.f, 21.f, 1.0f);
+    gTheLights.theLights[8].position = glm::vec4(-23.f, 18.f, -27.f, 1.0f);
     gTheLights.theLights[8].diffuse = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     gTheLights.theLights[8].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100.0f);
     gTheLights.theLights[8].direction = glm::normalize(glm::vec4(0.2f, -.8f, -.4f, 1.0f));

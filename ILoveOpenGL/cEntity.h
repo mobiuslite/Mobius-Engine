@@ -22,9 +22,13 @@ public:
 	std::vector<cComponent*> components;	
 	std::vector<cEntity*> children;
 
+	bool isGameplayEntity = false;
+
 	friend class cWorld;
 	friend class cEmitter;
 	friend class cEntityManager;
+
+	void Update(float dt);
 
 private:
 	cEntity();

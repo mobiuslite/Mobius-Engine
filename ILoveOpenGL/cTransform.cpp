@@ -4,6 +4,12 @@ void cTransform::Update(float dt)
 {
 
 }
+
+void cTransform::Translate(glm::vec3 t)
+{
+	this->position += t;
+}
+
 void cTransform::SetRotation(glm::quat q)
 {
 	this->rotation = q;

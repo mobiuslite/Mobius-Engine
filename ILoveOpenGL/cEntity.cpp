@@ -17,6 +17,15 @@ cEntity::~cEntity()
 	}
 }
 
+void cEntity::Update(float dt)
+{
+	for (cComponent* comp : this->components)
+	{
+		if(comp->IsUpdatable())
+			comp->Update(dt);
+	}
+}
+
 void cEntity::RemoveComponent(cComponent* component)
 {
 	//Finds component to delete

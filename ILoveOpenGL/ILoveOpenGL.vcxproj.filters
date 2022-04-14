@@ -180,6 +180,12 @@
     <ClCompile Include="cInstancedBrush.cpp">
       <Filter>Components\Brush</Filter>
     </ClCompile>
+    <ClCompile Include="cBowComponent.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="cProjectile.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cShaderManager.h">
@@ -286,6 +292,12 @@
     </ClInclude>
     <ClInclude Include="cInstancedBrush.h">
       <Filter>Components\Brush</Filter>
+    </ClInclude>
+    <ClInclude Include="cBowComponent.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="cProjectile.h">
+      <Filter>Components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
