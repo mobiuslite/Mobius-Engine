@@ -12,7 +12,7 @@ void cProjectile::Update(float dt)
 {
 	this->transform->Translate(this->velocity * dt);
 	
-	if (this->transform->position.y <= 2.25f)
+	if (this->transform->position.y <= 2.25f || this->hitTarget)
 	{
 		this->velocity = glm::vec3(0.0f);
 	}
@@ -20,4 +20,14 @@ void cProjectile::Update(float dt)
 	{
 		this->velocity += this->GRAVITY * dt;
 	}
+}
+
+cTransform cProjectile::GetProjTransform()
+{
+	return *this->transform;
+}
+
+void cProjectile::HitTarget()
+{
+	this->hitTarget = true;
 }

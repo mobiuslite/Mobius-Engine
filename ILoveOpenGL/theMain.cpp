@@ -52,6 +52,7 @@
 #include "cBowComponent.h"
 #include "cProjectile.h"
 #include "FMODSoundpanel/cSoundPanel.h"
+#include "cTarget.h"
 
 struct PostProcessingInfo
 {
@@ -96,7 +97,7 @@ float pitch = 0.0f;
 float flyCameraSpeed = 5.0f;
 float speedMultiple = 3.0f;
 
-cVAOManager*     gVAOManager;
+cVAOManager* gVAOManager;
 cShaderManager  gShaderManager;
 
 cEntityManager g_entityManager;
@@ -118,6 +119,7 @@ int showTextureIndex = 0;
 
 cEntity* g_skyBox;
 cEntity* g_bow;
+cBowComponent* g_bowComp;
 
 bool showDebugGui = true;
 ImGuiIO* io = nullptr;
@@ -146,7 +148,6 @@ int instancedRenderOffsetAmount = 10;
 
 bool g_MouseIsInsideWindow = false;
 
-bool aiming = false;
 float aimingValue = 0.0f;
 float aimingSpeed = 0.5f;
 
@@ -194,6 +195,11 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         {
             showDebugGui = !showDebugGui;
         }
+
+        if (key == GLFW_KEY_K && action == GLFW_PRESS)
+        {
+            g_bowComp->CleanUpProjectile();
+        }
     }
     return;
 }
@@ -202,29 +208,15 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
     {
-        aiming = true;
+        g_bowComp->aiming = true;
     }
-    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE && aiming)
+    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE && g_bowComp->aiming)
     {
-        cEntity* newProj = g_entityManager.CreateEntity();
-        newProj->name = "Projectile";
-        newProj->isGameplayEntity = true;
-
-        cMeshRenderer* mesh = newProj->AddComponent<cMeshRenderer>();
-        mesh->meshName = "ISO.ply";
-        mesh->wholeObjectDiffuseRGBA = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-        mesh->bUseWholeObjectDiffuseColour = true;
-
-        cTransform* trans = newProj->GetComponent<cTransform>();
-        trans->position = cameraEye;
-        trans->scale = glm::vec3(0.2f);
-
-        cProjectile* proj = new cProjectile(trans, cameraDir, 50.0f * aimingValue + 10.0f);
-
-        newProj->AddComponent(proj);
-
-        aiming = false;
+        g_bowComp->FireProjectile(cameraEye, cameraDir, aimingValue);
+        g_bowComp->aiming = false;
         aimingValue = 0.0f;
+
+        fmodSoundPanel.PlaySound("bowFire.mp3");
     }
         
 }
@@ -578,8 +570,13 @@ int main(void)
     g_skyBox = g_entityManager.GetEntityByName("Sky");
     g_bow = g_entityManager.GetEntityByName("bow");
     
-    cBowComponent* bowComp = new cBowComponent(g_bow->GetComponent<cTransform>(), &cameraEye);
+    cBowComponent* bowComp = new cBowComponent(g_bow->GetComponent<cTransform>(), &cameraEye, &g_entityManager);
     g_bow->AddComponent(bowComp);
+    g_bowComp = bowComp;
+
+    cEntity* targetOne = g_entityManager.GetEntityByName("TargetOne");
+    cTarget* targetCompOne = new cTarget(bowComp);
+    targetOne->AddComponent(targetCompOne);
 
     //g_entityManager.GetEntityByName("poolwater")->GetComponent<cMeshRenderer>()->bUseSkyboxReflection = true;
 
@@ -871,13 +868,11 @@ int main(void)
         glUniform1f(shadowShader->uniformLocations["bUseInstancedRendering"], (float)GL_FALSE);
         glUniform1f(shadowShader->uniformLocations["bUseHeightMap"], (float)GL_FALSE);
 
+        //Render Shadow
         std::vector<cEntity*> entityVector = g_entityManager.GetEntities();    
         Draw(&entityVector, shadowShader, deltaTime);
         
-
         //Render normal scene
-        
-
         glUseProgram(normalShader->ID);
         glBindFramebuffer(GL_FRAMEBUFFER, g_fbo->ID);
         glViewport(0, 0, g_fbo->width, g_fbo->height);
@@ -907,7 +902,7 @@ int main(void)
             cameraUp);
         glUniformMatrix4fv(matView_Location, 1, GL_FALSE, glm::value_ptr(v)); 
 
-        //Draw scene
+        //Draw normal scene
         Draw(&entityVector, normalShader, deltaTime);
 
         //End of zeroth pass
@@ -1129,7 +1124,7 @@ int main(void)
             entity->Update(deltaTime);
         }
 
-        if (aiming && aimingValue < 1.0f)
+        if (g_bowComp->aiming && aimingValue < 1.0f)
         {
             aimingValue += aimingSpeed * deltaTime;
         }
@@ -1565,6 +1560,17 @@ void DrawGUI(float dt)
                 ImGui::DragFloat("power", &curLight->power, 1.0f, 0.0f, 10000.0f);
 
                 ImGui::EndTabItem();
+            }
+
+            //If is directional light
+            if (((int)curLight->param1.x) == 2)
+            {
+                if (ImGui::BeginTabItem("Shadow Map"))
+                {
+                    ImGui::Image((void*)(intptr_t)shadowFBO->depthMap, ImVec2(500, 500));
+
+                    ImGui::EndTabItem();
+                }
             }
 
             ImGui::EndTabBar();

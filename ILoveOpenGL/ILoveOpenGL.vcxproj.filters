@@ -192,6 +192,9 @@
     <ClCompile Include="FMODSoundpanel\cSoundPanel.cpp">
       <Filter>FMOD</Filter>
     </ClCompile>
+    <ClCompile Include="cTarget.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cShaderManager.h">
@@ -307,6 +310,9 @@
     </ClInclude>
     <ClInclude Include="FMODSoundpanel\cSoundPanel.h">
       <Filter>FMOD</Filter>
+    </ClInclude>
+    <ClInclude Include="cTarget.h">
+      <Filter>Components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -171,6 +171,7 @@
     <ClCompile Include="cShader.cpp" />
     <ClCompile Include="cShaderManager.cpp" />
     <ClCompile Include="cShadowDepthFBO.cpp" />
+    <ClCompile Include="cTarget.cpp" />
     <ClCompile Include="cTextureViewer.cpp" />
     <ClCompile Include="cTransform.cpp" />
     <ClCompile Include="cInstancedRenderer.cpp" />
@@ -217,6 +218,7 @@
     <ClInclude Include="cPingPongFBOs.h" />
     <ClInclude Include="cProjectile.h" />
     <ClInclude Include="cShaderManager.h" />
+    <ClInclude Include="cTarget.h" />
     <ClInclude Include="cTextureViewer.h" />
     <ClInclude Include="cTransform.h" />
     <ClInclude Include="cInstancedRenderer.h" />

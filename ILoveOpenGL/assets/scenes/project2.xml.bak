@@ -1,7 +1,7 @@
 <Scene>
 	<Camera>
 		<Transform>
-			<Position x="-17.809828" y="6.451447" z="-20.232855"/>
+			<Position x="-20.225042" y="7.590160" z="-11.278905"/>
 		</Transform>
 	</Camera>
 	<Models>
@@ -17,11 +17,12 @@
 		<Model>sphere.fbx</Model>
 		<Model>grass2.ply</Model>
 		<Model>bow.fbx</Model>
+		<Model>ISO.ply</Model>
 	</Models>
 	<Description>
 		<Mesh FriendlyName="Sky" MeshName="SkyBoxUV.ply">
 			<Transform>
-				<Position x="-17.809828" y="6.451447" z="-20.232855"/>
+				<Position x="-20.225042" y="7.590160" z="-11.278905"/>
 				<Rotation x="0.000000" y="-0.000000" z="0.000000"/>
 				<Scale x="150.000000" y="150.000000" z="150.000000"/>
 			</Transform>
@@ -113,7 +114,7 @@
 		<Mesh FriendlyName="minecraftTree2" MeshName="tree2.ply">
 			<Transform>
 				<Position x="9.000000" y="1.940000" z="-10.700010"/>
-				<Rotation x="-180.000000" y="85.999977" z="-180.000000"/>
+				<Rotation x="180.000000" y="85.999924" z="180.000000"/>
 				<Scale x="0.988750" y="0.988750" z="0.988750"/>
 			</Transform>
 			<Misc>
@@ -160,7 +161,7 @@
 		</Mesh>
 		<Mesh FriendlyName="bow" MeshName="bow.fbx">
 			<Transform>
-				<Position x="-18.609827" y="5.951447" z="-18.982855"/>
+				<Position x="-21.025042" y="7.090160" z="-10.028905"/>
 				<Rotation x="-90.000000" y="-0.000000" z="-90.000000"/>
 				<Scale x="0.020000" y="0.020000" z="0.020000"/>
 			</Transform>
@@ -172,6 +173,19 @@
 				<UseLighting>true</UseLighting>
 				<Metallic>0.000000</Metallic>
 				<Roughness>0.575000</Roughness>
+				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="TargetOne" MeshName="ISO.ply">
+			<Transform>
+				<Position x="-19.000000" y="12.100000" z="11.400000"/>
+				<Rotation x="0.000000" y="-0.000000" z="0.000000"/>
+				<Scale x="1.000000" y="1.000000" z="1.000000"/>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Metallic>0.000000</Metallic>
+				<Roughness>1.000000</Roughness>
 				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
 			</Misc>
 		</Mesh>

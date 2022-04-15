@@ -27,6 +27,7 @@ public:
 	friend class cWorld;
 	friend class cEmitter;
 	friend class cEntityManager;
+	friend class cComponent;
 
 	void Update(float dt);
 
@@ -48,10 +49,15 @@ template<class T> bool cEntity::AddComponent(T* c)
 	}
 
 	//If it is not a component, return false; 
-	if (dynamic_cast<cComponent*>(c) == nullptr)
+	cComponent* newComp = dynamic_cast<cComponent*>(c);
+
+	if (newComp == nullptr)
 	{
 		return false;
 	}
+
+	newComp->SetEntity(this);
+	newComp->Awake();
 
 	this->components.push_back(c);
 	return true;
@@ -69,15 +75,19 @@ template <class T> T* cEntity::AddComponent()
 	}
 
 	T* newComponent = new T();
+	cComponent* newComp = dynamic_cast<cComponent*>(newComponent);
 
 	//Returns nullptr if the templated class is not a component.
-	if (dynamic_cast<cComponent*>(newComponent) == nullptr)
+	if (newComp == nullptr)
 	{
 		delete newComponent;
 		return nullptr;
 	}
 
-	this->components.push_back((cComponent*)newComponent);
+	newComp->SetEntity(this);
+	newComp->Awake();
+
+	this->components.push_back(newComp);
 	return newComponent;
 }
 

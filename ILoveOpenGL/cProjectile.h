@@ -9,7 +9,24 @@ public:
 	virtual ~cProjectile() {};
 	virtual void Update(float dt);
 
+	cTransform GetProjTransform();
+
+	void HitTarget();
+
+	void CleanUp()
+	{
+		cleanUp = true;
+	}
+
+	bool IsReadyForCleanUp()
+	{
+		return cleanUp;
+	}
+
 private:
+
+	bool cleanUp = false;
+	bool hitTarget = false;
 
 	cTransform* transform;
 	glm::vec3 velocity;
