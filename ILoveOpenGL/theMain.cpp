@@ -51,6 +51,7 @@
 #include <chrono>
 #include "cBowComponent.h"
 #include "cProjectile.h"
+#include "FMODSoundpanel/cSoundPanel.h"
 
 struct PostProcessingInfo
 {
@@ -69,8 +70,8 @@ struct PostProcessingInfo
 
 struct WindInfo
 {
-    float strength = 1.1f;
-    float size = 0.05f;
+    float strength = 0.896f;
+    float size = 0.14f;
     glm::vec3 windDir = glm::vec3(1.0f, 0.1f, 1.0f);
 };
 
@@ -150,6 +151,8 @@ float aimingValue = 0.0f;
 float aimingSpeed = 0.5f;
 
 float fovChangeAmount = 30.0f;
+
+cSoundPanel fmodSoundPanel;
 
 //Method in DrawObjectFunction
 void extern DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderProgram* shader, cVAOManager* VAOManager,
@@ -795,6 +798,10 @@ int main(void)
 
     io->Fonts->AddFontFromFileTTF("assets/fonts/Roboto-Medium.ttf", 15);
 
+    std::vector<Sound> musicList = fmodSoundPanel.GetMusicList();
+    fmodSoundPanel.PlayMusic(musicList[0].name);
+    fmodSoundPanel.SetPauseMusic(false);
+
     while (!glfwWindowShouldClose(window))
     {
         GLenum err;
@@ -1380,11 +1387,8 @@ void DrawGUI(float dt)
                             ImGui::Checkbox("Manual Color Selection", &renderer->bUseWholeObjectDiffuseColour);
                             if (renderer->bUseWholeObjectDiffuseColour)
                             {
-                                float colors[3] = { renderer->wholeObjectDiffuseRGBA.x, renderer->wholeObjectDiffuseRGBA.y, renderer->wholeObjectDiffuseRGBA.z };
-                                ImGui::ColorEdit3("Diffuse", colors);
-                                renderer->wholeObjectDiffuseRGBA.x = colors[0];
-                                renderer->wholeObjectDiffuseRGBA.y = colors[1];
-                                renderer->wholeObjectDiffuseRGBA.z = colors[2];
+                                float* colors[3] = { &renderer->wholeObjectDiffuseRGBA.x, &renderer->wholeObjectDiffuseRGBA.y, &renderer->wholeObjectDiffuseRGBA.z };
+                                ImGui::ColorEdit3("Diffuse", *colors);
                             }
                             else
                             {
@@ -1409,13 +1413,8 @@ void DrawGUI(float dt)
                             ImGui::SliderFloat("Roughness", &renderer->roughness, 0.0f, 1.0f);
                             ImGui::SliderFloat("Metallic", &renderer->metallic, 0.0f, 1.0f);
 
-                            float** tiling = new float* [2];
-                            tiling[0] = &renderer->tiling.x;
-                            tiling[1] = &renderer->tiling.y;
-
+                            float* tiling[2] = { &renderer->tiling.x , &renderer->tiling.y };
                             ImGui::DragFloat2("Tiling", *tiling, 0.1f, 0.0f, 10000.0f);
-
-                            delete[] tiling;
 
                             ImGui::Checkbox("Use Wind", &renderer->useWind);
 
@@ -1555,11 +1554,8 @@ void DrawGUI(float dt)
             {
                 ImGui::Checkbox("On", &curLight->on);
 
-                float colors[3] = { curLight->diffuse.x, curLight->diffuse.y, curLight->diffuse.z };
-                ImGui::ColorEdit3("Diffuse", colors);
-                curLight->diffuse.x = colors[0];
-                curLight->diffuse.y = colors[1];
-                curLight->diffuse.z = colors[2];
+                float* colors[3] = { &curLight->diffuse.x, &curLight->diffuse.y, &curLight->diffuse.z };
+                ImGui::ColorEdit3("Diffuse", *colors);
 
                 ImGui::Text("Attenuation");
                 ImGui::DragFloat("atten", &curLight->atten.z, .01f, 0.0f, 3.0f);
@@ -1599,12 +1595,8 @@ void DrawGUI(float dt)
         ImGui::SliderFloat("Wind Strength", &windInfo.strength, 0.0f, 5.0f);
         ImGui::DragFloat("Wind Size", &windInfo.size, 0.01f, 0.0f, 10.0f);
 
-        float directionArray[3] = { windInfo.windDir.x, windInfo.windDir.y, windInfo.windDir.z };
-        ImGui::SliderFloat3("Wind Direction", directionArray, -1.0f, 1.0f);
-        windInfo.windDir.x = directionArray[0];
-        windInfo.windDir.y = directionArray[1];
-        windInfo.windDir.z = directionArray[2];
-
+        float* directionArray[3] = { &windInfo.windDir.x, &windInfo.windDir.y, &windInfo.windDir.z };
+        ImGui::SliderFloat3("Wind Direction", *directionArray, -1.0f, 1.0f);
 
         ImGui::End();
     }

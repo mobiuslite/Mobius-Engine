@@ -67,6 +67,9 @@
     <Filter Include="Components\Brush">
       <UniqueIdentifier>{cbb4450f-5ebf-4270-88ec-23d0b62dc9a9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="FMOD">
+      <UniqueIdentifier>{d28fec6a-f0e6-4d9d-a973-1e4e0f83585d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="theMain.cpp">
@@ -186,6 +189,9 @@
     <ClCompile Include="cProjectile.cpp">
       <Filter>Components</Filter>
     </ClCompile>
+    <ClCompile Include="FMODSoundpanel\cSoundPanel.cpp">
+      <Filter>FMOD</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cShaderManager.h">
@@ -298,6 +304,9 @@
     </ClInclude>
     <ClInclude Include="cProjectile.h">
       <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="FMODSoundpanel\cSoundPanel.h">
+      <Filter>FMOD</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
