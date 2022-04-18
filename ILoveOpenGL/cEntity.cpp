@@ -15,6 +15,11 @@ cEntity::~cEntity()
 	{
 		RemoveComponent(c);
 	}
+
+	for (cEntity* child : this->children)
+	{
+		delete child;
+	}
 }
 
 void cEntity::Update(float dt)

@@ -46,6 +46,12 @@ cSoundPanel::cSoundPanel()
 	}
 }
 
+cSoundPanel* cSoundPanel::GetInstance()
+{
+	return &cSoundPanel::_instance;
+}
+cSoundPanel cSoundPanel::_instance;
+
 cSoundPanel::~cSoundPanel()
 {
 	//Removes the background stream

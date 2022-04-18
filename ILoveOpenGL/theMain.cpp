@@ -33,9 +33,6 @@
 #include "cEntity.h"
 #include "cBasicTextureManager/cBasicTextureManager.h"
 #include <algorithm>
-#include "Physics/cWorld.h"
-#include "cEmitters.h"
-#include "Physics/cForceGenerator.h"
 
 #include "cFBO/cFBO.h"
 #include "cMeshRenderer.h"
@@ -53,6 +50,8 @@
 #include "cProjectile.h"
 #include "FMODSoundpanel/cSoundPanel.h"
 #include "cTarget.h"
+#include "cParticleSystem.h"
+#include "cGameplaySystem.h"
 
 struct PostProcessingInfo
 {
@@ -140,6 +139,8 @@ PostProcessingInfo postProcessing;
 WindInfo windInfo;
 
 cInstancedBrush brush;
+cParticleSystem* particleSystem;
+cGameplaySystem* gameplaySystem;
 
 cPingPongFBOs* pingPongFBO;
 cShadowDepthFBO* shadowFBO;
@@ -148,16 +149,9 @@ int instancedRenderOffsetAmount = 10;
 
 bool g_MouseIsInsideWindow = false;
 
-float aimingValue = 0.0f;
-float aimingSpeed = 0.5f;
-
-float fovChangeAmount = 30.0f;
-
-cSoundPanel fmodSoundPanel;
-
 //Method in DrawObjectFunction
 void extern DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderProgram* shader, cVAOManager* VAOManager,
-    cBasicTextureManager textureManager, glm::vec3 eyeLocation);
+    cBasicTextureManager textureManager, glm::vec3 eyeLocation, sModelDrawInfo* model = nullptr);
 
 void Draw(std::vector<cEntity*>* meshes, cShaderManager::cShaderProgram* program, float deltaTime);
 void DrawGUI(float dt);
@@ -206,19 +200,18 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+    if (!showDebugGui)
     {
-        g_bowComp->aiming = true;
+        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+        {
+            g_bowComp->aiming = true;
+        }
+        else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE && g_bowComp->aiming)
+        {
+            g_bowComp->FireProjectile(cameraEye, cameraDir, g_bowComp->GetAimingValue());
+            cSoundPanel::GetInstance()->PlaySound("bowFire.mp3");
+        }
     }
-    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE && g_bowComp->aiming)
-    {
-        g_bowComp->FireProjectile(cameraEye, cameraDir, aimingValue);
-        g_bowComp->aiming = false;
-        aimingValue = 0.0f;
-
-        fmodSoundPanel.PlaySound("bowFire.mp3");
-    }
-        
 }
 
 // We call these every frame
@@ -530,6 +523,11 @@ int main(void)
         std::cout << "Issue loading wind noise" << std::endl;
     }
 
+    if (!g_textureManager.Create2DTextureFromBMPFile("reticle.bmp", true))
+    {
+        std::cout << "Issue loading wind noise" << std::endl;
+    }
+
    //g_textureManager.Create2DTextureFromBMPFile("smoke.bmp", true);
    //g_textureManager.Create2DTextureFromBMPFile("spyglass.bmp", true);
     gVAOManager = new cVAOManager();
@@ -573,11 +571,7 @@ int main(void)
     cBowComponent* bowComp = new cBowComponent(g_bow->GetComponent<cTransform>(), &cameraEye, &g_entityManager);
     g_bow->AddComponent(bowComp);
     g_bowComp = bowComp;
-
-    cEntity* targetOne = g_entityManager.GetEntityByName("TargetOne");
-    cTarget* targetCompOne = new cTarget(bowComp);
-    targetOne->AddComponent(targetCompOne);
-
+    
     //g_entityManager.GetEntityByName("poolwater")->GetComponent<cMeshRenderer>()->bUseSkyboxReflection = true;
 
     cShaderManager::cShaderProgram* normalShader = gShaderManager.pGetShaderProgramFromFriendlyName("Shader#1");
@@ -676,6 +670,8 @@ int main(void)
 
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bIsPlane", glGetUniformLocation(program, "bIsPlane")));
 
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("reticleTexture", glGetUniformLocation(program, "reticleTexture")));
+
     cShaderManager::cShaderProgram* pingPongShader = gShaderManager.pGetShaderProgramFromFriendlyName("PingPong");
 
     //glUseProgram(pingPongShader->ID);
@@ -744,7 +740,18 @@ int main(void)
                 gVAOManager->FindDrawInfoByModelName(mesh->meshName, drawInfo);
 
                 instanceRenderer->SetupVertexArrayAttrib(&drawInfo);
-            }
+
+                for (size_t i = 0; i < entity->children.size(); i++)
+                {
+                    cEntity* curChild = entity->children[i];
+                    instanceRenderer = curChild->GetComponent<cInstancedRenderer>();
+
+                    if (instanceRenderer != nullptr)
+                    {
+                        instanceRenderer->SetupVertexArrayAttrib(&drawInfo.children[i]);
+                    }
+                }
+            }       
         }
     }
 
@@ -795,14 +802,18 @@ int main(void)
 
     io->Fonts->AddFontFromFileTTF("assets/fonts/Roboto-Medium.ttf", 15);
 
-    std::vector<Sound> musicList = fmodSoundPanel.GetMusicList();
-    fmodSoundPanel.PlayMusic(musicList[0].name);
-    fmodSoundPanel.SetPauseMusic(false);
+    std::vector<Sound> musicList = cSoundPanel::GetInstance()->GetMusicList();
+    cSoundPanel::GetInstance()->PlayMusic(musicList[0].name);
+    cSoundPanel::GetInstance()->SetPauseMusic(false);
+
+    float balloonSpawnTime = 2.0f;
+    float elapsedBalloonTime = 0.0f;
+    particleSystem = new cParticleSystem(&g_entityManager);
+    gameplaySystem = new cGameplaySystem(&g_entityManager, particleSystem, g_bowComp);
 
     while (!glfwWindowShouldClose(window))
     {
         GLenum err;
-
 
         float useExposure = postProcessing.useExposureToneMapping ? 0.0f : 1.0f;
         glUniform4f(normalShader->uniformLocations["postprocessingVariables"], postProcessing.gamma, postProcessing.exposure, useExposure, postProcessing.bloomThreshhold);
@@ -813,6 +824,8 @@ int main(void)
         float deltaTime = currentTime - previousTime;
         deltaTime = (deltaTime > MAX_DELTA_TIME ? MAX_DELTA_TIME : deltaTime);
         previousTime = currentTime;
+
+        
 
         //glm::mat4 matModel;    // used to be "m"; Sometimes it's called "world"
         glm::mat4 p;
@@ -868,11 +881,11 @@ int main(void)
         glUniform1f(shadowShader->uniformLocations["bUseInstancedRendering"], (float)GL_FALSE);
         glUniform1f(shadowShader->uniformLocations["bUseHeightMap"], (float)GL_FALSE);
 
-        //Render Shadow
+        //Render Shadows
         std::vector<cEntity*> entityVector = g_entityManager.GetEntities();    
         Draw(&entityVector, shadowShader, deltaTime);
         
-        //Render normal scene
+        //Setup normal render
         glUseProgram(normalShader->ID);
         glBindFramebuffer(GL_FRAMEBUFFER, g_fbo->ID);
         glViewport(0, 0, g_fbo->width, g_fbo->height);
@@ -881,17 +894,15 @@ int main(void)
         glUniform4f(normalShader->uniformLocations["eyeLocation"], cameraEye.x, cameraEye.y, cameraEye.z, 1.0f);
 
         glUniformMatrix4fv(normalShader->uniformLocations["lightSpaceMatrix"], 1, GL_FALSE, glm::value_ptr(lightSpaceMat));
-
-        //RENDER SCENE
         glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_0_G_BUFFER);
-        //Draw scene
-        float usedFov = fov - (aimingValue * fovChangeAmount);
+
+        float usedFov = fov - (g_bowComp->GetAimingValue() * g_bowComp->fovChangeAmount);
 
         ratio = g_fbo->width / (float)g_fbo->height;
         p = glm::perspective(glm::radians(usedFov),
             ratio,
             0.1f,
-            300.0f);     
+            1000000.0f);     
         glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
         //glm::vec3 cameraEye = glm::vec3(0.0, 0.0, -4.0f);
         glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -1092,6 +1103,15 @@ int main(void)
             glUniform1i(normalShader->uniformLocations["bloomMapColorBuf"], unit);
         }  
 
+        GLint reticleTex = g_textureManager.getTextureIDFromName("reticle.bmp");
+        if (reticleTex != 0)
+        {
+            GLint unit = 32;
+            glActiveTexture(unit + GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, reticleTex);
+            glUniform1i(normalShader->uniformLocations["reticleTexture"], unit);
+        }
+
         fullscreenEntity->GetComponent<cTransform>()->position.z -= .1f;
         DrawObject(fullscreenEntity, glm::mat4(1.0f), normalShader, gVAOManager, g_textureManager, fullscreenPos);
         //END OF FINAL PASS
@@ -1119,15 +1139,10 @@ int main(void)
         ProcessAsyncMouse(window, (float)deltaTime);
         ProcessAsyncKeyboard(window, (float)deltaTime);
 
-        for (cEntity* entity : entityVector)
-        {
-            entity->Update(deltaTime);
-        }
-
-        if (g_bowComp->aiming && aimingValue < 1.0f)
-        {
-            aimingValue += aimingSpeed * deltaTime;
-        }
+        
+        g_entityManager.Update(deltaTime);
+        particleSystem->Update(deltaTime);
+        gameplaySystem->Update(deltaTime);
         
         while ((err = glGetError()) != GL_NO_ERROR)
         {
@@ -1180,15 +1195,15 @@ int main(void)
         }
     }
 
+    delete particleSystem;
+
     glfwDestroyWindow(window);
 
     glfwTerminate();
-    exit(EXIT_SUCCESS);
 }
 
 void Draw(std::vector<cEntity*>* meshes, cShaderManager::cShaderProgram* program, float deltaTime)
 {
-    GLenum err;
     //Upload wind map
     GLint windNoise = g_textureManager.getTextureIDFromName("noise.bmp");
     if (windNoise != 0)
@@ -1607,7 +1622,7 @@ void DrawGUI(float dt)
         ImGui::End();
     }
 
-    //ImGui::ShowDemoWindow();
+    ImGui::ShowDemoWindow();
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

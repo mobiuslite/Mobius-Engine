@@ -186,7 +186,6 @@ void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std:
 
 void Render(sModelDrawInfo* modelInfo, cEntity* curEntity, cShaderManager::cShaderProgram* shader)
 {
-    GLenum err;
     glBindVertexArray(modelInfo->VAO_ID);
     cInstancedRenderer* instancedRenderer = curEntity->GetComponent<cInstancedRenderer>();
     if (instancedRenderer == nullptr)
@@ -209,12 +208,16 @@ void Render(sModelDrawInfo* modelInfo, cEntity* curEntity, cShaderManager::cShad
     }
 
     glBindVertexArray(0);
+
+    //for (sModelDrawInfo child : modelInfo->children)
+    //{
+    //    Render(&child, curEntity, shader);
+    //}
 }
 
 void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderProgram* shader, cVAOManager* VAOManager,
-    cBasicTextureManager textureManager,  glm::vec3 eyeLocation)
+    cBasicTextureManager textureManager,  glm::vec3 eyeLocation, sModelDrawInfo* model = nullptr)
 {
-    GLenum err;
     cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
     cTransform* curTransform = curEntity->GetComponent<cTransform>();
     if (shader->type == RenderType::Normal)
@@ -284,9 +287,21 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
     if (shader->type == RenderType::PingPong || shader->type == RenderType::Shadow)
     {
         sModelDrawInfo modelInfo;
-        if (VAOManager->FindDrawInfoByModelName(curMesh->meshName, modelInfo))
+        if (model == nullptr)
         {
-            Render(&modelInfo, curEntity, shader);
+            if (VAOManager->FindDrawInfoByModelName(curMesh->meshName, modelInfo))
+            {
+                Render(&modelInfo, curEntity, shader);
+            }
+
+            for (size_t i = 0; i < curEntity->children.size(); i++)
+            {
+                DrawObject(curEntity->children[i], matModel, shader, VAOManager, textureManager, eyeLocation, &modelInfo.children[i]);
+            }
+        }
+        else
+        {
+            Render(model, curEntity, shader);
         }
         return;
     }
@@ -404,13 +419,22 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
     //        if (gVAOManager.FindDrawInfoByModelName("bun_zipper_res2 (justXYZ).ply", modelInfo))
     //        if (gVAOManager.FindDrawInfoByModelName("Assembled_ISS.ply", modelInfo))
 
-    if (VAOManager->FindDrawInfoByModelName(curMesh->meshName, modelInfo))
+    if (model == nullptr)
     {
-        Render(&modelInfo, curEntity, shader);
+        if (VAOManager->FindDrawInfoByModelName(curMesh->meshName, modelInfo))
+        {
+            Render(&modelInfo, curEntity, shader);
+        }
+
+        for (size_t i = 0; i < curEntity->children.size(); i++)
+        {
+            DrawObject(curEntity->children[i], matModel, shader, VAOManager, textureManager, eyeLocation, &modelInfo.children[i]);
+        }
     }
 
-    for (std::vector<cEntity*>::iterator childrenIt = curEntity->children.begin(); childrenIt != curEntity->children.end(); childrenIt++)
+    //Child rendering
+    else
     {
-        DrawObject(*childrenIt, matModel, shader, VAOManager, textureManager, eyeLocation);
+        Render(model, curEntity, shader);
     }
 }

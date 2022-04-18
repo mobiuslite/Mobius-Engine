@@ -56,7 +56,22 @@ bool cSceneLoader::LoadScene(std::string sceneName, cBasicTextureManager* textur
 	rapidxml::xml_node<>* descNode = sceneNode->first_node("Description");
 	for (rapidxml::xml_node<>* meshNode = descNode->first_node(); meshNode != NULL; meshNode = meshNode->next_sibling())
 	{
-		cEntity* newEntity = entityManager->CreateEntity();
+		cEntity* newEntity;
+
+		xml_attribute<>* childAttrib = meshNode->first_attribute("ChildOf");
+		if (childAttrib != nullptr)
+		{
+			std::string parentName = childAttrib->value();
+			newEntity = entityManager->CreateEntity(false);
+
+			entityManager->GetEntityByName(parentName)->children.push_back(newEntity);
+
+			newEntity->childOf = parentName;
+		}
+		else
+		{
+			newEntity = entityManager->CreateEntity();
+		}
 
 		cMeshRenderer* newMesh = new cMeshRenderer();
 		cTransform newTransform;

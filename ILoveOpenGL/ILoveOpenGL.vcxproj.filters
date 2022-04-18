@@ -70,6 +70,12 @@
     <Filter Include="FMOD">
       <UniqueIdentifier>{d28fec6a-f0e6-4d9d-a973-1e4e0f83585d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Particles">
+      <UniqueIdentifier>{589300f5-4c09-4414-8592-359bf515e4ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Systems">
+      <UniqueIdentifier>{1a74e764-38cb-4f9f-a993-bf0b8bb82880}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="theMain.cpp">
@@ -113,21 +119,6 @@
     </ClCompile>
     <ClCompile Include="cBasicTextureManager\CTextureFromBMP.cpp">
       <Filter>TextureManager</Filter>
-    </ClCompile>
-    <ClCompile Include="Physics\cForceGenerator.cpp">
-      <Filter>Physics</Filter>
-    </ClCompile>
-    <ClCompile Include="Physics\cForceRegistry.cpp">
-      <Filter>Physics</Filter>
-    </ClCompile>
-    <ClCompile Include="Physics\cParticle.cpp">
-      <Filter>Physics</Filter>
-    </ClCompile>
-    <ClCompile Include="Physics\cWorld.cpp">
-      <Filter>Physics</Filter>
-    </ClCompile>
-    <ClCompile Include="cEmitter.cpp">
-      <Filter>Physics</Filter>
     </ClCompile>
     <ClCompile Include="cEntityManager.cpp">
       <Filter>EntityManager</Filter>
@@ -195,6 +186,15 @@
     <ClCompile Include="cTarget.cpp">
       <Filter>Components</Filter>
     </ClCompile>
+    <ClCompile Include="cParticle.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="cParticleSystem.cpp">
+      <Filter>Particles</Filter>
+    </ClCompile>
+    <ClCompile Include="cGameplaySystem.cpp">
+      <Filter>Systems</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cShaderManager.h">
@@ -235,27 +235,6 @@
     </ClInclude>
     <ClInclude Include="cBasicTextureManager\CTextureFromBMP.h">
       <Filter>TextureManager</Filter>
-    </ClInclude>
-    <ClInclude Include="Physics\cForceGenerator.h">
-      <Filter>Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Physics\cForceRegistry.h">
-      <Filter>Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Physics\cParticle.h">
-      <Filter>Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Physics\cWorld.h">
-      <Filter>Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Physics\iForceGenerator.h">
-      <Filter>Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="cEmitters.h">
-      <Filter>Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="cEmitter.h">
-      <Filter>Physics</Filter>
     </ClInclude>
     <ClInclude Include="cEntityManager.h">
       <Filter>EntityManager</Filter>
@@ -313,6 +292,15 @@
     </ClInclude>
     <ClInclude Include="cTarget.h">
       <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="cParticleSystem.h">
+      <Filter>Particles</Filter>
+    </ClInclude>
+    <ClInclude Include="cParticle.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="cGameplaySystem.h">
+      <Filter>Systems</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

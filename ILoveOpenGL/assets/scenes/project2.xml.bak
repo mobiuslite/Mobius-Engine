@@ -1,16 +1,11 @@
 <Scene>
 	<Camera>
 		<Transform>
-			<Position x="-20.225042" y="7.590160" z="-11.278905"/>
+			<Position x="-6.594512" y="18.143789" z="-38.717819"/>
 		</Transform>
 	</Camera>
 	<Models>
 		<Model>SkyBoxUV.ply</Model>
-		<Model>house.ply</Model>
-		<Model>tree.ply</Model>
-		<Model>tree2.ply</Model>
-		<Model>tree3.ply</Model>
-		<Model>tree4.ply</Model>
 		<Model>Floor.ply</Model>
 		<Model>plane.ply</Model>
 		<Model>grass.ply</Model>
@@ -18,11 +13,12 @@
 		<Model>grass2.ply</Model>
 		<Model>bow.fbx</Model>
 		<Model>ISO.ply</Model>
+		<Model>treefixed.fbx</Model>
 	</Models>
 	<Description>
 		<Mesh FriendlyName="Sky" MeshName="SkyBoxUV.ply">
 			<Transform>
-				<Position x="-20.225042" y="7.590160" z="-11.278905"/>
+				<Position x="-6.594512" y="18.143789" z="-38.717819"/>
 				<Rotation x="0.000000" y="-0.000000" z="0.000000"/>
 				<Scale x="150.000000" y="150.000000" z="150.000000"/>
 			</Transform>
@@ -56,21 +52,22 @@
 				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
 			</Misc>
 		</Mesh>
-		<Mesh FriendlyName="minecraft" MeshName="house.ply">
+		<Mesh FriendlyName="floor" MeshName="Floor.ply">
 			<Transform>
 				<Position x="0.000000" y="0.000000" z="0.000000"/>
 				<Rotation x="0.000000" y="-0.000000" z="0.000000"/>
-				<Scale x="1.000000" y="1.000000" z="1.000000"/>
+				<Scale x="2000.000000" y="190.800003" z="2000.000000"/>
 			</Transform>
 			<Misc>
 				<UseLighting>true</UseLighting>
 				<Textures>
-					<Texture Ratio="1.000000">testing-RGB.bmp</Texture>
+					<Texture Ratio="1.000000">grass/albedo.bmp</Texture>
 				</Textures>
 				<Metallic>0.000000</Metallic>
-				<Roughness>1.000000</Roughness>
-				<AlphaMask>testing-Alpha.bmp</AlphaMask>
-				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
+				<Roughness>0.860000</Roughness>
+				<NormalMap>grass/normal.bmp</NormalMap>
+				<AOMap>grass/ao.bmp</AOMap>
+				<TilingOffset TilingX="250.000000" TilingY="250.000000" OffsetX="0.000000" OffsetY="0.000000"/>
 			</Misc>
 		</Mesh>
 		<Mesh FriendlyName="minecraftFlowers" MeshName="grass.ply">
@@ -111,57 +108,9 @@
 				<UseWind/>
 			</Misc>
 		</Mesh>
-		<Mesh FriendlyName="minecraftTree2" MeshName="tree2.ply">
-			<Transform>
-				<Position x="9.000000" y="1.940000" z="-10.700010"/>
-				<Rotation x="180.000000" y="85.999924" z="180.000000"/>
-				<Scale x="0.988750" y="0.988750" z="0.988750"/>
-			</Transform>
-			<Misc>
-				<UseLighting>true</UseLighting>
-				<Textures>
-					<Texture Ratio="1.000000">tree2-RGB.bmp</Texture>
-				</Textures>
-				<Metallic>0.000000</Metallic>
-				<Roughness>1.000000</Roughness>
-				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
-			</Misc>
-		</Mesh>
-		<Mesh FriendlyName="minecraftTree1" MeshName="tree4.ply">
-			<Transform>
-				<Position x="-12.000000" y="1.940000" z="0.000000"/>
-				<Rotation x="0.000000" y="-0.000000" z="0.000000"/>
-				<Scale x="1.000000" y="1.000000" z="1.000000"/>
-			</Transform>
-			<Misc>
-				<UseLighting>true</UseLighting>
-				<Textures>
-					<Texture Ratio="1.000000">tree4-RGB.bmp</Texture>
-				</Textures>
-				<Metallic>0.000000</Metallic>
-				<Roughness>1.000000</Roughness>
-				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
-			</Misc>
-		</Mesh>
-		<Mesh FriendlyName="minecraftTree1CloneClone" MeshName="tree3.ply">
-			<Transform>
-				<Position x="4.650001" y="1.940000" z="11.600039"/>
-				<Rotation x="0.000000" y="-0.000000" z="0.000000"/>
-				<Scale x="1.000000" y="1.000000" z="1.000000"/>
-			</Transform>
-			<Misc>
-				<UseLighting>true</UseLighting>
-				<Textures>
-					<Texture Ratio="1.000000">tree3-RGB.bmp</Texture>
-				</Textures>
-				<Metallic>0.000000</Metallic>
-				<Roughness>1.000000</Roughness>
-				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
-			</Misc>
-		</Mesh>
 		<Mesh FriendlyName="bow" MeshName="bow.fbx">
 			<Transform>
-				<Position x="-21.025042" y="7.090160" z="-10.028905"/>
+				<Position x="-7.394512" y="17.643789" z="-37.467819"/>
 				<Rotation x="-90.000000" y="-0.000000" z="-90.000000"/>
 				<Scale x="0.020000" y="0.020000" z="0.020000"/>
 			</Transform>
@@ -176,16 +125,38 @@
 				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
 			</Misc>
 		</Mesh>
-		<Mesh FriendlyName="TargetOne" MeshName="ISO.ply">
+		<Mesh FriendlyName="testTree" MeshName="treefixed.fbx">
 			<Transform>
-				<Position x="-19.000000" y="12.100000" z="11.400000"/>
+				<Position x="-7.000000" y="2.500000" z="-3.000000"/>
+				<Rotation x="0.000000" y="-0.000000" z="0.000000"/>
+				<Scale x="1" y="1" z="1"/>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">tree/treeAlbedo.bmp</Texture>
+				</Textures>
+				<Metallic>0.000000</Metallic>
+				<Roughness>1.000000</Roughness>
+				<NormalMap>tree/treeNormal.bmp</NormalMap>
+				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="testTreeLeaves" MeshName="" ChildOf="testTree">
+			<Transform>
+				<Position x="0.000000" y="0.000000" z="0.000000"/>
 				<Rotation x="0.000000" y="-0.000000" z="0.000000"/>
 				<Scale x="1.000000" y="1.000000" z="1.000000"/>
 			</Transform>
 			<Misc>
 				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">tree/leaveAlbedo.bmp</Texture>
+				</Textures>
 				<Metallic>0.000000</Metallic>
 				<Roughness>1.000000</Roughness>
+				<AlphaMask>tree/leaveMask.bmp</AlphaMask>
+				<NormalMap>tree/leaveNormal.bmp</NormalMap>
 				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
 			</Misc>
 		</Mesh>

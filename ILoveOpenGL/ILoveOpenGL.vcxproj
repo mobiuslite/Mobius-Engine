@@ -158,7 +158,6 @@
     <ClCompile Include="cBasicTextureManager\cBasicTextureManager.cpp" />
     <ClCompile Include="cBasicTextureManager\CTextureFromBMP.cpp" />
     <ClCompile Include="cBowComponent.cpp" />
-    <ClCompile Include="cEmitter.cpp" />
     <ClCompile Include="cEntity.cpp" />
     <ClCompile Include="cEntityManager.cpp" />
     <ClCompile Include="cFBO\cFBO.cpp" />
@@ -166,8 +165,11 @@
     <ClCompile Include="cLightHelper.cpp" />
     <ClCompile Include="cLightManager.cpp" />
     <ClCompile Include="cMeshRenderer.cpp" />
+    <ClCompile Include="cParticle.cpp" />
+    <ClCompile Include="cParticleSystem.cpp" />
     <ClCompile Include="cPingPongFBOs.cpp" />
     <ClCompile Include="cProjectile.cpp" />
+    <ClCompile Include="cGameplaySystem.cpp" />
     <ClCompile Include="cShader.cpp" />
     <ClCompile Include="cShaderManager.cpp" />
     <ClCompile Include="cShadowDepthFBO.cpp" />
@@ -187,10 +189,6 @@
     <ClCompile Include="include\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="include\imgui\imgui_tables.cpp" />
     <ClCompile Include="include\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="Physics\cForceGenerator.cpp" />
-    <ClCompile Include="Physics\cForceRegistry.cpp" />
-    <ClCompile Include="Physics\cParticle.cpp" />
-    <ClCompile Include="Physics\cWorld.cpp" />
     <ClCompile Include="SceneLoader\cSceneLoader.cpp" />
     <ClCompile Include="SceneLoader\cSceneSaver.cpp" />
     <ClCompile Include="theMain.cpp">
@@ -205,8 +203,6 @@
     <ClInclude Include="cBasicTextureManager\CTextureFromBMP.h" />
     <ClInclude Include="cBowComponent.h" />
     <ClInclude Include="cComponent.h" />
-    <ClInclude Include="cEmitter.h" />
-    <ClInclude Include="cEmitters.h" />
     <ClInclude Include="cEntity.h" />
     <ClInclude Include="cEntityManager.h" />
     <ClInclude Include="cFBO\cFBO.h" />
@@ -215,8 +211,11 @@
     <ClInclude Include="cLightHelper.h" />
     <ClInclude Include="cLightManager.h" />
     <ClInclude Include="cMeshRenderer.h" />
+    <ClInclude Include="cParticle.h" />
+    <ClInclude Include="cParticleSystem.h" />
     <ClInclude Include="cPingPongFBOs.h" />
     <ClInclude Include="cProjectile.h" />
+    <ClInclude Include="cGameplaySystem.h" />
     <ClInclude Include="cShaderManager.h" />
     <ClInclude Include="cTarget.h" />
     <ClInclude Include="cTextureViewer.h" />
@@ -228,11 +227,6 @@
     <ClInclude Include="FMODSoundpanel\cSoundPanel.h" />
     <ClInclude Include="GLCommon.h" />
     <ClInclude Include="cShadowDepthFBO.h" />
-    <ClInclude Include="Physics\cForceGenerator.h" />
-    <ClInclude Include="Physics\cForceRegistry.h" />
-    <ClInclude Include="Physics\cParticle.h" />
-    <ClInclude Include="Physics\cWorld.h" />
-    <ClInclude Include="Physics\iForceGenerator.h" />
     <ClInclude Include="RenderType.h" />
     <ClInclude Include="SceneLoader\cSceneLoader.h" />
     <ClInclude Include="SceneLoader\sModel.h" />

@@ -51,6 +51,7 @@ public:
 	float wholeObjectShininess_SpecPower;	// 1.0 to ??
 
 	bool bUseSpecular;
+
 	//float alphaTransparency;
 
 	bool bUseAlphaMask;

@@ -91,6 +91,8 @@ uniform sampler2D texture_WorldPos;
 uniform sampler2D texture_LightSpacePos;
 uniform sampler2D texture_Emmision;
 
+uniform sampler2D reticleTexture;
+
 uniform sampler2D texLightpassColorBuf;
 uniform sampler2D bloomMapColorBuf;
 uniform sampler2D shadowMapColorBuf;
@@ -214,6 +216,12 @@ void main()
   
 		pixelColour.rgb = mapped;
 		pixelColour.a = 1.0f;
+
+		vec3 reticlePixelColor = texture(reticleTexture, UVLookup).rgb;
+		if (reticlePixelColor.r > 0.1f)
+		{
+			pixelColour.rgb = reticlePixelColor;
+		}
 
 		return;
 	}

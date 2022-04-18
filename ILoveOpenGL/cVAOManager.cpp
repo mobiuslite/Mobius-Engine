@@ -94,6 +94,111 @@ void cVAOManager::SetShaderProgramID_Threaded(unsigned int shaderProgram)
     this->shaderProgramID_ThreadedLoader = shaderProgram;
 }
 
+void SetupAttribs(sModelDrawInfo& drawInfo, unsigned int shaderProgramID)
+{
+    
+    // 
+// Model is loaded and the vertices and indices are in the drawInfo struct
+// 
+
+// Create a VAO (Vertex Array Object), which will 
+//	keep track of all the 'state' needed to draw 
+//	from this buffer...
+
+// Ask OpenGL for a new buffer ID...
+    glGenVertexArrays(1, &(drawInfo.VAO_ID));
+    // "Bind" this buffer:
+    // - aka "make this the 'current' VAO buffer
+    glBindVertexArray(drawInfo.VAO_ID);
+
+    // Now ANY state that is related to vertex or index buffer
+    //	and vertex attribute layout, is stored in the 'state' 
+    //	of the VAO... 
+
+
+    // NOTE: OpenGL error checks have been omitted for brevity
+//	glGenBuffers(1, &vertex_buffer);
+    glGenBuffers(1, &(drawInfo.VertexBufferID));
+
+    //	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, drawInfo.VertexBufferID);
+    // sVert vertices[3]
+    glBufferData(GL_ARRAY_BUFFER,
+        sizeof(sVertex_XYZW_RGBA_N_UV_T_B) * drawInfo.numberOfVertices,	// ::g_NumberOfVertsToDraw,	// sizeof(vertices), 
+        (GLvoid*)drawInfo.pVertices,							// pVertices,			//vertices, 
+        GL_STATIC_DRAW);
+
+
+    // Copy the index buffer into the video card, too
+    // Create an index buffer.
+    glGenBuffers(1, &(drawInfo.IndexBufferID));
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, drawInfo.IndexBufferID);
+
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,			// Type: Index element array
+        sizeof(unsigned int) * drawInfo.numberOfIndices,
+        (GLvoid*)drawInfo.pIndices,
+        GL_STATIC_DRAW);
+
+    // Set the vertex attributes.
+
+    GLint vpos_location = glGetAttribLocation(shaderProgramID, "vPosition");	// program
+    glEnableVertexAttribArray(vpos_location);	    // vPos
+    glVertexAttribPointer(vpos_location, 4,		// vPos
+        GL_FLOAT, GL_FALSE,
+        sizeof(sVertex_XYZW_RGBA_N_UV_T_B),
+        (void*)offsetof(sVertex_XYZW_RGBA_N_UV_T_B, x));
+    //( void* )0);
+
+    GLint vcol_location = glGetAttribLocation(shaderProgramID, "vColour");
+    glEnableVertexAttribArray(vcol_location);	    // vCol
+    glVertexAttribPointer(vcol_location, 4,		// vCol
+        GL_FLOAT, GL_FALSE,
+        sizeof(sVertex_XYZW_RGBA_N_UV_T_B),
+        (void*)offsetof(sVertex_XYZW_RGBA_N_UV_T_B, r));
+
+    GLint vnorm_location = glGetAttribLocation(shaderProgramID, "vNormal");
+    glEnableVertexAttribArray(vnorm_location);	    // vCol
+    glVertexAttribPointer(vnorm_location, 4,		// vCol
+        GL_FLOAT, GL_FALSE,
+        sizeof(sVertex_XYZW_RGBA_N_UV_T_B),
+        (void*)offsetof(sVertex_XYZW_RGBA_N_UV_T_B, nx));
+
+    GLint vUV_location = glGetAttribLocation(shaderProgramID, "vUVx2");
+    glEnableVertexAttribArray(vUV_location);	    // vCol
+    glVertexAttribPointer(vUV_location, 4,		// vCol
+        GL_FLOAT, GL_FALSE,
+        sizeof(sVertex_XYZW_RGBA_N_UV_T_B),
+        (void*)offsetof(sVertex_XYZW_RGBA_N_UV_T_B, u0));
+
+    GLint vtang_location = glGetAttribLocation(shaderProgramID, "vTangent");
+    glEnableVertexAttribArray(vtang_location);	    // vCol
+    glVertexAttribPointer(vtang_location, 4,		// vCol
+        GL_FLOAT, GL_FALSE,
+        sizeof(sVertex_XYZW_RGBA_N_UV_T_B),
+        (void*)offsetof(sVertex_XYZW_RGBA_N_UV_T_B, tx));
+
+    GLint vBiNorm_location = glGetAttribLocation(shaderProgramID, "vBiNormal");
+    glEnableVertexAttribArray(vBiNorm_location);	    // vCol
+    glVertexAttribPointer(vBiNorm_location, 4,		// vCol
+        GL_FLOAT, GL_FALSE,
+        sizeof(sVertex_XYZW_RGBA_N_UV_T_B),
+        (void*)offsetof(sVertex_XYZW_RGBA_N_UV_T_B, bx));
+
+    // Now that all the parts are set up, set the VAO to zero
+    glBindVertexArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    glDisableVertexAttribArray(vpos_location);
+    glDisableVertexAttribArray(vcol_location);
+    glDisableVertexAttribArray(vnorm_location);
+    glDisableVertexAttribArray(vUV_location);
+    glDisableVertexAttribArray(vtang_location);
+    glDisableVertexAttribArray(vBiNorm_location);
+}
+
 bool cVAOManager::LoadModelIntoVAO(
 		std::string fileName, 
 		sModelDrawInfo &drawInfo,
@@ -124,112 +229,24 @@ bool cVAOManager::LoadModelIntoVAO(
             return false;
         }
     }
-	// 
-	// Model is loaded and the vertices and indices are in the drawInfo struct
-	// 
 
-	// Create a VAO (Vertex Array Object), which will 
-	//	keep track of all the 'state' needed to draw 
-	//	from this buffer...
+    SetupAttribs(drawInfo, shaderProgramID);
 
-	// Ask OpenGL for a new buffer ID...
-	glGenVertexArrays( 1, &(drawInfo.VAO_ID) );
-	// "Bind" this buffer:
-	// - aka "make this the 'current' VAO buffer
-	glBindVertexArray(drawInfo.VAO_ID);
-
-	// Now ANY state that is related to vertex or index buffer
-	//	and vertex attribute layout, is stored in the 'state' 
-	//	of the VAO... 
-
-
-	// NOTE: OpenGL error checks have been omitted for brevity
-//	glGenBuffers(1, &vertex_buffer);
-	glGenBuffers(1, &(drawInfo.VertexBufferID) );
-
-//	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, drawInfo.VertexBufferID);
-	// sVert vertices[3]
-	glBufferData( GL_ARRAY_BUFFER, 
-				  sizeof(sVertex_XYZW_RGBA_N_UV_T_B) * drawInfo.numberOfVertices,	// ::g_NumberOfVertsToDraw,	// sizeof(vertices), 
-				  (GLvoid*) drawInfo.pVertices,							// pVertices,			//vertices, 
-				  GL_STATIC_DRAW );
-
-
-	// Copy the index buffer into the video card, too
-	// Create an index buffer.
-	glGenBuffers( 1, &(drawInfo.IndexBufferID) );
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, drawInfo.IndexBufferID);
-
-	glBufferData( GL_ELEMENT_ARRAY_BUFFER,			// Type: Index element array
-	              sizeof( unsigned int ) * drawInfo.numberOfIndices, 
-	              (GLvoid*) drawInfo.pIndices,
-                  GL_STATIC_DRAW );
-
-	// Set the vertex attributes.
-
-	GLint vpos_location = glGetAttribLocation(shaderProgramID, "vPosition");	// program
-	glEnableVertexAttribArray(vpos_location);	    // vPos
-	glVertexAttribPointer( vpos_location, 4,		// vPos
-						   GL_FLOAT, GL_FALSE,
-						   sizeof(sVertex_XYZW_RGBA_N_UV_T_B),
-						   ( void* ) offsetof(sVertex_XYZW_RGBA_N_UV_T_B, x));
-						   //( void* )0);
-
-    GLint vcol_location = glGetAttribLocation(shaderProgramID, "vColour");
-	glEnableVertexAttribArray(vcol_location);	    // vCol
-	glVertexAttribPointer( vcol_location, 4,		// vCol
-						   GL_FLOAT, GL_FALSE,
-                            sizeof(sVertex_XYZW_RGBA_N_UV_T_B),
-						   ( void* ) offsetof(sVertex_XYZW_RGBA_N_UV_T_B, r));
-
-    GLint vnorm_location = glGetAttribLocation(shaderProgramID, "vNormal");
-    glEnableVertexAttribArray(vnorm_location);	    // vCol
-    glVertexAttribPointer(vnorm_location, 4,		// vCol
-        GL_FLOAT, GL_FALSE,
-        sizeof(sVertex_XYZW_RGBA_N_UV_T_B),
-        (void*)offsetof(sVertex_XYZW_RGBA_N_UV_T_B, nx));
-
-    GLint vUV_location = glGetAttribLocation(shaderProgramID, "vUVx2");
-    glEnableVertexAttribArray(vUV_location);	    // vCol
-    glVertexAttribPointer(vUV_location, 4,		// vCol
-        GL_FLOAT, GL_FALSE,
-        sizeof(sVertex_XYZW_RGBA_N_UV_T_B),
-        (void*)offsetof(sVertex_XYZW_RGBA_N_UV_T_B, u0));
-
-    GLint vtang_location = glGetAttribLocation(shaderProgramID, "vTangent");
-    glEnableVertexAttribArray(vtang_location);	    // vCol
-    glVertexAttribPointer(vtang_location, 4,		// vCol
-        GL_FLOAT, GL_FALSE,
-        sizeof(sVertex_XYZW_RGBA_N_UV_T_B),
-        (void*)offsetof(sVertex_XYZW_RGBA_N_UV_T_B, tx));
-
-    GLint vBiNorm_location = glGetAttribLocation(shaderProgramID, "vBiNormal");
-    glEnableVertexAttribArray(vBiNorm_location);	    // vCol
-    glVertexAttribPointer(vBiNorm_location, 4,		// vCol
-        GL_FLOAT, GL_FALSE,
-        sizeof(sVertex_XYZW_RGBA_N_UV_T_B),
-        (void*)offsetof(sVertex_XYZW_RGBA_N_UV_T_B, bx));
-
-	// Now that all the parts are set up, set the VAO to zero
-	glBindVertexArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	glDisableVertexAttribArray(vpos_location);
-	glDisableVertexAttribArray(vcol_location);
-	glDisableVertexAttribArray(vnorm_location);
-	glDisableVertexAttribArray(vUV_location);
-	glDisableVertexAttribArray(vtang_location);
-	glDisableVertexAttribArray(vBiNorm_location);
+    for (size_t i = 0; i < drawInfo.children.size(); i++)
+    {
+        SetupAttribs(drawInfo.children[i], shaderProgramID);
+    }
 
 	// Store the draw information into the map
 	this->m_map_ModelName_to_VAOID[ drawInfo.meshName ] = drawInfo;
 
-    delete drawInfo.pVertices;
-    delete drawInfo.pIndices;
+    delete[] drawInfo.pVertices;
+    delete[] drawInfo.pIndices;
+    for (sModelDrawInfo child : drawInfo.children)
+    {
+        delete[] child.pVertices;
+        delete[] child.pIndices;
+    }
 
 	return true;
 }
@@ -264,29 +281,8 @@ bool cVAOManager::FindDrawInfoByModelName(
 	return true;
 }
 
-bool cVAOManager::LoadFBXModelFromFile(std::string fileName, sModelDrawInfo& drawInfo)
+void LoadMesh(sModelDrawInfo& drawInfo, aiMesh* mesh)
 {
-    const aiScene* scene = assimpImporter.ReadFile("assets/models/" + fileName,
-        aiProcess_Triangulate |
-        aiProcess_GenSmoothNormals |
-        aiProcess_PopulateArmatureData |
-        aiProcess_FixInfacingNormals |
-        aiProcess_LimitBoneWeights);
-
-    if (scene == nullptr)
-    {
-        printf("MeshManager::LoadMeshWithAssimp: ERROR: Failed to load file %s\n", fileName.c_str());
-        return false;
-    }
-
-    if (!scene->HasMeshes())
-    {
-        printf("MeshManager::LoadMeshWithAssimp: ERROR: Model file does not contain any meshes %s\n", fileName.c_str());
-        return false;
-    }
-
-    aiMesh* mesh = scene->mMeshes[0];
-
     bool useRGBA = false;
     bool useNormals = false;
     bool useUV = false;
@@ -310,8 +306,6 @@ bool cVAOManager::LoadFBXModelFromFile(std::string fileName, sModelDrawInfo& dra
     drawInfo.numberOfVertices = mesh->mNumVertices;
     drawInfo.numberOfTriangles = mesh->mNumFaces;
     drawInfo.numberOfIndices = mesh->mNumFaces * 3;
-
-    float biggestVertex = 0.0;
 
     //    sVertex myVertexArray[500];
     std::vector<sVertex> vecVertexArray;    // aka "smart array"
@@ -386,7 +380,6 @@ bool cVAOManager::LoadFBXModelFromFile(std::string fileName, sModelDrawInfo& dra
 
         vecTriagleArray.push_back(tempTri);
     }
-    float thisBiggestVertex = glm::distance(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z));
 
     // Allocate the amount of space we need for the GPU side arrays
     drawInfo.pVertices = new sVertex_XYZW_RGBA_N_UV_T_B[drawInfo.numberOfVertices];
@@ -503,6 +496,42 @@ bool cVAOManager::LoadFBXModelFromFile(std::string fileName, sModelDrawInfo& dra
             vert3->bw = 1.0f;
         }
 
+    }
+
+}
+
+bool cVAOManager::LoadFBXModelFromFile(std::string fileName, sModelDrawInfo& drawInfo)
+{
+    const aiScene* scene = assimpImporter.ReadFile("assets/models/" + fileName,
+        aiProcess_Triangulate |
+        aiProcess_GenSmoothNormals |
+        aiProcess_PopulateArmatureData |
+        aiProcess_FixInfacingNormals |
+        aiProcess_LimitBoneWeights);
+
+    if (scene == nullptr)
+    {
+        printf("MeshManager::LoadMeshWithAssimp: ERROR: Failed to load file %s\n", fileName.c_str());
+        return false;
+    }
+
+    if (!scene->HasMeshes())
+    {
+        printf("MeshManager::LoadMeshWithAssimp: ERROR: Model file does not contain any meshes %s\n", fileName.c_str());
+        return false;
+    }
+
+    aiMesh* mesh = scene->mMeshes[0];
+    LoadMesh(drawInfo, mesh);
+
+    if (scene->mNumMeshes > 1)
+    {
+        for (int i = 1; i < scene->mNumMeshes; i++)
+        {
+            sModelDrawInfo childDrawInfo;
+            LoadMesh(childDrawInfo, scene->mMeshes[i]);
+            drawInfo.children.push_back(childDrawInfo);
+        }
     }
 
     return true;

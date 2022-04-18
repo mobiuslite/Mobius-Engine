@@ -20,6 +20,11 @@ cBowComponent::cBowComponent(cTransform* meshTransform, glm::vec3* cameraPos, cE
 void cBowComponent::Update(float dt)
 {
 	transform->position = *cameraPos + offset;
+
+    if (aiming && aimingValue < 1.0f)
+    {
+        aimingValue += aimingSpeed * dt;
+    }
 }
 
 std::vector<cProjectile*> cBowComponent::GetFiredProjectiles()
@@ -36,6 +41,11 @@ void cBowComponent::CleanUpProjectile()
     }
 
     this->projectilesFired.clear();
+}
+
+float cBowComponent::GetAimingValue()
+{
+    return this->aimingValue;
 }
 
 void cBowComponent::FireProjectile(glm::vec3 pos, glm::vec3 direction, float aimingValue)
@@ -58,4 +68,7 @@ void cBowComponent::FireProjectile(glm::vec3 pos, glm::vec3 direction, float aim
     newProj->AddComponent(proj);
 
     this->projectilesFired.push_back(proj);
+
+    this->aiming = false;
+    this->aimingValue = 0.0f;
 }

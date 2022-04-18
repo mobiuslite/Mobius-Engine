@@ -18,6 +18,8 @@ public:
 	void RemoveEntity(cEntity* e);
 	void RemoveEntity(unsigned int index);
 
+	void Update(float dt);
+
 private:
 	std::vector<cEntity*> entities;
 };

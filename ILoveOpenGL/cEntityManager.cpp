@@ -9,6 +9,14 @@ cEntityManager::~cEntityManager()
 	entities.clear();
 }
 
+void cEntityManager::Update(float dt)
+{
+	for (cEntity* entity : this->entities)
+	{
+		entity->Update(dt);
+	}
+}
+
 std::vector<cEntity*> cEntityManager::GetEntities()
 {
 	return entities;

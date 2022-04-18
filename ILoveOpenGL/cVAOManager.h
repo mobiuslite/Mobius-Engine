@@ -46,6 +46,8 @@ struct sModelDrawInfo
 	unsigned int* pIndices;
 	bool bLoadedFromFile;
 	bool bLoadedIntoVAO;
+
+	std::vector<sModelDrawInfo> children;
 };
 
 

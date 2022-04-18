@@ -28,6 +28,12 @@ public:
 	cSoundPanel();
 	~cSoundPanel();
 
+	cSoundPanel(cSoundPanel& other) = delete;
+	cSoundPanel& operator=(cSoundPanel& other) = delete;
+
+	//Gets the instance of the scene loader
+	static cSoundPanel* GetInstance();
+
 	// << MUSIC CONTROLS >> Returns true if successful.
 
 	//Plays a streamed song, use the same file name found in the music folder
@@ -100,4 +106,6 @@ private:
 	void LoadMusic();
 	void LoadSounds();
 	void LoadBg();
+
+	static cSoundPanel _instance;
 };

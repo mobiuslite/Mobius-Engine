@@ -17,7 +17,8 @@ public:
 	template<class T> bool HasComponent();
 	void RemoveComponent(cComponent* component);
 				
-	std::string name;			
+	std::string name;	
+	std::string childOf = "";
 
 	std::vector<cComponent*> components;	
 	std::vector<cEntity*> children;

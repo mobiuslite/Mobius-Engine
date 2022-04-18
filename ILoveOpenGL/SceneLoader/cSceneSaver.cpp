@@ -41,7 +41,18 @@ bool cSceneLoader::SaveScene(std::string sceneName, glm::vec3 cameraPos, cEntity
 
 	xml_node<>* descNode = doc->allocate_node(rapidxml::node_element, "Description");
 
+	//Includes entity childen to be part of the save file
+	std::vector<cEntity*> finalEntityList;
 	for (cEntity* entity : entityManager->GetEntities())
+	{
+		finalEntityList.push_back(entity);
+		for (cEntity* child : entity->children)
+		{
+			finalEntityList.push_back(child);
+		}
+	}
+
+	for (cEntity* entity : finalEntityList)
 	{
 		if (entity->isGameplayEntity)
 			continue;
@@ -53,6 +64,12 @@ bool cSceneLoader::SaveScene(std::string sceneName, glm::vec3 cameraPos, cEntity
 		xml_node<>* meshNode = doc->allocate_node(rapidxml::node_element, "Mesh");
 		meshNode->append_attribute(doc->allocate_attribute("FriendlyName", doc->allocate_string(entity->name.c_str())));
 		meshNode->append_attribute(doc->allocate_attribute("MeshName", doc->allocate_string(mesh->meshName.c_str())));
+
+		if (entity->childOf != "")
+		{
+			meshNode->append_attribute(doc->allocate_attribute("ChildOf", doc->allocate_string(entity->childOf.c_str())));
+		}
+
 		//Transform		
 		xml_node<>* transformNode = doc->allocate_node(rapidxml::node_element, "Transform");
 		xml_node<>* posNode = doc->allocate_node(rapidxml::node_element, "Position");

@@ -16,8 +16,10 @@ public:
 	std::vector<cProjectile*> GetFiredProjectiles();
 	void CleanUpProjectile();
 
-	bool aiming;
+	float GetAimingValue();
 
+	bool aiming;
+	const float fovChangeAmount = 25.0f;
 private:
 
 	std::vector<cProjectile*> projectilesFired;
@@ -26,4 +28,7 @@ private:
 	cTransform* transform;
 	glm::vec3* cameraPos;
 	glm::vec3 offset;
+
+	float aimingValue = 0.0f;
+	float aimingSpeed = 0.75f;	
 };
