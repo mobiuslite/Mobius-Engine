@@ -16,6 +16,7 @@ void cParticleSystem::Update(float dt)
 		if (curPart->ReadyForCleanup())
 		{
 			this->vecParticles.erase(this->vecParticles.begin() + i);
+			curPart->GetEntity()->markedForDeletion = true;
 		}
 		else
 		{
@@ -46,4 +47,6 @@ void cParticleSystem::AddParticle(glm::vec3 pos, glm::vec3 velo, float lifeTime)
 
 	newMesh->bUseWholeObjectDiffuseColour = true;
 	newMesh->wholeObjectDiffuseRGBA = glm::vec4(rRandom, gRandom, bRandom, 1.0f);
+
+	newEntity->name = "particle effect";
 }

@@ -22,7 +22,14 @@ void cParticle::Update(float dt)
 	transform->position += this->velocity * dt;
 	this->velocity += this->GRAVITY * dt;
 
-	transform->scale = transform->scale * (((elapsedLifetime / this->lifeTime) - 1.0f) * -1.0f);
+	if (transform->scale.x > 0.0f)
+	{
+		transform->scale -= (1.0f / this->lifeTime) * dt;
+	}
+	else
+	{
+		transform->scale = glm::vec3(0.0f);
+	}
 
 	elapsedLifetime += dt;
 

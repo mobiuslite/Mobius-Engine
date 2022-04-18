@@ -1,7 +1,7 @@
 <Scene>
 	<Camera>
 		<Transform>
-			<Position x="-12.726118" y="19.161613" z="-39.133644"/>
+			<Position x="-16.530212" y="18.324486" z="-68.741920"/>
 		</Transform>
 	</Camera>
 	<Models>
@@ -15,13 +15,14 @@
 		<Model>ISO.ply</Model>
 		<Model>treefixed.fbx</Model>
 		<Model>HOUSE.fbx</Model>
+		<Model>lightpost.fbx</Model>
 	</Models>
 	<Description>
 		<Mesh FriendlyName="Sky" MeshName="SkyBoxUV.ply">
 			<Transform>
-				<Position x="-12.726118" y="19.161613" z="-39.133644"/>
+				<Position x="-16.530212" y="18.324486" z="-68.741920"/>
 				<Rotation x="0.000000" y="-0.000000" z="0.000000"/>
-				<Scale x="150.000000" y="150.000000" z="150.000000"/>
+				<Scale x="550.000000" y="550.000000" z="550.000000"/>
 			</Transform>
 			<Misc>
 				<UseLighting>false</UseLighting>
@@ -86,7 +87,7 @@
 				<Roughness>1.000000</Roughness>
 				<AlphaMask>billboard/grassAlpha.bmp</AlphaMask>
 				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
-				<Instanced Amount="0" Offset="1.250000" RandomStrength="0.780000">assets/scenes/flowerOffsets.txt</Instanced>
+				<Instanced Amount="62" Offset="1.250000" RandomStrength="0.780000">assets/scenes/flowerOffsets.txt</Instanced>
 				<UseWind/>
 			</Misc>
 		</Mesh>
@@ -105,13 +106,13 @@
 				<Roughness>1.000000</Roughness>
 				<AlphaMask>grassAlpha.bmp</AlphaMask>
 				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
-				<Instanced Amount="0" Offset="3" RandomStrength="0.780000">assets/scenes/grassOffsets.txt</Instanced>
+				<Instanced Amount="0" Offset="3.000000" RandomStrength="0.780000">assets/scenes/grassOffsets.txt</Instanced>
 				<UseWind/>
 			</Misc>
 		</Mesh>
 		<Mesh FriendlyName="bow" MeshName="bow.fbx">
 			<Transform>
-				<Position x="-13.526118" y="18.661613" z="-37.883644"/>
+				<Position x="-17.330212" y="17.824486" z="-67.491920"/>
 				<Rotation x="-90.000000" y="-0.000000" z="-90.000000"/>
 				<Scale x="0.020000" y="0.020000" z="0.020000"/>
 			</Transform>
@@ -141,7 +142,7 @@
 				<Roughness>1.000000</Roughness>
 				<NormalMap>tree/treeNormal.bmp</NormalMap>
 				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
-				<Instanced Amount="0" Offset="100" RandomStrength="0.780000">assets/scenes/treeOffsets.txt</Instanced>
+				<Instanced Amount="194" Offset="5.000000" RandomStrength="0.780000">assets/scenes/treeOffsets.txt</Instanced>
 			</Misc>
 		</Mesh>
 		<Mesh FriendlyName="testTreeLeaves" MeshName="" ChildOf="testTree">
@@ -160,7 +161,7 @@
 				<AlphaMask>tree/leaveMask.bmp</AlphaMask>
 				<NormalMap>tree/leaveNormal.bmp</NormalMap>
 				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
-				<Instanced Amount="0" Offset="100" RandomStrength="0.780000">assets/scenes/treeOffsets.txt</Instanced>
+				<Instanced Amount="194" Offset="100.000000" RandomStrength="0.780000">assets/scenes/treeOffsets.txt</Instanced>
 			</Misc>
 		</Mesh>
 		<Mesh FriendlyName="House" MeshName="HOUSE.fbx">
@@ -179,6 +180,19 @@
 				<RoughnessMap>house/rough.bmp</RoughnessMap>
 				<NormalMap>house/normal.bmp</NormalMap>
 				<AOMap>house/ao.bmp</AOMap>
+				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="lightpostone" MeshName="lightpost.fbx">
+			<Transform>
+				<Position x="15.000000" y="2.600000" z="-19.200001"/>
+				<Rotation x="-91.100296" y="-0.000000" z="0.000000"/>
+				<Scale x="3.200000" y="3.200000" z="3.200000"/>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Metallic>0.000000</Metallic>
+				<Roughness>1.000000</Roughness>
 				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
 			</Misc>
 		</Mesh>

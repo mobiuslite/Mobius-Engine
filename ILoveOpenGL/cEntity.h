@@ -24,6 +24,7 @@ public:
 	std::vector<cEntity*> children;
 
 	bool isGameplayEntity = false;
+	bool markedForDeletion = false;
 
 	friend class cWorld;
 	friend class cEmitter;

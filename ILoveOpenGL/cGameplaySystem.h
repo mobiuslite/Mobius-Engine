@@ -15,6 +15,6 @@ private:
 	cParticleSystem* particleSystem;
 	cBowComponent* bowComp;
 
-	const float balloonSpawnTime = 2000.0f;
+	const float balloonSpawnTime = 2.0f;
 	float elapsedBalloonTime;
 };

@@ -11,9 +11,21 @@ cEntityManager::~cEntityManager()
 
 void cEntityManager::Update(float dt)
 {
-	for (cEntity* entity : this->entities)
+	std::vector<cEntity*> deletedEntities;
+
+	for (size_t i = 0; i < this->entities.size(); i++)
 	{
-		entity->Update(dt);
+		cEntity* curEntity = this->entities[i];
+		curEntity->Update(dt);
+		if (curEntity->markedForDeletion)
+		{
+			deletedEntities.push_back(curEntity);
+		}
+	}
+
+	for (cEntity* entity : deletedEntities)
+	{
+		this->DeleteEntity(entity);
 	}
 }
 

@@ -62,8 +62,8 @@ struct PostProcessingInfo
     bool useExposureToneMapping = true;
 
     float bloomThreshhold = 5.18f;
-    float bloomSize = 1.75f;
-    unsigned int bloomIterationAmount = 30;
+    float bloomSize = 1.f;
+    int bloomIterationAmount = 30;
 
     float ambientPower = 0.086f;
 
@@ -1313,6 +1313,7 @@ void DrawGUI(float dt)
                 ImGui::Spacing();
                 ImGui::DragFloat("Bloom Threshhold", &postProcessing.bloomThreshhold, 0.1f, 0.0f, 10000.0f);
                 ImGui::DragFloat("Bloom Size", &postProcessing.bloomSize, 0.1f, 0.0f, 10.0f);
+                ImGui::SliderInt("Bloom Iteration Amount", &postProcessing.bloomIterationAmount, 1, 100);
 
                 ImGui::Text("Shadows");
                 ImGui::Spacing();

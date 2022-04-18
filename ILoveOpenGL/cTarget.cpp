@@ -39,7 +39,7 @@ void cTarget::Update(float dt)
 				{
 					glm::vec3 direction;
 					const float speed = 3.5f;
-					const float lifetime = 10.0f;
+					const float lifetime = 1.5f;
 
 					float x = ((rand() % 21) / 10.0f) - 1.0f;
 					float y	= ((rand() % 21) / 10.0f) - 1.0f;
@@ -50,7 +50,7 @@ void cTarget::Update(float dt)
 					particleSystem->AddParticle(transform->position, direction * speed, lifetime);
 				}
 
-				this->entityManager->DeleteEntity(this->GetEntity());
+				this->GetEntity()->markedForDeletion = true;
 				return;
 
 			}
