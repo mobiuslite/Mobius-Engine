@@ -21,6 +21,4 @@ private:
 
 	cInstancedRenderer* renderer;
 	glm::vec3 lastPosAdded;
-
-	const float offset = 1.0f;
 };

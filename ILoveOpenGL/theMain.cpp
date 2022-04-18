@@ -56,16 +56,18 @@
 struct PostProcessingInfo
 {
     float gamma = 1.85f;
-    float exposure = 0.631f;
-    float shadowBias = 0.0055f;
+    float exposure = 1.289f;
+    float shadowBias = 0.0016f;
 
     bool useExposureToneMapping = true;
 
     float bloomThreshhold = 5.18f;
     float bloomSize = 1.75f;
-    unsigned int bloomIterationAmount = 15;
+    unsigned int bloomIterationAmount = 30;
 
-    float ambientPower = 0.05f;
+    float ambientPower = 0.086f;
+
+    glm::vec4 colorCorrection = glm::vec4(0.0f, 0.09f, 0.92f, 0.035f);
 };
 
 struct WindInfo
@@ -671,6 +673,7 @@ int main(void)
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bIsPlane", glGetUniformLocation(program, "bIsPlane")));
 
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("reticleTexture", glGetUniformLocation(program, "reticleTexture")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("cc", glGetUniformLocation(program, "cc")));
 
     cShaderManager::cShaderProgram* pingPongShader = gShaderManager.pGetShaderProgramFromFriendlyName("PingPong");
 
@@ -859,8 +862,8 @@ int main(void)
         glViewport(0, 0, shadowFBO->SHADOW_WIDTH, shadowFBO->SHADOW_HEIGHT);
 
         //glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_SHADOW);
-        float near_plane = .01f, far_plane = 80.5f;
-        float shadowOrthoBounds = 40.0f;
+        float near_plane = .01f, far_plane = 1000.0f;
+        float shadowOrthoBounds = 500.0f;
         p = glm::ortho(-shadowOrthoBounds, shadowOrthoBounds, -shadowOrthoBounds, shadowOrthoBounds, near_plane, far_plane);
 
 
@@ -902,7 +905,8 @@ int main(void)
         p = glm::perspective(glm::radians(usedFov),
             ratio,
             0.1f,
-            1000000.0f);     
+            1000.0f);     
+
         glUniformMatrix4fv(matProjection_Location, 1, GL_FALSE, glm::value_ptr(p));
         //glm::vec3 cameraEye = glm::vec3(0.0, 0.0, -4.0f);
         glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -1095,6 +1099,9 @@ int main(void)
         //Only show bloom on the lit colour buffer
         glUniform1f(normalShader->uniformLocations["bShowBloom"], (textureId == g_fbo->colourTexture_0_ID) ? (float)GL_TRUE : (float)GL_FALSE);
         //Upload bloom map
+
+        glUniform4f(normalShader->uniformLocations["cc"], postProcessing.colorCorrection.r, postProcessing.colorCorrection.g, postProcessing.colorCorrection.b, postProcessing.colorCorrection.a);
+
         if (pingPongFBO->pingpongBuffer[!horizontal] != 0)
         {
             GLint unit = 12;
@@ -1295,6 +1302,12 @@ void DrawGUI(float dt)
                 ImGui::Checkbox("Use Exposure", &postProcessing.useExposureToneMapping);
                 if (postProcessing.useExposureToneMapping)
                     ImGui::SliderFloat("Exposure", &postProcessing.exposure, 0.0f, 5.0f);
+
+                ImGui::Text("Color Correction");
+                ImGui::Spacing();
+
+                float* cc[4] = { &postProcessing.colorCorrection.r,&postProcessing.colorCorrection.g, &postProcessing.colorCorrection.b, &postProcessing.colorCorrection.a };
+                ImGui::ColorEdit4("CC", *cc);
 
                 ImGui::Text("Bloom");
                 ImGui::Spacing();
@@ -1621,9 +1634,6 @@ void DrawGUI(float dt)
 
         ImGui::End();
     }
-
-    ImGui::ShowDemoWindow();
-
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -1634,13 +1644,13 @@ void SetUpLights()
 {
     //OUTSIDE LIGHTS
     gTheLights.theLights[0].name = "Outside light";
-    gTheLights.theLights[0].position = glm::vec4(-4.5f, 6.0f, -1.5f, 1.0f);
+    gTheLights.theLights[0].position = glm::vec4(13.5f, 15.0f, -30.5f, 1.0f);
     gTheLights.theLights[0].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
     gTheLights.theLights[0].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100.0f);
     //gTheLights.theLights[0].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[0].param1.x = 0;
-    gTheLights.theLights[0].power = 38.0f;
+    gTheLights.theLights[0].power = 43.0f;
     gTheLights.TurnOnLight(0);  // Or this!
     gTheLights.SetUpUniformLocations(program, 0);
 
@@ -1652,7 +1662,7 @@ void SetUpLights()
      //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[1].param1.x = 0;
     gTheLights.theLights[1].power = 38.0f;
-    gTheLights.TurnOnLight(1);  // Or this!
+    gTheLights.TurnOffLight(1);  // Or this!
     gTheLights.SetUpUniformLocations(program, 1);
 
     gTheLights.theLights[2].name = "Outside light";
@@ -1663,7 +1673,7 @@ void SetUpLights()
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[2].param1.x = 0;
     gTheLights.theLights[2].power = 38.0f;
-    gTheLights.TurnOnLight(2);  // Or this!
+    gTheLights.TurnOffLight(2);  // Or this!
     gTheLights.SetUpUniformLocations(program, 2);
 
     gTheLights.theLights[3].name = "Outside light";
@@ -1674,7 +1684,7 @@ void SetUpLights()
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[3].param1.x = 0;
     gTheLights.theLights[3].power = 38.0f;
-    gTheLights.TurnOnLight(3);  // Or this!
+    gTheLights.TurnOffLight(3);  // Or this!
     gTheLights.SetUpUniformLocations(program, 3);
 
     gTheLights.theLights[6].name = "Outside light";
@@ -1685,7 +1695,7 @@ void SetUpLights()
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[6].param1.x = 0;
     gTheLights.theLights[6].power = 38.0f;
-    gTheLights.TurnOnLight(6);  // Or this!
+    gTheLights.TurnOffLight(6);  // Or this!
     gTheLights.SetUpUniformLocations(program, 6);
 
     gTheLights.theLights[7].name = "Outside light";
@@ -1696,7 +1706,7 @@ void SetUpLights()
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[7].param1.x = 0;
     gTheLights.theLights[7].power = 38.0f;
-    gTheLights.TurnOnLight(7);  // Or this!
+    gTheLights.TurnOffLight(7);  // Or this!
     gTheLights.SetUpUniformLocations(program, 7);
 
     gTheLights.theLights[9].name = "Outside light";
@@ -1707,7 +1717,7 @@ void SetUpLights()
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[9].param1.x = 0;
     gTheLights.theLights[9].power = 38.0f;
-    gTheLights.TurnOnLight(9);  // Or this!
+    gTheLights.TurnOffLight(9);  // Or this!
     gTheLights.SetUpUniformLocations(program, 9);
 
 
@@ -1721,7 +1731,7 @@ void SetUpLights()
     gTheLights.theLights[4].param1.x = 1;
     gTheLights.theLights[4].param1.y = 20.0f;
     gTheLights.theLights[4].param1.z = 25.0f;
-    gTheLights.TurnOnLight(4);  // Or this!
+    gTheLights.TurnOffLight(4);  // Or this!
     gTheLights.SetUpUniformLocations(program, 4);
 
     gTheLights.theLights[5].name = "Inside light";
@@ -1733,13 +1743,13 @@ void SetUpLights()
     gTheLights.theLights[5].param1.x = 1;
     gTheLights.theLights[5].param1.y = 20.0f;
     gTheLights.theLights[5].param1.z = 25.0f;
-    gTheLights.TurnOnLight(5);  // Or this!
+    gTheLights.TurnOffLight(5);  // Or this!
     gTheLights.SetUpUniformLocations(program, 5);
 
     //SUN
 
     gTheLights.theLights[8].name = "Sun light";
-    gTheLights.theLights[8].position = glm::vec4(-23.f, 18.f, -27.f, 1.0f);
+    gTheLights.theLights[8].position = glm::vec4(-5.f, 57.f, -69.f, 1.0f);
     gTheLights.theLights[8].diffuse = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     gTheLights.theLights[8].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100.0f);
     gTheLights.theLights[8].direction = glm::normalize(glm::vec4(0.2f, -.8f, -.4f, 1.0f));

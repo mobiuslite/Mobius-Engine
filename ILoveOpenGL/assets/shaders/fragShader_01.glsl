@@ -128,6 +128,8 @@ uniform vec2 screenWidthHeight;
 //z use exposure based tonemapping > 0.5f
 //w = bloom threshhold
 uniform vec4 postprocessingVariables;
+uniform vec4 cc;
+
 uniform float ambientPower;
 
 uniform samplerCube skyBox;
@@ -216,6 +218,8 @@ void main()
   
 		pixelColour.rgb = mapped;
 		pixelColour.a = 1.0f;
+
+		pixelColour.rgb += cc.rgb * cc.a;
 
 		vec3 reticlePixelColor = texture(reticleTexture, UVLookup).rgb;
 		if (reticlePixelColor.r > 0.1f)

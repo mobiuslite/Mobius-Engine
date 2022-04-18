@@ -24,7 +24,7 @@ void cInstancedBrush::AddOffset(glm::vec3 pos)
 {
 	if (this->renderer != nullptr)
 	{
-		if (glm::distance(pos, this->lastPosAdded) >= this->offset)
+		if (glm::distance(pos, this->lastPosAdded) >= this->renderer->GetOffset())
 		{
 			this->renderer->AddOffset(pos);
 			this->lastPosAdded = pos;
