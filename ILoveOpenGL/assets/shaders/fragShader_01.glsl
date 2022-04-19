@@ -129,6 +129,7 @@ uniform vec2 screenWidthHeight;
 //w = bloom threshhold
 uniform vec4 postprocessingVariables;
 uniform vec4 cc;
+uniform float saturation;
 
 uniform float ambientPower;
 
@@ -218,6 +219,10 @@ void main()
   
 		pixelColour.rgb = mapped;
 		pixelColour.a = 1.0f;
+
+		const vec3 W = vec3(0.2125, 0.7154, 0.0721);
+		vec3 intensity = vec3(dot(pixelColour.rgb, W));
+		pixelColour.rgb = mix(intensity, pixelColour.rgb, saturation);
 
 		pixelColour.rgb += cc.rgb * cc.a;
 

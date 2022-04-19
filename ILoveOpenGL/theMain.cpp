@@ -63,9 +63,10 @@ struct PostProcessingInfo
 
     float bloomThreshhold = 5.18f;
     float bloomSize = 1.f;
-    int bloomIterationAmount = 30;
+    int bloomIterationAmount = 40;
 
-    float ambientPower = 0.086f;
+    float ambientPower = 0.066f;
+    float saturation = 1.24f;
 
     glm::vec4 colorCorrection = glm::vec4(0.0f, 0.09f, 0.92f, 0.035f);
 };
@@ -674,6 +675,7 @@ int main(void)
 
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("reticleTexture", glGetUniformLocation(program, "reticleTexture")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("cc", glGetUniformLocation(program, "cc")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("saturation", glGetUniformLocation(program, "saturation")));
 
     cShaderManager::cShaderProgram* pingPongShader = gShaderManager.pGetShaderProgramFromFriendlyName("PingPong");
 
@@ -822,6 +824,7 @@ int main(void)
         glUniform4f(normalShader->uniformLocations["postprocessingVariables"], postProcessing.gamma, postProcessing.exposure, useExposure, postProcessing.bloomThreshhold);
         glUniform1f(normalShader->uniformLocations["ambientPower"], postProcessing.ambientPower);
         glUniform1f(normalShader->uniformLocations["shadowBias"], postProcessing.shadowBias);
+        glUniform1f(normalShader->uniformLocations["saturation"], postProcessing.saturation);
 
         float currentTime = (float)glfwGetTime();
         float deltaTime = currentTime - previousTime;
@@ -1308,6 +1311,7 @@ void DrawGUI(float dt)
 
                 float* cc[4] = { &postProcessing.colorCorrection.r,&postProcessing.colorCorrection.g, &postProcessing.colorCorrection.b, &postProcessing.colorCorrection.a };
                 ImGui::ColorEdit4("CC", *cc);
+                ImGui::DragFloat("Saturation", &postProcessing.saturation, 0.01f, 0.0f, 10.0f);
 
                 ImGui::Text("Bloom");
                 ImGui::Spacing();
@@ -1645,7 +1649,7 @@ void SetUpLights()
 {
     //OUTSIDE LIGHTS
     gTheLights.theLights[0].name = "Outside light";
-    gTheLights.theLights[0].position = glm::vec4(13.5f, 15.0f, -30.5f, 1.0f);
+    gTheLights.theLights[0].position = glm::vec4(13.27f, 12.8f, -20.16f, 1.0f);
     gTheLights.theLights[0].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
     gTheLights.theLights[0].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100.0f);
     //gTheLights.theLights[0].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
