@@ -57,7 +57,7 @@ struct PostProcessingInfo
 {
     float gamma = 1.85f;
     float exposure = 1.289f;
-    float shadowBias = 0.0016f;
+    float shadowBias = 0.0006f;
 
     bool useExposureToneMapping = true;
 
@@ -213,16 +213,21 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     {
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            int curMode = glfwGetInputMode(window, GLFW_CURSOR);
+
+            if (curMode == GLFW_CURSOR_NORMAL)
+            {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            }
+            else
+            {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            }
+            
         }
         else if (key == GLFW_KEY_GRAVE_ACCENT && action == GLFW_PRESS)
         {
             showDebugGui = !showDebugGui;
-        }
-
-        if (key == GLFW_KEY_K && action == GLFW_PRESS)
-        {
-            g_bowComp->CleanUpProjectile();
         }
 
         if (key == GLFW_KEY_1 && action == GLFW_PRESS)
@@ -908,7 +913,7 @@ int main(void)
         glViewport(0, 0, shadowFBO->SHADOW_WIDTH, shadowFBO->SHADOW_HEIGHT);
 
         //glUniform1ui(normalShader->uniformLocations["passNumber"], RENDER_PASS_SHADOW);
-        float near_plane = .01f, far_plane = 1000.0f;
+        float near_plane = .0001f, far_plane = 1000.0f;
         float shadowOrthoBounds = 500.0f;
         p = glm::ortho(-shadowOrthoBounds, shadowOrthoBounds, -shadowOrthoBounds, shadowOrthoBounds, near_plane, far_plane);
 
@@ -1828,7 +1833,7 @@ void SetUpLights()
     //SUN
 
     gTheLights.theLights[8].name = "Sun light";
-    gTheLights.theLights[8].position = glm::vec4(-5.f, 57.f, -69.f, 1.0f);
+    gTheLights.theLights[8].position = glm::vec4(48.f, 114.f, -174.f, 1.0f);
     gTheLights.theLights[8].diffuse = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     gTheLights.theLights[8].atten = glm::vec4(0.2f, 0.1f, 0.005f, 100.0f);
     gTheLights.theLights[8].direction = glm::normalize(glm::vec4(0.2f, -.8f, -.4f, 1.0f));

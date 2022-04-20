@@ -1,10 +1,12 @@
 #pragma once
 #include "cTransform.h"
 
+class cBowComponent;
+
 class cProjectile : public cComponent
 {
 public:
-	cProjectile(cTransform* meshTransform, glm::vec3 direction, float speed);
+	cProjectile(cBowComponent* parent, cTransform* meshTransform, glm::vec3 direction, float speed);
 
 	virtual ~cProjectile() {};
 	virtual void Update(float dt);
@@ -13,16 +15,14 @@ public:
 
 	void HitTarget();
 
-	const bool IsReadyForCleanup() { return this->readyForCleanup; }
-
 private:
 
 	bool hitTarget = false;
 
-	bool readyForCleanup = false;
 	float elapsedLifetime;
 	const float lifetime = 60.0f;
 
+	cBowComponent* parent;
 	cTransform* transform;
 	glm::vec3 velocity;
 

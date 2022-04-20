@@ -1,9 +1,11 @@
 #include "cProjectile.h"
+#include "cBowComponent.h"
 
-cProjectile::cProjectile(cTransform* meshTransform, glm::vec3 direction, float speed)
+cProjectile::cProjectile(cBowComponent* parent, cTransform* meshTransform, glm::vec3 direction, float speed)
 {
 	this->transform = meshTransform;
 	this->velocity = glm::normalize(direction) * speed;
+	this->parent = parent;
 
 	this->isUpdatable = true;
 
@@ -15,7 +17,8 @@ void cProjectile::Update(float dt)
 	this->elapsedLifetime += dt;
 	if (this->elapsedLifetime >= this->lifetime)
 	{
-		readyForCleanup = true;
+		parent->RemoveProjectile(this->GetEntity());
+		this->GetEntity()->Delete();
 	}
 
 	this->transform->Translate(this->velocity * dt);

@@ -298,6 +298,9 @@ void main()
 			pixelBrightColour = vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		}
 
+		pixelNormal.rgb = (pixelNormal.rgb + 1.0f) / 2.0f;
+		pixelWorldPos.rgb = (pixelWorldPos.rgb + 1.0f) / 2.0f;
+
 		return;
 	}
 

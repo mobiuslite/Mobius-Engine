@@ -23,12 +23,14 @@ cGameplaySystem::cGameplaySystem(cEntityManager* manager, cParticleSystem* parti
     this->normal.maxRiseSpeed = 3.0f;
     this->normal.minRiseSpeed = 1.0f;
 
-    this->hard.balloonSpawnTime = 1.75f;
+    this->hard.balloonSpawnTime = 1.5f;
     this->hard.maxDistance = 35.0f;
     this->hard.maxRiseSpeed = 4.0f;
     this->hard.minRiseSpeed = 2.0f;
 
     this->curDifficulty = &normal;
+
+    this->balloonsSpawned = 0;
 }
 
 void cGameplaySystem::Update(float dt)
@@ -75,6 +77,8 @@ void cGameplaySystem::Update(float dt)
 
             cTarget* newTarget = new cTarget(bowComp, entityManager, particleSystem, this, curDifficulty->minRiseSpeed, curDifficulty->maxRiseSpeed);
             newBalloon->AddComponent(newTarget);
+
+            this->balloonsSpawned++;
         }
 
         if (elapsedGameTime >= gameTime)
@@ -89,7 +93,8 @@ void cGameplaySystem::Update(float dt)
             }
             this->targets.clear();
 
-            this->bowComp->GameDone();
+            this->bowComp->GameDone(this->balloonsSpawned);
+            this->balloonsSpawned = 1;
         }
     }
 }

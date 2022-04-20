@@ -14,14 +14,14 @@ public:
 	void FireProjectile(glm::vec3 pos, glm::vec3 direction, float aimingValue);
 
 	std::vector<cProjectile*> GetFiredProjectiles();
-	void CleanUpProjectile();
+	void RemoveProjectile(cEntity* proj);
 
 	float GetAimingValue();
 	void PoppedBalloon();
 
 	float GetAccuracy();
 
-	void GameDone();
+	void GameDone(unsigned int totalBalloonsSpawned);
 	void GameStart();
 
 	bool aiming;

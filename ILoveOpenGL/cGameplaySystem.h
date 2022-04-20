@@ -9,9 +9,9 @@ public:
 	cGameplaySystem(cEntityManager* manager, cParticleSystem* particle, cBowComponent* bow);
 
 	void Update(float dt);
-	void SetNormalDifficult() { this->curDifficulty = &normal; }
-	void SetEasyDifficult() { this->curDifficulty = &easy; }
-	void SetHardDifficult() { this->curDifficulty = &hard; }
+	void SetNormalDifficult() { if(!this->playing) this->curDifficulty = &normal; }
+	void SetEasyDifficult() { if (!this->playing) this->curDifficulty = &easy; }
+	void SetHardDifficult() { if (!this->playing) this->curDifficulty = &hard; }
 
 	void RemoveBalloon(cEntity* target);
 
@@ -40,6 +40,8 @@ private:
 	cBowComponent* bowComp;
 
 	const float gameTime = 30.0f;
+
+	unsigned int balloonsSpawned;
 
 	float elapsedBalloonTime;
 	float elapsedGameTime;
