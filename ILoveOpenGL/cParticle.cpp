@@ -1,12 +1,14 @@
 #include "cParticle.h"
 #include "cEntity.h"
 
-cParticle::cParticle(glm::vec3 velocity, float lifeTime)
+cParticle::cParticle(glm::vec3 velocity, float lifeTime, float damping)
 {
 	this->velocity = velocity;
 	this->isUpdatable = true;
 
 	this->transform = nullptr;
+
+	this->damping = damping;
 
 	this->elapsedLifetime = 0.0f;
 	this->lifeTime = lifeTime;
@@ -21,6 +23,7 @@ void cParticle::Update(float dt)
 {
 	transform->position += this->velocity * dt;
 	this->velocity += this->GRAVITY * dt;
+	this->velocity *= glm::pow(damping, dt);
 
 	if (transform->scale.x > 0.0f)
 	{

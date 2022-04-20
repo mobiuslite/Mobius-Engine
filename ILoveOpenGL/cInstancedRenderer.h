@@ -25,12 +25,16 @@ public:
 
 	float GetRandomStrength();
 
+	const bool UseFile() { return useFile; }
+
 	void SetupVertexArrayAttrib(sModelDrawInfo* drawInfo);
 
 	std::string fileName;
 private:
 	float offset;
 	float randomStrength;
+
+	bool useFile;
 
 	std::vector<glm::vec4> translations;
 	unsigned int instancedVBO_ID;

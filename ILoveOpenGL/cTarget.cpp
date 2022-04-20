@@ -1,19 +1,24 @@
 #include "cTarget.h"
 #include "cMeshRenderer.h"
 #include "FMODSoundpanel/cSoundPanel.h"
-#include <iostream>
 
 
-cTarget::cTarget(cBowComponent* bow, cEntityManager* entityManager, cParticleSystem* particleSystem)
+cTarget::cTarget(cBowComponent* bow, cEntityManager* entityManager, cParticleSystem* particleSystem, cGameplaySystem* gameplaySystem, float minRiseSpeed, float maxRiseSpeed)
 {
 	this->bow = bow;
 	this->isUpdatable = true;
 	this->transform = nullptr;
 
+	this->parent = gameplaySystem;
+
 	this->entityManager = entityManager;
 	this->particleSystem = particleSystem;
 
-	this->riseSpeed = ((float)(rand() % 31) / 10.0f) + 1.0f;
+	if (maxRiseSpeed > 0.0f && minRiseSpeed > 0.0f)
+		this->riseSpeed = rand() % (int)(maxRiseSpeed - minRiseSpeed) + minRiseSpeed;
+	else
+		this->riseSpeed = 0.0f;
+
 }
 
 void cTarget::Awake()
@@ -27,12 +32,6 @@ void cTarget::Update(float dt)
 	{
 		if (rise)
 		{
-			this->elapsedLifetime += dt;
-			if (this->elapsedLifetime >= this->TARGET_LIFETIME)
-			{
-				this->GetEntity()->Delete();
-			}
-
 			transform->position += glm::vec3(0.0f, riseSpeed, 0.0f) * dt;
 		}
 
@@ -51,7 +50,7 @@ void cTarget::Update(float dt)
 				{
 					glm::vec3 direction;
 					const float speed = 3.5f;
-					const float lifetime = 1.5f;
+					const float lifetime = 2.5f;
 
 					float x = ((rand() % 21) / 10.0f) - 1.0f;
 					float y	= ((rand() % 21) / 10.0f) - 1.0f;
@@ -62,16 +61,12 @@ void cTarget::Update(float dt)
 					particleSystem->AddParticle(transform->position, direction * speed, lifetime);
 				}
 
-				if (rise)
-				{
-					this->bow->PoppedBalloon();
+				this->bow->PoppedBalloon();
 
-					std::cout << "Accuracy: %" << this->bow->GetAccuracy() << std::endl;
-				}
-
+				if(rise)
+					this->parent->RemoveBalloon(this->GetEntity());
 				this->GetEntity()->Delete();
 				return;
-
 			}
 		}
 	}

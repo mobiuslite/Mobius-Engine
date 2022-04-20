@@ -10,13 +10,12 @@ cInstancedRenderer::cInstancedRenderer(unsigned int amount, float offset, std::s
     this->randomStrength = randomAmount;
     this->fileName = fileName;
 
-    int eachAmount = (int)glm::sqrt(amount);
-    int totalAmount = 0;
-
-    //TODO: Read in file and input offsets
+    //If file exists
     std::ifstream inputFile(fileName);
     if (inputFile.is_open())
     {
+        useFile = true;
+
         while (!inputFile.eof())
         {
             std::string xOffset;
@@ -31,6 +30,24 @@ cInstancedRenderer::cInstancedRenderer(unsigned int amount, float offset, std::s
             translations.push_back(newTranslation);
         }
         inputFile.close();
+    }
+
+    //If file doesn't exist
+    else
+    {
+        useFile = false;
+        int fixedAmount = (int)sqrt(amount);
+
+        for (int y = -fixedAmount; y < fixedAmount; y += 2)
+        {
+            for (int x = -fixedAmount; x < fixedAmount; x += 2)
+            {
+                int randomXOffset = (rand() % 200) * randomAmount;
+                int randomZOffset = (rand() % 200) * randomAmount;
+
+                translations.push_back(glm::vec4(x * offset + (randomXOffset / 100.0f), 0.0f, y * offset + (randomZOffset / 100.0f), 1.0f));
+            }
+        }
     }
 
     glGenBuffers(1, &this->instancedVBO_ID);

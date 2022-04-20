@@ -13,20 +13,15 @@ public:
 
 	void HitTarget();
 
-	void CleanUp()
-	{
-		cleanUp = true;
-	}
-
-	bool IsReadyForCleanUp()
-	{
-		return cleanUp;
-	}
+	const bool IsReadyForCleanup() { return this->readyForCleanup; }
 
 private:
 
-	bool cleanUp = false;
 	bool hitTarget = false;
+
+	bool readyForCleanup = false;
+	float elapsedLifetime;
+	const float lifetime = 60.0f;
 
 	cTransform* transform;
 	glm::vec3 velocity;

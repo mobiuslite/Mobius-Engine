@@ -6,7 +6,7 @@
 class cParticle : public cComponent
 {
 public:
-	cParticle(glm::vec3 velocity, float lifeTime);
+	cParticle(glm::vec3 velocity, float lifeTime, float damping = .5f);
 
 	virtual void Awake();
 	virtual void Update(float dt);
@@ -19,8 +19,10 @@ private:
 	float lifeTime;
 	float elapsedLifetime;
 
+	float damping;
+
 	bool readyForCleanup = false;
 
 	glm::vec3 velocity;
-	const glm::vec3 GRAVITY = glm::vec3(0.0f, -4.0f, 0.0f);
+	const glm::vec3 GRAVITY = glm::vec3(0.0f, -2.5f, 0.0f);
 };

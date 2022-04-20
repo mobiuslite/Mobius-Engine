@@ -21,6 +21,9 @@ public:
 
 	float GetAccuracy();
 
+	void GameDone();
+	void GameStart();
+
 	bool aiming;
 	const float fovChangeAmount = 25.0f;
 private:

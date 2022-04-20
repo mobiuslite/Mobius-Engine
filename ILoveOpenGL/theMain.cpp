@@ -96,7 +96,7 @@ float lastY;
 float yaw = 90.0f;
 float pitch = 0.0f;
 
-float flyCameraSpeed = 5.0f;
+float flyCameraSpeed = 7.0f;
 float speedMultiple = 3.0f;
 
 cVAOManager* gVAOManager;
@@ -123,7 +123,7 @@ cEntity* g_skyBox;
 cEntity* g_bow;
 cBowComponent* g_bowComp;
 
-bool showDebugGui = true;
+bool showDebugGui = false;
 ImGuiIO* io = nullptr;
 size_t selectedEntityDebug = 0;
 size_t selectedLightDebug = 0;
@@ -202,7 +202,7 @@ void CreateStartingTarget()
 
     newTransform->scale = glm::vec3(0.9f);
 
-    cTarget* newTarget = new cTarget(g_bowComp, &g_entityManager, particleSystem);
+    cTarget* newTarget = new cTarget(g_bowComp, &g_entityManager, particleSystem, gameplaySystem, 0.0f, 0.0f);
     startingTarget->AddComponent(newTarget);
     newTarget->rise = false;
 }
@@ -223,6 +223,22 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         if (key == GLFW_KEY_K && action == GLFW_PRESS)
         {
             g_bowComp->CleanUpProjectile();
+        }
+
+        if (key == GLFW_KEY_1 && action == GLFW_PRESS)
+        {
+            std::cout << "Difficulty set to easy!" << std::endl;
+            gameplaySystem->SetEasyDifficult();
+        }
+        else if (key == GLFW_KEY_2 && action == GLFW_PRESS)
+        {
+            std::cout << "Difficulty set to normal!" << std::endl;
+            gameplaySystem->SetNormalDifficult();
+        }
+        else if (key == GLFW_KEY_3 && action == GLFW_PRESS)
+        {
+            std::cout << "Difficulty set to hard!" << std::endl;
+            gameplaySystem->SetHardDifficult();
         }
     }
     return;
@@ -346,11 +362,11 @@ void ProcessAsyncKeyboard(GLFWwindow* window, float deltaTime)
 
             if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_S) != GLFW_PRESS)
             {
-                cameraEye += cameraDir * speed * deltaTime;
+                cameraEye += (showDebugGui ? cameraDir : glm::vec3(cameraDir.x, 0.0f, cameraDir.z)) * speed * deltaTime;
             }
             else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_W) != GLFW_PRESS)
             {
-                cameraEye -= cameraDir * speed * deltaTime;
+                cameraEye -= (showDebugGui ? cameraDir : glm::vec3(cameraDir.x, 0.0f, cameraDir.z)) * speed * deltaTime;
             }
 
             if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_D) != GLFW_PRESS)
@@ -364,11 +380,13 @@ void ProcessAsyncKeyboard(GLFWwindow* window, float deltaTime)
 
             if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_E) != GLFW_PRESS)
             {
-                cameraEye -= glm::vec3(0.0f, 1.0f, 0.0f) * speed * deltaTime;
+                if(showDebugGui)
+                    cameraEye -= glm::vec3(0.0f, 1.0f, 0.0f) * speed * deltaTime;
             }
             else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_Q) != GLFW_PRESS)
             {
-                cameraEye += glm::vec3(0.0f, 1.0f, 0.0f) * speed * deltaTime;
+                if(showDebugGui)
+                    cameraEye += glm::vec3(0.0f, 1.0f, 0.0f) * speed * deltaTime;
             }
         }
     }
@@ -1175,6 +1193,10 @@ int main(void)
 
                 //start game
                 gameplaySystem->playing = true;
+                gameplaySystem->SetHardDifficult();
+
+                g_bowComp->GameStart();
+
                 targetMesh->render = false;
 
                 std::vector<Sound> musicList = cSoundPanel::GetInstance()->GetMusicList();
@@ -1703,7 +1725,7 @@ void SetUpLights()
     gTheLights.theLights[0].name = "Outside light";
     gTheLights.theLights[0].position = glm::vec4(13.27f, 12.8f, -20.16f, 1.0f);
     gTheLights.theLights[0].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
-    gTheLights.theLights[0].atten = glm::vec4(0.2f, 0.1f, 0.025f, 100.0f);
+    gTheLights.theLights[0].atten = glm::vec4(0.2f, 0.1f, 0.025f, 400.0f);
     //gTheLights.theLights[0].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[0].param1.x = 0;

@@ -12,6 +12,23 @@ cGameplaySystem::cGameplaySystem(cEntityManager* manager, cParticleSystem* parti
 
     this->elapsedBalloonTime = 0.0f;
     this->elapsedGameTime = 0.0f;
+
+    this->easy.balloonSpawnTime = 3.0f;
+    this->easy.maxDistance = 20.0f;
+    this->easy.maxRiseSpeed = 2.0f;
+    this->easy.minRiseSpeed = 1.0f;
+
+    this->normal.balloonSpawnTime = 2.0f;
+    this->normal.maxDistance = 25.0f;
+    this->normal.maxRiseSpeed = 3.0f;
+    this->normal.minRiseSpeed = 1.0f;
+
+    this->hard.balloonSpawnTime = 1.75f;
+    this->hard.maxDistance = 35.0f;
+    this->hard.maxRiseSpeed = 4.0f;
+    this->hard.minRiseSpeed = 2.0f;
+
+    this->curDifficulty = &normal;
 }
 
 void cGameplaySystem::Update(float dt)
@@ -22,13 +39,15 @@ void cGameplaySystem::Update(float dt)
 
         elapsedBalloonTime += dt;
         elapsedGameTime += dt;
-        if (elapsedBalloonTime >= balloonSpawnTime)
+        if (elapsedBalloonTime >= curDifficulty->balloonSpawnTime)
         {
             elapsedBalloonTime = 0.0f;
 
             cEntity* newBalloon = entityManager->CreateEntity();
             newBalloon->name = "Target";
             newBalloon->isGameplayEntity = true;
+
+            targets.push_back(newBalloon);
 
             cMeshRenderer* newMesh = newBalloon->AddComponent<cMeshRenderer>();
             newMesh->meshName = "ISO.ply";
@@ -47,14 +66,14 @@ void cGameplaySystem::Update(float dt)
             float xRandom = ((rand() % 21) - 10.0f);
             newTransform->position.x += xRandom;
 
-            float zRandom = (float)(rand() % 25);
+            float zRandom = (float)(rand() % (int)curDifficulty->maxDistance);
             zRandom -= 20.0f;
 
             newTransform->position.z = zRandom;
 
             newTransform->scale = glm::vec3(0.9f);
 
-            cTarget* newTarget = new cTarget(bowComp, entityManager, particleSystem);
+            cTarget* newTarget = new cTarget(bowComp, entityManager, particleSystem, this, curDifficulty->minRiseSpeed, curDifficulty->maxRiseSpeed);
             newBalloon->AddComponent(newTarget);
         }
 
@@ -63,6 +82,26 @@ void cGameplaySystem::Update(float dt)
             elapsedGameTime = 0.0f;
             elapsedBalloonTime = 0.0f;
             this->playing = false;
+
+            for (cEntity* balloon : this->targets)
+            {
+                balloon->Delete();
+            }
+            this->targets.clear();
+
+            this->bowComp->GameDone();
+        }
+    }
+}
+
+void cGameplaySystem::RemoveBalloon(cEntity* target)
+{
+    for (size_t i = 0; i < this->targets.size(); i++)
+    {
+        if (this->targets[i] == target)
+        {
+            this->targets.erase(this->targets.begin() + i);
+            return;
         }
     }
 }

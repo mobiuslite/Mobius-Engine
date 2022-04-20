@@ -21,6 +21,8 @@ uniform vec3 windDirection;
 uniform float windStrength;
 uniform mat4 lightSpaceMatrix;
 
+uniform vec4 eyeLocation;
+
 //uniform bool bUseVertexColour;		// Will default to GL_FALSE, which is zero (0)
 //uniform vec3 vertexColourOverride;
 
