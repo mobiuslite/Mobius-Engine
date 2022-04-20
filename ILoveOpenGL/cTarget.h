@@ -12,6 +12,8 @@ public:
 	virtual void Update(float dt);
 	virtual void Awake();
 
+	bool rise = true;
+
 private:
 	cTransform* transform;
 	cBowComponent* bow;
@@ -20,6 +22,8 @@ private:
 	cParticleSystem* particleSystem;
 
 	float riseSpeed;
+	float elapsedLifetime;
 
 	const float TARGET_RADIUS = 1.0f;
+	const float TARGET_LIFETIME = 15.0f;
 };

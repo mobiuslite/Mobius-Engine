@@ -73,7 +73,7 @@ struct PostProcessingInfo
 
 struct WindInfo
 {
-    float strength = 0.896f;
+    float strength = 1.896f;
     float size = 0.14f;
     glm::vec3 windDir = glm::vec3(1.0f, 0.1f, 1.0f);
 };
@@ -109,7 +109,7 @@ cLightHelper gTheLightHelper;
 
 cBasicTextureManager g_textureManager;
 
-cEntity* g_DebugSphere = NULL;
+cEntity* startingTarget;
 
 unsigned int g_selectedObject = 0;
 unsigned int g_selectedLight = 0;
@@ -178,6 +178,33 @@ static void GLFW_cursor_enter_callback(GLFWwindow* window, int entered)
         g_MouseIsInsideWindow = false;
     }
     return;
+}
+
+void CreateStartingTarget()
+{
+    startingTarget = g_entityManager.CreateEntity(false);
+    startingTarget->name = "Starting Target";
+    startingTarget->isGameplayEntity = true;
+
+    cMeshRenderer* newMesh = startingTarget->AddComponent<cMeshRenderer>();
+    newMesh->meshName = "ISO.ply";
+    newMesh->bUseWholeObjectDiffuseColour = true;
+    newMesh->roughness = 0.4f;
+
+    float rRandom = (rand() % 11) / 10.0f;
+    float gRandom = (rand() % 11) / 10.0f;
+    float bRandom = (rand() % 11) / 10.0f;
+
+    newMesh->wholeObjectDiffuseRGBA = glm::vec4(rRandom, gRandom, bRandom, 1.0f);
+
+    cTransform* newTransform = startingTarget->GetComponent<cTransform>();
+    newTransform->position = glm::vec3(-21.0f, 10.6f, -34.f);
+
+    newTransform->scale = glm::vec3(0.9f);
+
+    cTarget* newTarget = new cTarget(g_bowComp, &g_entityManager, particleSystem);
+    startingTarget->AddComponent(newTarget);
+    newTarget->rise = false;
 }
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -807,14 +834,12 @@ int main(void)
 
     io->Fonts->AddFontFromFileTTF("assets/fonts/Roboto-Medium.ttf", 15);
 
-    std::vector<Sound> musicList = cSoundPanel::GetInstance()->GetMusicList();
-    cSoundPanel::GetInstance()->PlayMusic(musicList[0].name);
-    cSoundPanel::GetInstance()->SetPauseMusic(false);
-
     float balloonSpawnTime = 2.0f;
     float elapsedBalloonTime = 0.0f;
     particleSystem = new cParticleSystem(&g_entityManager);
     gameplaySystem = new cGameplaySystem(&g_entityManager, particleSystem, g_bowComp);
+
+    CreateStartingTarget();
 
     while (!glfwWindowShouldClose(window))
     {
@@ -889,6 +914,8 @@ int main(void)
 
         //Render Shadows
         std::vector<cEntity*> entityVector = g_entityManager.GetEntities();    
+        entityVector.push_back(startingTarget);
+
         Draw(&entityVector, shadowShader, deltaTime);
         
         //Setup normal render
@@ -1138,6 +1165,32 @@ int main(void)
             brush.SetActive(false);
         }
 
+        cMeshRenderer* targetMesh = startingTarget->GetComponent<cMeshRenderer>();
+        if (targetMesh->render)
+        {
+            startingTarget->Update(deltaTime);
+            if (startingTarget->IsBeingDeleted())
+            {
+                startingTarget->StopDeletion();
+
+                //start game
+                gameplaySystem->playing = true;
+                targetMesh->render = false;
+
+                std::vector<Sound> musicList = cSoundPanel::GetInstance()->GetMusicList();
+
+                if (cSoundPanel::GetInstance()->GetCurrentMusic().sound == nullptr)
+                {
+                    cSoundPanel::GetInstance()->PlayMusic(musicList[0].name);
+                    cSoundPanel::GetInstance()->SetPauseMusic(false);
+                }
+            }          
+        }
+        else if (!targetMesh->render && !gameplaySystem->playing)
+        {
+            targetMesh->render = true;
+        }
+
         //glEnable(GL_CULL_FACE);
         //glCullFace(GL_BACK);
 
@@ -1166,8 +1219,6 @@ int main(void)
         std::cout << "WARNING: OpenGL errors found!: " << err << std::endl;
     }
 
-    g_entityManager.DeleteEntity(g_DebugSphere);
-
     if (!g_fbo->shutdown())
     {
         std::cout << "Error shutting down fbo" << std::endl;
@@ -1181,6 +1232,8 @@ int main(void)
     delete g_fbo;
     delete pingPongFBO;
     delete shadowFBO;
+
+    g_entityManager.DeleteEntity(startingTarget);
 
     std::vector<sModelDrawInfo> modelInfoArray = gVAOManager->GetLoadedModels();
 
@@ -1479,7 +1532,6 @@ void DrawGUI(float dt)
 
                         ImGui::EndTabBar();
                     }
-
                     ImGui::Separator();
                     if (ImGui::Button("Delete Entity"))
                     {

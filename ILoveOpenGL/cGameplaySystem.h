@@ -9,6 +9,7 @@ public:
 	cGameplaySystem(cEntityManager* manager, cParticleSystem* particle, cBowComponent* bow);
 
 	void Update(float dt);
+	bool playing = false;
 
 private:
 	cEntityManager* entityManager;
@@ -16,5 +17,8 @@ private:
 	cBowComponent* bowComp;
 
 	const float balloonSpawnTime = 2.0f;
+	const float gameTime = 30.0f;
+
 	float elapsedBalloonTime;
+	float elapsedGameTime;
 };

@@ -9,6 +9,7 @@ cEntity::cEntity()
 {
 	AddComponent<cTransform>();
 }
+
 cEntity::~cEntity()
 {
 	for (cComponent* c : this->components)
@@ -29,6 +30,11 @@ void cEntity::Update(float dt)
 		if(comp->IsUpdatable())
 			comp->Update(dt);
 	}
+}
+
+void cEntity::Delete()
+{
+	this->markedForDeletion = true;
 }
 
 void cEntity::RemoveComponent(cComponent* component)

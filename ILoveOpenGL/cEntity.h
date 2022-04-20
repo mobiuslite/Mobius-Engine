@@ -7,8 +7,6 @@ class cComponent;
 class cEntity
 {
 public:
-	
-	cEntity* clone() const { return new cEntity(*this); }
 
 	template<class T> T* AddComponent();
 	template<class T> bool AddComponent(T* c);
@@ -16,7 +14,7 @@ public:
 	template<class T> T* GetComponent();
 	template<class T> bool HasComponent();
 	void RemoveComponent(cComponent* component);
-				
+		
 	std::string name;	
 	std::string childOf = "";
 
@@ -24,7 +22,7 @@ public:
 	std::vector<cEntity*> children;
 
 	bool isGameplayEntity = false;
-	bool markedForDeletion = false;
+	
 
 	friend class cWorld;
 	friend class cEmitter;
@@ -32,8 +30,13 @@ public:
 	friend class cComponent;
 
 	void Update(float dt);
+	void Delete();
+	const bool IsBeingDeleted() { return markedForDeletion; }
+	void StopDeletion() { markedForDeletion = false; }
 
 private:
+	bool markedForDeletion = false;
+
 	cEntity();
 	virtual ~cEntity();
 };

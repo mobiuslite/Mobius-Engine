@@ -17,6 +17,9 @@ public:
 	void CleanUpProjectile();
 
 	float GetAimingValue();
+	void PoppedBalloon();
+
+	float GetAccuracy();
 
 	bool aiming;
 	const float fovChangeAmount = 25.0f;
@@ -31,4 +34,7 @@ private:
 
 	float aimingValue = 0.0f;
 	float aimingSpeed = 0.75f;	
+
+	unsigned int projectilesFiredCount;
+	unsigned int balloonsPopped;
 };

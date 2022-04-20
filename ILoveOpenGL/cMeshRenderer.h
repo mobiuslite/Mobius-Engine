@@ -80,6 +80,8 @@ public:
 	bool bIsImposter = false;
 	bool useWind = false;
 
+	bool render = true;
+
 	bool useAlbedoMap = false;
 	std::vector<Texture> textures;
 	glm::vec2 tiling;

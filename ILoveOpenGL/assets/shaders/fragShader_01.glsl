@@ -230,6 +230,7 @@ void main()
 		if (reticlePixelColor.r > 0.1f)
 		{
 			pixelColour.rgb = reticlePixelColor;
+			
 		}
 
 		return;

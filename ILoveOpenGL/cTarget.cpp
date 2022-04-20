@@ -1,6 +1,7 @@
 #include "cTarget.h"
 #include "cMeshRenderer.h"
 #include "FMODSoundpanel/cSoundPanel.h"
+#include <iostream>
 
 
 cTarget::cTarget(cBowComponent* bow, cEntityManager* entityManager, cParticleSystem* particleSystem)
@@ -24,6 +25,17 @@ void cTarget::Update(float dt)
 {
 	if (this->transform != nullptr)
 	{
+		if (rise)
+		{
+			this->elapsedLifetime += dt;
+			if (this->elapsedLifetime >= this->TARGET_LIFETIME)
+			{
+				this->GetEntity()->Delete();
+			}
+
+			transform->position += glm::vec3(0.0f, riseSpeed, 0.0f) * dt;
+		}
+
 		std::vector<cProjectile*> bowProj = bow->GetFiredProjectiles();
 
 		for (cProjectile* proj : bowProj)
@@ -50,12 +62,17 @@ void cTarget::Update(float dt)
 					particleSystem->AddParticle(transform->position, direction * speed, lifetime);
 				}
 
-				this->GetEntity()->markedForDeletion = true;
+				if (rise)
+				{
+					this->bow->PoppedBalloon();
+
+					std::cout << "Accuracy: %" << this->bow->GetAccuracy() << std::endl;
+				}
+
+				this->GetEntity()->Delete();
 				return;
 
 			}
 		}
-
-		transform->position += glm::vec3(0.0f, riseSpeed, 0.0f) * dt;
 	}
 }

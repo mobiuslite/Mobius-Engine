@@ -1,7 +1,7 @@
 <Scene>
 	<Camera>
 		<Transform>
-			<Position x="-10.343294" y="10.088960" z="-64.378098"/>
+			<Position x="-22.227806" y="11.327440" z="-67.594574"/>
 		</Transform>
 	</Camera>
 	<Models>
@@ -9,7 +9,6 @@
 		<Model>Floor.ply</Model>
 		<Model>plane.ply</Model>
 		<Model>grass.ply</Model>
-		<Model>sphere.fbx</Model>
 		<Model>grass2.ply</Model>
 		<Model>bow.fbx</Model>
 		<Model>ISO.ply</Model>
@@ -18,11 +17,14 @@
 		<Model>HOUSE.fbx</Model>
 		<Model>lightpost.fbx</Model>
 		<Model>lightpostLight.fbx</Model>
+		<Model>barrel.fbx</Model>
+		<Model>rock_01.FBX</Model>
+		<Model>rock_02.FBX</Model>
 	</Models>
 	<Description>
 		<Mesh FriendlyName="Sky" MeshName="SkyBoxUV.ply">
 			<Transform>
-				<Position x="-10.343294" y="10.088960" z="-64.378098"/>
+				<Position x="-22.227806" y="11.327440" z="-67.594574"/>
 				<Rotation x="0.000000" y="-0.000000" z="0.000000"/>
 				<Scale x="550.000000" y="550.000000" z="550.000000"/>
 			</Transform>
@@ -35,25 +37,6 @@
 				<Roughness>1.000000</Roughness>
 				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
 				<Brightness>2.450000</Brightness>
-			</Misc>
-		</Mesh>
-		<Mesh FriendlyName="Sphere" MeshName="sphere.fbx">
-			<Transform>
-				<Position x="0.448472" y="8.637508" z="-12.314700"/>
-				<Rotation x="0.000000" y="-0.000000" z="0.000000"/>
-				<Scale x="0.025000" y="0.025000" z="0.025000"/>
-			</Transform>
-			<Misc>
-				<UseLighting>true</UseLighting>
-				<Textures>
-					<Texture Ratio="1.000000">rust.bmp</Texture>
-				</Textures>
-				<Metallic>1.000000</Metallic>
-				<MetallicMap>rustmet.bmp</MetallicMap>
-				<Roughness>1.000000</Roughness>
-				<RoughnessMap>rustrough.bmp</RoughnessMap>
-				<NormalMap>rustnorm.bmp</NormalMap>
-				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
 			</Misc>
 		</Mesh>
 		<Mesh FriendlyName="floor" MeshName="Floor.ply">
@@ -114,18 +97,21 @@
 		</Mesh>
 		<Mesh FriendlyName="bow" MeshName="bow.fbx">
 			<Transform>
-				<Position x="-11.143294" y="9.588960" z="-63.128098"/>
-				<Rotation x="-90.000000" y="-0.000000" z="-90.000000"/>
-				<Scale x="0.020000" y="0.020000" z="0.020000"/>
+				<Position x="-23.027805" y="10.827440" z="-66.344574"/>
+				<Rotation x="-0.000107" y="-76.203354" z="80.787163"/>
+				<Scale x="0.007000" y="0.007000" z="0.007000"/>
 			</Transform>
-			<Colors>
-				<OverrideColor>true</OverrideColor>
-				<Color r="0.194690" g="0.786201" b="1.000000" a="1.000000"/>
-			</Colors>
 			<Misc>
 				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">bow/albedo.bmp</Texture>
+				</Textures>
 				<Metallic>0.000000</Metallic>
+				<MetallicMap>bow/metallic.bmp</MetallicMap>
 				<Roughness>0.575000</Roughness>
+				<RoughnessMap>bow/rough.bmp</RoughnessMap>
+				<NormalMap>bow/normal.bmp</NormalMap>
+				<AOMap>bow/ao.bmp</AOMap>
 				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
 			</Misc>
 		</Mesh>
@@ -144,7 +130,7 @@
 				<Roughness>1.000000</Roughness>
 				<NormalMap>tree/treeNormal.bmp</NormalMap>
 				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
-				<Instanced Amount="194" Offset="5.000000" RandomStrength="0.780000">assets/scenes/treeOffsets.txt</Instanced>
+				<Instanced Amount="112" Offset="5.000000" RandomStrength="0.780000">assets/scenes/treeOffsets.txt</Instanced>
 			</Misc>
 		</Mesh>
 		<Mesh FriendlyName="testTreeLeaves" MeshName="" ChildOf="testTree">
@@ -163,7 +149,44 @@
 				<AlphaMask>tree/leaveMask.bmp</AlphaMask>
 				<NormalMap>tree/leaveNormal.bmp</NormalMap>
 				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
-				<Instanced Amount="194" Offset="100.000000" RandomStrength="0.780000">assets/scenes/treeOffsets.txt</Instanced>
+				<Instanced Amount="112" Offset="100.000000" RandomStrength="0.780000">assets/scenes/treeOffsets.txt</Instanced>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="testTree2" MeshName="treefixed2.fbx">
+			<Transform>
+				<Position x="0.000000" y="0.000000" z="0.000000"/>
+				<Rotation x="0.000000" y="-0.000000" z="0.000000"/>
+				<Scale x="1.000000" y="1.000000" z="1.000000"/>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">tree/treeAlbedo.bmp</Texture>
+				</Textures>
+				<Metallic>0.000000</Metallic>
+				<Roughness>1.000000</Roughness>
+				<NormalMap>tree/treeNormal.bmp</NormalMap>
+				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
+				<Instanced Amount="20" Offset="5.000000" RandomStrength="0.780000">assets/scenes/treeOffsets2.txt</Instanced>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="testTreeLeaves2" MeshName="" ChildOf="testTree2">
+			<Transform>
+				<Position x="0.000000" y="0.000000" z="0.000000"/>
+				<Rotation x="0.000000" y="-0.000000" z="0.000000"/>
+				<Scale x="1.000000" y="1.000000" z="1.000000"/>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">tree/leaveAlbedo.bmp</Texture>
+				</Textures>
+				<Metallic>0.000000</Metallic>
+				<Roughness>1.000000</Roughness>
+				<AlphaMask>tree/leaveMask.bmp</AlphaMask>
+				<NormalMap>tree/leaveNormal.bmp</NormalMap>
+				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
+				<Instanced Amount="20" Offset="100.000000" RandomStrength="0.780000">assets/scenes/treeOffsets2.txt</Instanced>
 			</Misc>
 		</Mesh>
 		<Mesh FriendlyName="House" MeshName="HOUSE.fbx">
@@ -220,6 +243,115 @@
 				<Roughness>1.000000</Roughness>
 				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
 				<Emmision r="1.000000" g="0.832485" b="0.176991">16.700001</Emmision>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="rock1" MeshName="rock_01.FBX">
+			<Transform>
+				<Position x="56.799999" y="1.800000" z="-57.000000"/>
+				<Rotation x="-71.046768" y="-0.000000" z="0.000000"/>
+				<Scale x="5.000000" y="5.000000" z="5.000000"/>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">rock1/albedo.bmp</Texture>
+				</Textures>
+				<Metallic>0.000000</Metallic>
+				<Roughness>1.000000</Roughness>
+				<RoughnessMap>rock1/rough.bmp</RoughnessMap>
+				<NormalMap>rock1/normal.bmp</NormalMap>
+				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="rock2" MeshName="rock_01.FBX">
+			<Transform>
+				<Position x="13.400000" y="2.200000" z="-22.100000"/>
+				<Rotation x="-134.072128" y="10.313074" z="75.630432"/>
+				<Scale x="1.900000" y="1.800000" z="1.500000"/>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">rock1/albedo.bmp</Texture>
+				</Textures>
+				<Metallic>0.000000</Metallic>
+				<Roughness>1.000000</Roughness>
+				<RoughnessMap>rock1/rough.bmp</RoughnessMap>
+				<NormalMap>rock1/normal.bmp</NormalMap>
+				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="rock3" MeshName="rock_01.FBX">
+			<Transform>
+				<Position x="-112.900002" y="3.300000" z="-57.000000"/>
+				<Rotation x="-81.932961" y="4.583726" z="0.000001"/>
+				<Scale x="5.600000" y="6.800000" z="6.100000"/>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">rock1/albedo.bmp</Texture>
+				</Textures>
+				<Metallic>0.000000</Metallic>
+				<Roughness>1.000000</Roughness>
+				<RoughnessMap>rock1/rough.bmp</RoughnessMap>
+				<NormalMap>rock1/normal.bmp</NormalMap>
+				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="rock4" MeshName="rock_01.FBX">
+			<Transform>
+				<Position x="20.900000" y="1.900000" z="4.300000"/>
+				<Rotation x="0.000000" y="-79.068184" z="0.000000"/>
+				<Scale x="3.200000" y="3.000000" z="2.500000"/>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">rock1/albedo.bmp</Texture>
+				</Textures>
+				<Metallic>0.000000</Metallic>
+				<Roughness>1.000000</Roughness>
+				<RoughnessMap>rock1/rough.bmp</RoughnessMap>
+				<NormalMap>rock1/normal.bmp</NormalMap>
+				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="rock5" MeshName="rock_01.FBX">
+			<Transform>
+				<Position x="55.799999" y="1.700000" z="-61.700001"/>
+				<Rotation x="-93.392120" y="-0.000000" z="0.000000"/>
+				<Scale x="1.600000" y="1.700000" z="2.000000"/>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">rock1/albedo.bmp</Texture>
+				</Textures>
+				<Metallic>0.000000</Metallic>
+				<Roughness>1.000000</Roughness>
+				<RoughnessMap>rock1/rough.bmp</RoughnessMap>
+				<NormalMap>rock1/normal.bmp</NormalMap>
+				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
+			</Misc>
+		</Mesh>
+		<Mesh FriendlyName="barrelone" MeshName="barrel.fbx">
+			<Transform>
+				<Position x="27.900000" y="4.000000" z="-11.200000"/>
+				<Rotation x="0.000000" y="-0.000000" z="0.000000"/>
+				<Scale x="0.085000" y="0.085000" z="0.085000"/>
+			</Transform>
+			<Misc>
+				<UseLighting>true</UseLighting>
+				<Textures>
+					<Texture Ratio="1.000000">barrel/albedo.bmp</Texture>
+				</Textures>
+				<Metallic>0.000000</Metallic>
+				<MetallicMap>barrel/metallic.bmp</MetallicMap>
+				<Roughness>1.000000</Roughness>
+				<RoughnessMap>barrel/rough.bmp</RoughnessMap>
+				<NormalMap>barrel/normal.bmp</NormalMap>
+				<TilingOffset TilingX="1.000000" TilingY="1.000000" OffsetX="0.000000" OffsetY="0.000000"/>
 			</Misc>
 		</Mesh>
 	</Description>

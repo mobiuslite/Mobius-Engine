@@ -521,6 +521,7 @@ bool cVAOManager::LoadFBXModelFromFile(std::string fileName, sModelDrawInfo& dra
         return false;
     }
 
+
     aiMesh* mesh = scene->mMeshes[0];
     LoadMesh(drawInfo, mesh);
 

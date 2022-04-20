@@ -14,6 +14,9 @@ cBowComponent::cBowComponent(cTransform* meshTransform, glm::vec3* cameraPos, cE
     this->aiming = false;
 
     this->entityManager = manager;
+
+    projectilesFiredCount = 0;
+    balloonsPopped = 0;
 }
 
 
@@ -48,6 +51,16 @@ float cBowComponent::GetAimingValue()
     return this->aimingValue;
 }
 
+void cBowComponent::PoppedBalloon()
+{
+    this->balloonsPopped++;
+}
+
+float cBowComponent::GetAccuracy()
+{
+    return (this->balloonsPopped / ((float)this->projectilesFiredCount)) * 100.0f;
+}
+
 void cBowComponent::FireProjectile(glm::vec3 pos, glm::vec3 direction, float aimingValue)
 {
     cEntity* newProj = this->entityManager->CreateEntity();
@@ -55,13 +68,13 @@ void cBowComponent::FireProjectile(glm::vec3 pos, glm::vec3 direction, float aim
     newProj->isGameplayEntity = true;
 
     cMeshRenderer* mesh = newProj->AddComponent<cMeshRenderer>();
-    mesh->meshName = "ISO.ply";
-    mesh->wholeObjectDiffuseRGBA = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    mesh->meshName = "arrow.fbx";
+    mesh->wholeObjectDiffuseRGBA = glm::vec4(0.85f, 0.85f, 0.85f, 1.0f);
     mesh->bUseWholeObjectDiffuseColour = true;
 
     cTransform* trans = newProj->GetComponent<cTransform>();
     trans->position = pos;
-    trans->scale = glm::vec3(0.2f);
+    trans->scale = glm::vec3(0.02f);
 
     cProjectile* proj = new cProjectile(trans, direction, 50.0f * aimingValue + 10.0f);
 
@@ -71,4 +84,6 @@ void cBowComponent::FireProjectile(glm::vec3 pos, glm::vec3 direction, float aim
 
     this->aiming = false;
     this->aimingValue = 0.0f;
+
+    this->projectilesFiredCount++;
 }

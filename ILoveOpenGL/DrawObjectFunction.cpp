@@ -219,6 +219,11 @@ void DrawObject(cEntity* curEntity, glm::mat4 matModel, cShaderManager::cShaderP
     cBasicTextureManager textureManager,  glm::vec3 eyeLocation, sModelDrawInfo* model = nullptr)
 {
     cMeshRenderer* curMesh = curEntity->GetComponent<cMeshRenderer>();
+    if (!curMesh->render)
+    {
+        return;
+    }
+
     cTransform* curTransform = curEntity->GetComponent<cTransform>();
     if (shader->type == RenderType::Normal)
     {

@@ -16,7 +16,7 @@ void cParticleSystem::Update(float dt)
 		if (curPart->ReadyForCleanup())
 		{
 			this->vecParticles.erase(this->vecParticles.begin() + i);
-			curPart->GetEntity()->markedForDeletion = true;
+			curPart->GetEntity()->Delete();
 		}
 		else
 		{

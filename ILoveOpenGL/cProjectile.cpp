@@ -20,6 +20,14 @@ void cProjectile::Update(float dt)
 	{
 		this->velocity += this->GRAVITY * dt;
 	}
+
+	glm::vec3 direction = glm::normalize(this->velocity);
+	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+	glm::mat3 rotationMat = glm::lookAt(transform->position, transform->position + direction, up);
+
+														//Add 90 degrees to fix model rotation
+	transform->SetRotation(glm::quat_cast(rotationMat) * glm::quat(glm::vec3(0.0f, 90.0f, 0.0f)));
 }
 
 cTransform cProjectile::GetProjTransform()
