@@ -299,7 +299,6 @@ void main()
 		}
 
 		pixelNormal.rgb = (pixelNormal.rgb + 1.0f) / 2.0f;
-		pixelWorldPos.rgb = (pixelWorldPos.rgb + 1.0f) / 2.0f;
 
 		return;
 	}

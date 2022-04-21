@@ -79,7 +79,7 @@
 		</Mesh>
 		<Mesh FriendlyName="minecraftGrass" MeshName="grass2.ply">
 			<Transform>
-				<Position x="-10.400000" y="1.875000" z="0.000000"/>
+				<Position x="0" y="0" z="0.000000"/>
 				<Rotation x="0.000000" y="-0.000000" z="0.000000"/>
 				<Scale x="1.000000" y="1.000000" z="1.000000"/>
 			</Transform>

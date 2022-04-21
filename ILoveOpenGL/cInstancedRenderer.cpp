@@ -45,7 +45,7 @@ cInstancedRenderer::cInstancedRenderer(unsigned int amount, float offset, std::s
                 int randomXOffset = (rand() % 200) * randomAmount;
                 int randomZOffset = (rand() % 200) * randomAmount;
 
-                translations.push_back(glm::vec4(x * offset + (randomXOffset / 100.0f), 0.0f, y * offset + (randomZOffset / 100.0f), 1.0f));
+                translations.push_back(glm::vec4(x * offset + (randomXOffset / 100.0f), 1.9f, y * offset + (randomZOffset / 100.0f), 1.0f));
             }
         }
     }
