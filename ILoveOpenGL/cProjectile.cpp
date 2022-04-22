@@ -34,13 +34,11 @@ void cProjectile::Update(float dt)
 
 	if (glm::length(velocity) > 0.0f)
 	{
-		glm::vec3 direction = glm::normalize(this->velocity);
-		glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
-		glm::mat3 rotationMat = glm::lookAt(transform->position, transform->position + direction, up);
+		glm::vec3 dir = glm::normalize(velocity);
 
-		//Add 90 degrees to fix model rotation
-		transform->SetRotation(glm::quat_cast(rotationMat) * glm::quat(glm::vec3(0.0f, 90.0f, 0.0f)));
+		float rotY = -1.f * atan2(dir.z, dir.x);		
+		transform->SetRotation(glm::vec3(0.0f, rotY, 0.0f));
 	}
 }
 

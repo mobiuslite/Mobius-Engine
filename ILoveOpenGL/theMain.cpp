@@ -866,7 +866,6 @@ int main(void)
 
     while (!glfwWindowShouldClose(window))
     {
-        GLenum err;
 
         float useExposure = postProcessing.useExposureToneMapping ? 0.0f : 1.0f;
         glUniform4f(normalShader->uniformLocations["postprocessingVariables"], postProcessing.gamma, postProcessing.exposure, useExposure, postProcessing.bloomThreshhold);
@@ -1233,18 +1232,8 @@ int main(void)
         g_entityManager.Update(deltaTime);
         particleSystem->Update(deltaTime);
         gameplaySystem->Update(deltaTime);
-        
-        while ((err = glGetError()) != GL_NO_ERROR)
-        {
-            std::cout << "WARNING: OpenGL errors found!: " << err << std::endl;
-        }
     }
 
-    GLenum err;
-    while ((err = glGetError()) != GL_NO_ERROR)
-    {
-        std::cout << "WARNING: OpenGL errors found!: " << err << std::endl;
-    }
 
     if (!g_fbo->shutdown())
     {
@@ -1277,12 +1266,6 @@ int main(void)
         buffersToDelete[1] = modelInfo.IndexBufferID;
 
         glDeleteBuffers(2, buffersToDelete);
-
-        GLenum err;
-        while ((err = glGetError()) != GL_NO_ERROR)
-        {
-            std::cout << "WARNING: OpenGL errors found!: " << err << std::endl;
-        }
     }
 
     delete particleSystem;
@@ -1734,7 +1717,7 @@ void SetUpLights()
     //gTheLights.theLights[0].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[0].param1.x = 0;
-    gTheLights.theLights[0].power = 43.0f;
+    gTheLights.theLights[0].power = 35.0f;
     gTheLights.TurnOnLight(0);  // Or this!
     gTheLights.SetUpUniformLocations(program, 0);
 
