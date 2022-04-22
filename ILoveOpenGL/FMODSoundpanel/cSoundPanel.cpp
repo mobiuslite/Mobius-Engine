@@ -180,6 +180,12 @@ void cSoundPanel::SetMusicVolume(float volume)
 		musicChannel->setVolume(volume);
 }
 
+void cSoundPanel::SetBGVolume(float volume)
+{
+	if (volume > 0.0f)
+		backgroundChannel->setVolume(volume);
+}
+
 float cSoundPanel::GetReverb()
 {
 	return reverbProperties->WetLevel;

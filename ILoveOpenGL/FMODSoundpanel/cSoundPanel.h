@@ -50,6 +50,7 @@ public:
 	//Gets and Sets the music's volume
 	float GetMusicVolume();
 	void SetMusicVolume(float volume);
+	void SetBGVolume(float volume);
 
 	//Gets and Sets the music's reverb wetness
 	float GetReverb();

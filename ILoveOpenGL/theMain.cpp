@@ -99,6 +99,9 @@ float pitch = 0.0f;
 float flyCameraSpeed = 7.0f;
 float speedMultiple = 3.0f;
 
+float musicVolume = 0.6f;
+float bgVolume = 0.8f;
+
 cVAOManager* gVAOManager;
 cShaderManager  gShaderManager;
 
@@ -724,6 +727,7 @@ int main(void)
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("bIsPlane", glGetUniformLocation(program, "bIsPlane")));
 
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("reticleTexture", glGetUniformLocation(program, "reticleTexture")));
+    normalShader->uniformLocations.insert(std::pair<std::string, GLint>("showReticle", glGetUniformLocation(program, "showReticle")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("cc", glGetUniformLocation(program, "cc")));
     normalShader->uniformLocations.insert(std::pair<std::string, GLint>("saturation", glGetUniformLocation(program, "saturation")));
 
@@ -1179,12 +1183,14 @@ int main(void)
         {
             DrawGUI(deltaTime);
             brush.SetActive(true);
+            glUniform1f(normalShader->uniformLocations["showReticle"], 0.0f);
         }
         else
         {
             io->WantCaptureKeyboard = false;
             io->WantCaptureMouse = false;
             brush.SetActive(false);
+            glUniform1f(normalShader->uniformLocations["showReticle"], 1.0f);
         }
 
         cMeshRenderer* targetMesh = startingTarget->GetComponent<cMeshRenderer>();
@@ -1680,6 +1686,23 @@ void DrawGUI(float dt)
         ImGui::Begin("Misc");
         ImGui::DragFloat("Mouse Sensitivity", &mouseSense, 0.005f, 0.0001f, 10.0f);
         ImGui::SliderFloat("Camera FOV", &fov, 60.0f, 110.0f);
+        ImGui::Separator();
+
+        float changeVolume = musicVolume;
+        ImGui::SliderFloat("Music Volume", &changeVolume, 0.0f, 1.1f);
+        if (changeVolume != musicVolume)
+        {
+            cSoundPanel::GetInstance()->SetMusicVolume(changeVolume);
+            musicVolume = changeVolume;
+        }
+
+        changeVolume = bgVolume;
+        ImGui::SliderFloat("Wind Volume", &changeVolume, 0.0f, 1.1f);
+        if (changeVolume != bgVolume)
+        {
+            cSoundPanel::GetInstance()->SetBGVolume(changeVolume);
+            bgVolume = changeVolume;
+        }
 
         ImGui::Text(std::string("Frame time: %f").c_str(), dt);
 
@@ -1713,11 +1736,11 @@ void SetUpLights()
     gTheLights.theLights[0].name = "Outside light";
     gTheLights.theLights[0].position = glm::vec4(13.27f, 12.8f, -20.16f, 1.0f);
     gTheLights.theLights[0].diffuse = glm::vec4(1.0f, 0.6f, .05f, 1.0f);
-    gTheLights.theLights[0].atten = glm::vec4(0.2f, 0.1f, 0.025f, 400.0f);
+    gTheLights.theLights[0].atten = glm::vec4(0.33f, 0.1f, 0.025f, 400.0f);
     //gTheLights.theLights[0].direction = glm::vec4(0.0f, -1.0f, 1.0f, 1.0f);
     //gTheLights.theLights[0].specular = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
     gTheLights.theLights[0].param1.x = 0;
-    gTheLights.theLights[0].power = 35.0f;
+    gTheLights.theLights[0].power = 380.0f;
     gTheLights.TurnOnLight(0);  // Or this!
     gTheLights.SetUpUniformLocations(program, 0);
 

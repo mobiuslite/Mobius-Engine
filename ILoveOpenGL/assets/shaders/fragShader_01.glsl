@@ -92,6 +92,7 @@ uniform sampler2D texture_LightSpacePos;
 uniform sampler2D texture_Emmision;
 
 uniform sampler2D reticleTexture;
+uniform bool showReticle;
 
 uniform sampler2D texLightpassColorBuf;
 uniform sampler2D bloomMapColorBuf;
@@ -226,13 +227,15 @@ void main()
 
 		pixelColour.rgb += cc.rgb * cc.a;
 
-		vec3 reticlePixelColor = texture(reticleTexture, UVLookup).rgb;
-		if (reticlePixelColor.r > 0.1f)
+		if(showReticle)
 		{
-			pixelColour.rgb = reticlePixelColor;
-			
+			vec3 reticlePixelColor = texture(reticleTexture, UVLookup).rgb;
+			if (reticlePixelColor.r > 0.1f)
+			{
+				pixelColour.rgb = reticlePixelColor;
+				
+			}
 		}
-
 		return;
 	}
 
@@ -475,6 +478,8 @@ vec3 PBR(vec3 albedo, vec3 normal, vec3 worldPos, vec4 lightSpacePos, float roug
 			{
 				continue;
 			}
+
+			attenuation *= 1.0f/distanceToLight;
 		}
 
 		vec3 L = normalize(lightVec);

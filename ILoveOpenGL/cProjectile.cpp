@@ -34,7 +34,7 @@ void cProjectile::Update(float dt)
 
 	if (glm::length(velocity) > 0.0f)
 	{
-
+		//Rotate arrow so it is aligned with the bow when firing
 		glm::vec3 dir = glm::normalize(velocity);
 
 		float rotY = -1.f * atan2(dir.z, dir.x);		
