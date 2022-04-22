@@ -3,6 +3,8 @@ Song used: Can You Really Call This A Hotel - Undertale
 
 Video link: 
 
+ESC to toggle mouse lock
+
 GAME CONTROLS:
 	*WASD to move around
 	*Mouse to move camera
@@ -13,4 +15,3 @@ DEBUG CONTROLS: (Press ` to activate)
 	*Hold right click to move camera
 	*WASD/EQ to move camera
 	*Left click when brush is enabled to paint instanced renderers
-	*ESC to toggle mouse lock

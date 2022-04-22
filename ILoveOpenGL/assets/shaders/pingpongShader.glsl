@@ -23,27 +23,25 @@ void main()
 	UVLookup.x = gl_FragCoord.x / screenWidthHeight.x;
 	UVLookup.y = gl_FragCoord.y / screenWidthHeight.y;
     
-    vec2 tex_offset = 1.0 / textureSize(bloomMap, 0) * bloomSize; // gets size of single texel
-    vec3 result = texture(bloomMap, UVLookup).rgb * weight[0]; // current fragment's contribution
+    //Get size of a pixel
+    vec2 texOffset = 1.0 / textureSize(bloomMap, 0) * bloomSize;
+    vec3 result = texture(bloomMap, UVLookup).rgb * weight[0];
+
     if(horizontal)
     {
         for(int i = 1; i < 5; ++i)
         {
-            result += texture(bloomMap, UVLookup + vec2(tex_offset.x * i, 0.0)).rgb * weight[i];
-            result += texture(bloomMap, UVLookup - vec2(tex_offset.x * i, 0.0)).rgb * weight[i];
+            result += texture(bloomMap, UVLookup + vec2(texOffset.x * i, 0.0)).rgb * weight[i];
+            result += texture(bloomMap, UVLookup - vec2(texOffset.x * i, 0.0)).rgb * weight[i];
         }
     }
     else
     {
         for(int i = 1; i < 5; ++i)
         {
-            result += texture(bloomMap, UVLookup + vec2(0.0, tex_offset.y * i)).rgb * weight[i];
-            result += texture(bloomMap, UVLookup - vec2(0.0, tex_offset.y * i)).rgb * weight[i];
+            result += texture(bloomMap, UVLookup + vec2(0.0, texOffset.y * i)).rgb * weight[i];
+            result += texture(bloomMap, UVLookup - vec2(0.0, texOffset.y * i)).rgb * weight[i];
         }
     }
     pixelColour = vec4(result, 1.0);
-   //pixelColour *= 0.01f;
-   //pixelColour += vec4(1.0f, 0.0f, 0.0f, 1.0f);
-
-    //pixelColour = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 }

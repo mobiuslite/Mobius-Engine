@@ -99,8 +99,8 @@ float pitch = 0.0f;
 float flyCameraSpeed = 7.0f;
 float speedMultiple = 3.0f;
 
-float musicVolume = 0.6f;
-float bgVolume = 0.8f;
+float musicVolume = 0.27f;
+float bgVolume = 0.5f;
 
 cVAOManager* gVAOManager;
 cShaderManager  gShaderManager;
@@ -416,6 +416,8 @@ MessageCallback(GLenum source,
 
 int main(void)
 {
+    cSoundPanel::GetInstance()->SetBGVolume(bgVolume);
+
     GLFWwindow* window;
 //    GLuint vertex_buffer = 0;     // ** NOW in VAO Manager **
 
@@ -868,6 +870,8 @@ int main(void)
 
     CreateStartingTarget();
 
+    std::cout << "Done loading!" << std::endl;
+
     while (!glfwWindowShouldClose(window))
     {
 
@@ -1215,6 +1219,7 @@ int main(void)
                 {
                     cSoundPanel::GetInstance()->PlayMusic(musicList[0].name);
                     cSoundPanel::GetInstance()->SetPauseMusic(false);
+                    cSoundPanel::GetInstance()->SetMusicVolume(musicVolume);
                 }
             }          
         }

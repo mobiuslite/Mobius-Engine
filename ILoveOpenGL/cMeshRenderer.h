@@ -10,7 +10,7 @@
 struct Texture
 {
 	std::string name;
-	float ratio;
+	float ratio = 1.0f;
 };
 
 class cMeshRenderer : public cComponent

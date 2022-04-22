@@ -158,12 +158,12 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
 	//Smooth Shadows
 	float shadow = 0.0f;
 	vec2 texelSize = 1.0 / textureSize(shadowMapColorBuf, 0);
-	for (int x = -1; x <= 1; ++x)
+	for (int x = -1; x <= 1; x++)
 	{
-		for (int y = -1; y <= 1; ++y)
+		for (int y = -1; y <= 1; y++)
 		{
-			float pcfDepth = texture(shadowMapColorBuf, projCoords.xy + vec2(x, y) * texelSize).r;
-			shadow += currentDepth - shadowBias > pcfDepth ? 1.0 : 0.0;
+			float pcfSmoothDepth = texture(shadowMapColorBuf, projCoords.xy + vec2(x, y) * texelSize).r;
+			shadow += currentDepth - shadowBias > pcfSmoothDepth ? 1.0 : 0.0;
 		}
 	}
 	shadow /= 9.0;
@@ -176,17 +176,12 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
 
 void main()
 {
-	// This is the pixel colour on the screen.
-	// Just ONE pixel, though.
-	//pixelColour = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-
 	vec4 normals = fNormal;
 	vec4 vertexDiffuseColour = fVertexColour;
 
 	float pixelRoughness = roughness;
 	float pixelMetallic = metallic;
 
-	//pixelFirstPass = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 	if(passNumber == RENDER_PASS_2_EFFECTS_PASS)
 	{
 		vec3 finalColour = vec3(0.0f, 0.0f, 0.0f);
@@ -221,6 +216,7 @@ void main()
 		pixelColour.rgb = mapped;
 		pixelColour.a = 1.0f;
 
+		//Saturation algorithm
 		const vec3 W = vec3(0.2125, 0.7154, 0.0721);
 		vec3 intensity = vec3(dot(pixelColour.rgb, W));
 		pixelColour.rgb = mix(intensity, pixelColour.rgb, saturation);
@@ -262,7 +258,7 @@ void main()
 		pixelLightSpacePos = texture(texture_LightSpacePos, UVLookup).rgba;
 		//pixelSpecular = texture(texture_Specular, UVLookup).rgba;
 
-		//w value too metallic
+		//w value = metallic
 		pixelEmmision = texture(texture_Emmision, UVLookup).rgba;
 		float lightingMetallic = pixelEmmision.w;
 
@@ -276,12 +272,8 @@ void main()
 		}
 		else
 		{
-			//pixelColour = calcualteLightContrib( pixelMatColor.rgb, pixelNormal.xyz, pixelWorldPos.xyz, pixelSpecular.rgba, pixelLightSpacePos);		
-			//pixelColour.a = 1.0f;
-
 			vec3 pbrColor = PBR(pixelMatColor.rgb, pixelNormal.xyz, pixelWorldPos.xyz, pixelLightSpacePos, lightingRoughness, lightingMetallic);
-			
-			
+					
 			vec3 ambient = ambientPower * pixelMatColor.rgb * ao;
 			vec3 color = ambient + pbrColor;
 			
@@ -315,7 +307,6 @@ void main()
 	if(bUseSkybox)
 	{	
 		vec4 skyBoxTexture = texture(skyBox, fVertPosition.xyz);
-		//pixelColour = skyBoxTexture;
 
 		pixelMatColor = pow(vec4(skyBoxTexture.rgb * brightness, 1.0f), vec4(postprocessingVariables.x));	
 		pixelMatColor.w = 1.0f;
@@ -329,9 +320,7 @@ void main()
 	if(bUseAlphaMask)
 	{
 		vec3 alphaMaskTexture = texture(alphaMask, vec2((fUVx2.x * tilingAndOffset.x) + tilingAndOffset.z, (fUVx2.y * tilingAndOffset.y) + tilingAndOffset.w)).rgb;
-
 		float alphaValue = alphaMaskTexture.r;
-		//pixelColour.a = alphaValue;
 
 		if(alphaValue < 0.1f)
 		{
@@ -373,7 +362,6 @@ void main()
 		return;
 	}
 
-	//ST = UV
 	if(textureRatios.x >  0.1f)
 	{
 		vec3 textureColour = (texture(texture_00, vec2((fUVx2.x * tilingAndOffset.x) + tilingAndOffset.z, (fUVx2.y * tilingAndOffset.y) + tilingAndOffset.w)).rgb * textureRatios.x);
@@ -381,13 +369,11 @@ void main()
 		vertexDiffuseColour = vec4(textureColour, 1.0f);
 	}
 	
-	// Use model vertex colours or not?
 	if ( bUseWholeObjectDiffuseColour )
 	{
 		vertexDiffuseColour = wholeObjectDiffuseColour;
 	}
 	
-	// Use debug colour?
 	if ( bUseDebugColour )
 	{
 		// Overwrite the vertex colour with this debug colour
@@ -433,24 +419,20 @@ void main()
 	pixelLightSpacePos = fLightSpacePos;
 
 	pixelEmmision = vec4(emmision, pixelMetallic);
-
-	//if(bUseSpecular){
-	//	//pixelSpecular = wholeObjectSpecularColour.rgba;
-	//	pixelSpecular = wholeObjectSpecularColour;
-	//}else{
-	//	pixelSpecular = vec4(0.0f, 0.0f, 0.0f, 0.0f);
-	//}	
 };
 
 vec3 PBR(vec3 albedo, vec3 normal, vec3 worldPos, vec4 lightSpacePos, float roughness, float metallic)
 {
 	vec3 N = normalize(normal);
+
+	//Direction of fragment to camera
 	vec3 V = normalize(eyeLocation.xyz - worldPos);
 
-	vec3 F0 = vec3(0.04);
+	//Fresnel Surface reflection at zero
+	vec3 F0 = vec3(0.04f);
 	F0 = mix(F0, albedo, metallic);
 
-	vec3 finalColor = vec3(0.0);
+	vec3 finalColor = vec3(0.0f);
 	for (int index = 0; index < NUMBEROFLIGHTS; index++)
 	{
 		if (theLights[index].param2.x == 0.0f)
@@ -488,20 +470,20 @@ vec3 PBR(vec3 albedo, vec3 normal, vec3 worldPos, vec4 lightSpacePos, float roug
 
 		float NDF = TrowbridgeGGXNormalDist(N, H, roughness);
 		float G = SmithGeometry(N, V, L, roughness);
-		vec3 F = schlickFresnel(max(dot(V, H), 0.0), F0);
+		vec3 F = schlickFresnel(max(dot(V, H), 0.0f), F0);
 
 		vec3 kS = F;
-		vec3 kD = (vec3(1.0) - kS) * (1.0 - metallic);
+		vec3 kD = (vec3(1.0f) - kS) * (1.0f - metallic);
 
 		//Calculate Cook-Torrance specular BRDF
 		vec3 numerator = NDF * G * F;
-		float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+		float denominator = 4.0f * max(dot(N, V), 0.0f) * max(dot(N, L), 0.0f) + 0.0001f;
 		vec3 specular = numerator / denominator;
 
-		float NdotL = max(dot(N, L), 0.0);
+		float NdotL = max(dot(N, L), 0.0f);
 
 		float shadow = 0.0f;
-		if (intLightType == DIRECTIONAL_LIGHT_TYPE)		// = 2
+		if (intLightType == DIRECTIONAL_LIGHT_TYPE)
 		{
 			shadow = ShadowCalculation(lightSpacePos, N, L);
 		}
@@ -511,15 +493,15 @@ vec3 PBR(vec3 albedo, vec3 normal, vec3 worldPos, vec4 lightSpacePos, float roug
 	return finalColor;
 }
 
-float TrowbridgeGGXNormalDist(vec3 N, vec3 H, float roughness)
+float TrowbridgeGGXNormalDist(vec3 normal, vec3 halfwayVector, float roughness)
 {
 	float a = roughness * roughness;
 	float aSquared = a * a;
-	float NdotH = max(dot(N, H), 0.0);
-	float NdotH2 = NdotH * NdotH;
+	float NdotH = max(dot(normal, halfwayVector), 0.0f);
+	float NdotHSquared = NdotH * NdotH;
 
 	float num = aSquared;
-	float denom = (NdotH2 * (aSquared - 1.0) + 1.0);
+	float denom = (NdotHSquared * (aSquared - 1.0f) + 1.0f);
 	denom = PI * denom * denom;
 
 	return num / denom;
@@ -527,25 +509,25 @@ float TrowbridgeGGXNormalDist(vec3 N, vec3 H, float roughness)
 
 float SchlickGGXGeometry(float NdotV, float roughness)
 {
-	float r = (roughness + 1.0);
-	float k = (r * r) / 8.0;
+	float r = (roughness + 1.0f);
+	float k = (r * r) / 8.0f;
 
 	float num = NdotV;
-	float denom = NdotV * (1.0 - k) + k;
+	float denom = NdotV * (1.0f - k) + k;
 
 	return num / denom;
 }
-float SmithGeometry(vec3 N, vec3 V, vec3 L, float roughness)
+float SmithGeometry(vec3 normal, vec3 fragmentDirection, vec3 lightVec, float roughness)
 {
-	float NdotV = max(dot(N, V), 0.0);
-	float NdotL = max(dot(N, L), 0.0);
+	float NdotV = max(dot(normal, fragmentDirection), 0.0f);
+	float NdotL = max(dot(normal, lightVec), 0.0f);
 	float ggx2 = SchlickGGXGeometry(NdotV, roughness);
 	float ggx1 = SchlickGGXGeometry(NdotL, roughness);
 
 	return ggx1 * ggx2;
 }
 
-vec3 schlickFresnel(float cosTheta, vec3 F0)
+vec3 schlickFresnel(float cosineTheta, vec3 F0)
 {
-	return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+	return F0 + (1.0f - F0) * pow(clamp(1.0f - cosineTheta, 0.0f, 1.0f), 5.0f);
 }
