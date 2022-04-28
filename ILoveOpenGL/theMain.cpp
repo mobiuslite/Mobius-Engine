@@ -22,36 +22,36 @@
 #include <vector>       // "smart array"
 #include <fstream>      // C++ file I-O library (look like any other stream)
 
-#include "cVAOManager.h"
-#include "cShaderManager.h"
+#include "Managers/cVAOManager.h"
+#include "Managers/cShaderManager.h"
 
-#include "cLightManager.h"
-#include "cLightHelper.h"
+#include "Managers/cLightManager.h"
+#include "Managers/cLightHelper.h"
 #include "SceneLoader/cSceneLoader.h"
 #include "SceneLoader/sModel.h"
 
 #include "cEntity.h"
-#include "cBasicTextureManager/cBasicTextureManager.h"
+#include "Managers/cBasicTextureManager/cBasicTextureManager.h"
 #include <algorithm>
 
-#include "cFBO/cFBO.h"
-#include "cMeshRenderer.h"
-#include "cEntityManager.h"
-#include "cTransform.h"
-#include "cTextureViewer.h"
-#include "cPingPongFBOs.h"
-#include "cShadowDepthFBO.h"
+#include "FBOS/cFBO/cFBO.h"
+#include "Components/cMeshRenderer.h"
+#include "Managers/cEntityManager.h"
+#include "Components/cTransform.h"
+#include "Components/cTextureViewer.h"
+#include "FBOs/cPingPongFBOs.h"
+#include "FBOs/cShadowDepthFBO.h"
 
 #include "RenderType.h"
-#include "cInstancedRenderer.h"
+#include "Components/cInstancedRenderer.h"
 #include "cInstancedBrush.h"
 #include <chrono>
-#include "cBowComponent.h"
-#include "cProjectile.h"
+#include "Components/cBowComponent.h"
+#include "Components/cProjectile.h"
 #include "FMODSoundpanel/cSoundPanel.h"
-#include "cTarget.h"
-#include "cParticleSystem.h"
-#include "cGameplaySystem.h"
+#include "Components/cTarget.h"
+#include "Systems/cParticleSystem.h"
+#include "Systems/cGameplaySystem.h"
 
 struct PostProcessingInfo
 {

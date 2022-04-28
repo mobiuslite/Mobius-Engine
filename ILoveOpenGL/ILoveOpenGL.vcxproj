@@ -24,6 +24,7 @@
     <ProjectGuid>{80afcf61-8852-4204-a0c2-3876b6ea17bf}</ProjectGuid>
     <RootNamespace>ILoveOpenGL</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>BalloonGame</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -153,33 +154,20 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AnimationSystem.cpp" />
-    <ClCompile Include="cBasicTextureManager\C24BitBMPpixel.cpp" />
-    <ClCompile Include="cBasicTextureManager\cBasicTextureManager.cpp" />
-    <ClCompile Include="cBasicTextureManager\CTextureFromBMP.cpp" />
-    <ClCompile Include="cBowComponent.cpp" />
     <ClCompile Include="cEntity.cpp" />
-    <ClCompile Include="cEntityManager.cpp" />
-    <ClCompile Include="cFBO\cFBO.cpp" />
     <ClCompile Include="cInstancedBrush.cpp" />
-    <ClCompile Include="cLightHelper.cpp" />
-    <ClCompile Include="cLightManager.cpp" />
-    <ClCompile Include="cMeshRenderer.cpp" />
-    <ClCompile Include="cParticle.cpp" />
-    <ClCompile Include="cParticleSystem.cpp" />
-    <ClCompile Include="cPingPongFBOs.cpp" />
-    <ClCompile Include="cProjectile.cpp" />
-    <ClCompile Include="cGameplaySystem.cpp" />
-    <ClCompile Include="cShader.cpp" />
-    <ClCompile Include="cShaderManager.cpp" />
-    <ClCompile Include="cShadowDepthFBO.cpp" />
-    <ClCompile Include="cTarget.cpp" />
-    <ClCompile Include="cTextureViewer.cpp" />
-    <ClCompile Include="cTransform.cpp" />
-    <ClCompile Include="cInstancedRenderer.cpp" />
-    <ClCompile Include="cVAOManager.cpp" />
+    <ClCompile Include="Components\cBowComponent.cpp" />
+    <ClCompile Include="Components\cInstancedRenderer.cpp" />
+    <ClCompile Include="Components\cMeshRenderer.cpp" />
+    <ClCompile Include="Components\cParticle.cpp" />
+    <ClCompile Include="Components\cProjectile.cpp" />
+    <ClCompile Include="Components\cTarget.cpp" />
+    <ClCompile Include="Components\cTextureViewer.cpp" />
+    <ClCompile Include="Components\cTransform.cpp" />
     <ClCompile Include="DrawObjectFunction.cpp" />
-    <ClCompile Include="FlyCamera\cFlyCamera.cpp" />
+    <ClCompile Include="FBOs\cFBO\cFBO.cpp" />
+    <ClCompile Include="FBOs\cPingPongFBOs.cpp" />
+    <ClCompile Include="FBOs\cShadowDepthFBO.cpp" />
     <ClCompile Include="FMODSoundpanel\cSoundPanel.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="include\imgui\imgui.cpp" />
@@ -189,48 +177,58 @@
     <ClCompile Include="include\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="include\imgui\imgui_tables.cpp" />
     <ClCompile Include="include\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Managers\cBasicTextureManager\C24BitBMPpixel.cpp" />
+    <ClCompile Include="Managers\cBasicTextureManager\cBasicTextureManager.cpp" />
+    <ClCompile Include="Managers\cBasicTextureManager\CTextureFromBMP.cpp" />
+    <ClCompile Include="Managers\cEntityManager.cpp" />
+    <ClCompile Include="Managers\cLightHelper.cpp" />
+    <ClCompile Include="Managers\cLightManager.cpp" />
+    <ClCompile Include="Managers\cShader.cpp" />
+    <ClCompile Include="Managers\cShaderManager.cpp" />
+    <ClCompile Include="Managers\cVAOManager.cpp" />
     <ClCompile Include="SceneLoader\cSceneLoader.cpp" />
     <ClCompile Include="SceneLoader\cSceneSaver.cpp" />
+    <ClCompile Include="Systems\AnimationSystem.cpp" />
+    <ClCompile Include="Systems\cGameplaySystem.cpp" />
+    <ClCompile Include="Systems\cParticleSystem.cpp" />
     <ClCompile Include="theMain.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AnimationSystem.h" />
-    <ClInclude Include="cAnimation.h" />
-    <ClInclude Include="cBasicTextureManager\C24BitBMPpixel.h" />
-    <ClInclude Include="cBasicTextureManager\cBasicTextureManager.h" />
-    <ClInclude Include="cBasicTextureManager\CTextureFromBMP.h" />
-    <ClInclude Include="cBowComponent.h" />
-    <ClInclude Include="cComponent.h" />
     <ClInclude Include="cEntity.h" />
-    <ClInclude Include="cEntityManager.h" />
-    <ClInclude Include="cFBO\cFBO.h" />
     <ClInclude Include="cInstancedBrush.h" />
-    <ClInclude Include="cKeyframe.h" />
-    <ClInclude Include="cLightHelper.h" />
-    <ClInclude Include="cLightManager.h" />
-    <ClInclude Include="cMeshRenderer.h" />
-    <ClInclude Include="cParticle.h" />
-    <ClInclude Include="cParticleSystem.h" />
-    <ClInclude Include="cPingPongFBOs.h" />
-    <ClInclude Include="cProjectile.h" />
-    <ClInclude Include="cGameplaySystem.h" />
-    <ClInclude Include="cShaderManager.h" />
-    <ClInclude Include="cTarget.h" />
-    <ClInclude Include="cTextureViewer.h" />
-    <ClInclude Include="cTransform.h" />
-    <ClInclude Include="cInstancedRenderer.h" />
-    <ClInclude Include="cVAOManager.h" />
-    <ClInclude Include="FlyCamera\cFlyCamera.h" />
-    <ClInclude Include="FlyCamera\iCamera.h" />
+    <ClInclude Include="Components\cAnimation.h" />
+    <ClInclude Include="Components\cBowComponent.h" />
+    <ClInclude Include="Components\cComponent.h" />
+    <ClInclude Include="Components\cInstancedRenderer.h" />
+    <ClInclude Include="Components\cKeyframe.h" />
+    <ClInclude Include="Components\cMeshRenderer.h" />
+    <ClInclude Include="Components\cParticle.h" />
+    <ClInclude Include="Components\cProjectile.h" />
+    <ClInclude Include="Components\cTarget.h" />
+    <ClInclude Include="Components\cTextureViewer.h" />
+    <ClInclude Include="Components\cTransform.h" />
+    <ClInclude Include="FBOs\cFBO\cFBO.h" />
+    <ClInclude Include="FBOs\cPingPongFBOs.h" />
+    <ClInclude Include="FBOs\cShadowDepthFBO.h" />
     <ClInclude Include="FMODSoundpanel\cSoundPanel.h" />
     <ClInclude Include="GLCommon.h" />
-    <ClInclude Include="cShadowDepthFBO.h" />
+    <ClInclude Include="Managers\cBasicTextureManager\C24BitBMPpixel.h" />
+    <ClInclude Include="Managers\cBasicTextureManager\cBasicTextureManager.h" />
+    <ClInclude Include="Managers\cBasicTextureManager\CTextureFromBMP.h" />
+    <ClInclude Include="Managers\cEntityManager.h" />
+    <ClInclude Include="Managers\cLightHelper.h" />
+    <ClInclude Include="Managers\cLightManager.h" />
+    <ClInclude Include="Managers\cShaderManager.h" />
+    <ClInclude Include="Managers\cVAOManager.h" />
     <ClInclude Include="RenderType.h" />
     <ClInclude Include="SceneLoader\cSceneLoader.h" />
     <ClInclude Include="SceneLoader\sModel.h" />
     <ClInclude Include="sVertex_types.h" />
+    <ClInclude Include="Systems\AnimationSystem.h" />
+    <ClInclude Include="Systems\cGameplaySystem.h" />
+    <ClInclude Include="Systems\cParticleSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\fragShader_01.glsl" />

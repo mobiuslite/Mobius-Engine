@@ -4,9 +4,9 @@
 
 #include <rapidxml/rapidxml.hpp>
 #include <rapidxml/rapidxml_print.hpp>
-#include "../cMeshRenderer.h"
-#include "../cTransform.h"
-#include "../cInstancedRenderer.h"
+#include "../Components/cMeshRenderer.h"
+#include "../Components/cTransform.h"
+#include "../Components/cInstancedRenderer.h"
 
 bool cSceneLoader::SaveScene(std::string sceneName, glm::vec3 cameraPos, cEntityManager* entityManager)
 {

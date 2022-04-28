@@ -4,10 +4,10 @@
 #include <iostream>
 #include <rapidxml/rapidxml.hpp>
 #include <rapidxml/rapidxml_utils.hpp>
-#include "../cMeshRenderer.h"
-#include "../cTransform.h"
-#include "../cTextureViewer.h"
-#include "../cInstancedRenderer.h"
+#include "../Components/cMeshRenderer.h"
+#include "../Components/cTransform.h"
+#include "../Components/cTextureViewer.h"
+#include "../Components/cInstancedRenderer.h"
 
 cSceneLoader::cSceneLoader()
 {

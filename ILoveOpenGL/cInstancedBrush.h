@@ -1,7 +1,7 @@
 #pragma once
-#include "cInstancedRenderer.h"
+#include "../Components/cInstancedRenderer.h"
 
-
+//Allows you to paint instanced entities in the world and save them to a file
 class cInstancedBrush
 {
 public:

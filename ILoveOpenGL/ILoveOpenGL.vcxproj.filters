@@ -13,41 +13,8 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="ShaderManager">
-      <UniqueIdentifier>{df1bac7f-a7c2-40db-a31b-19141363b6e2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Meshes">
-      <UniqueIdentifier>{97271fe8-145c-40c2-ad0b-eba0201aa77d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Meshes\VAOManager">
-      <UniqueIdentifier>{1ec42f94-d5b2-4551-b7d7-4819e0f63e76}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Light Manager">
-      <UniqueIdentifier>{a9405f2c-fa1e-4829-8652-592c008be91e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ShaderManager\Shaders">
-      <UniqueIdentifier>{c95199ec-e234-4186-9de7-d8481abf3a6f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="SceneLoader">
       <UniqueIdentifier>{fedd6553-1097-4869-a176-e04dc206f482}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Light Manager\Light Helper">
-      <UniqueIdentifier>{e83892ad-eecf-47b5-b100-ae385bcad161}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="FlyCamera">
-      <UniqueIdentifier>{c0669388-5f07-4574-a043-781c56dff33a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Scenes">
-      <UniqueIdentifier>{a14a828c-aab5-4685-9430-14cc342fb7ea}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="TextureManager">
-      <UniqueIdentifier>{693849a0-f456-4547-bb6f-309ad33ab2cf}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Physics">
-      <UniqueIdentifier>{8ab99319-993c-4efb-97f6-f92339a3fd5e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="EntityManager">
-      <UniqueIdentifier>{6ab8a480-2093-4171-a680-2638be3a2cf7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Components">
       <UniqueIdentifier>{b16b0de4-32c3-450c-96f7-c2805d1970fa}</UniqueIdentifier>
@@ -55,14 +22,8 @@
     <Filter Include="FBO">
       <UniqueIdentifier>{fa34a9bd-5ca8-45b2-9279-3fbe92b84344}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Animation">
-      <UniqueIdentifier>{632289ac-3db1-46b3-8453-3f01754da8ea}</UniqueIdentifier>
-    </Filter>
     <Filter Include="imgui">
       <UniqueIdentifier>{4e14f667-53e2-4cb5-a6b4-becfe81c25b8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ShaderManager\Shaders\Shadow">
-      <UniqueIdentifier>{5bc99248-c220-4148-91e6-dec90a848b2e}</UniqueIdentifier>
     </Filter>
     <Filter Include="Components\Brush">
       <UniqueIdentifier>{cbb4450f-5ebf-4270-88ec-23d0b62dc9a9}</UniqueIdentifier>
@@ -70,11 +31,44 @@
     <Filter Include="FMOD">
       <UniqueIdentifier>{d28fec6a-f0e6-4d9d-a973-1e4e0f83585d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Particles">
-      <UniqueIdentifier>{589300f5-4c09-4414-8592-359bf515e4ac}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Systems">
       <UniqueIdentifier>{1a74e764-38cb-4f9f-a993-bf0b8bb82880}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Managers">
+      <UniqueIdentifier>{1d10e3e8-04f4-40d8-a4d0-853c9a8b83c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Managers\VAOManager">
+      <UniqueIdentifier>{1ec42f94-d5b2-4551-b7d7-4819e0f63e76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Managers\ShaderManager">
+      <UniqueIdentifier>{df1bac7f-a7c2-40db-a31b-19141363b6e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Managers\ShaderManager\Shaders">
+      <UniqueIdentifier>{c95199ec-e234-4186-9de7-d8481abf3a6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Managers\ShaderManager\Shaders\Shadow">
+      <UniqueIdentifier>{5bc99248-c220-4148-91e6-dec90a848b2e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Managers\TextureManager">
+      <UniqueIdentifier>{693849a0-f456-4547-bb6f-309ad33ab2cf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Managers\Light Manager">
+      <UniqueIdentifier>{a9405f2c-fa1e-4829-8652-592c008be91e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Managers\Light Manager\Light Helper">
+      <UniqueIdentifier>{e83892ad-eecf-47b5-b100-ae385bcad161}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Managers\EntityManager">
+      <UniqueIdentifier>{6ab8a480-2093-4171-a680-2638be3a2cf7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Systems\Animation">
+      <UniqueIdentifier>{632289ac-3db1-46b3-8453-3f01754da8ea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Systems\Particles">
+      <UniqueIdentifier>{589300f5-4c09-4414-8592-359bf515e4ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SceneLoader\Scenes">
+      <UniqueIdentifier>{a14a828c-aab5-4685-9430-14cc342fb7ea}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -84,62 +78,17 @@
     <ClCompile Include="glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cShader.cpp">
-      <Filter>ShaderManager</Filter>
-    </ClCompile>
-    <ClCompile Include="cShaderManager.cpp">
-      <Filter>ShaderManager</Filter>
-    </ClCompile>
-    <ClCompile Include="cVAOManager.cpp">
-      <Filter>Meshes\VAOManager</Filter>
-    </ClCompile>
-    <ClCompile Include="cLightManager.cpp">
-      <Filter>Light Manager</Filter>
-    </ClCompile>
     <ClCompile Include="SceneLoader\cSceneLoader.cpp">
       <Filter>SceneLoader</Filter>
     </ClCompile>
     <ClCompile Include="SceneLoader\cSceneSaver.cpp">
       <Filter>SceneLoader</Filter>
     </ClCompile>
-    <ClCompile Include="cLightHelper.cpp">
-      <Filter>Light Manager\Light Helper</Filter>
-    </ClCompile>
     <ClCompile Include="DrawObjectFunction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FlyCamera\cFlyCamera.cpp">
-      <Filter>FlyCamera</Filter>
-    </ClCompile>
-    <ClCompile Include="cBasicTextureManager\C24BitBMPpixel.cpp">
-      <Filter>TextureManager</Filter>
-    </ClCompile>
-    <ClCompile Include="cBasicTextureManager\cBasicTextureManager.cpp">
-      <Filter>TextureManager</Filter>
-    </ClCompile>
-    <ClCompile Include="cBasicTextureManager\CTextureFromBMP.cpp">
-      <Filter>TextureManager</Filter>
-    </ClCompile>
-    <ClCompile Include="cEntityManager.cpp">
-      <Filter>EntityManager</Filter>
-    </ClCompile>
     <ClCompile Include="cEntity.cpp">
-      <Filter>EntityManager</Filter>
-    </ClCompile>
-    <ClCompile Include="cFBO\cFBO.cpp">
-      <Filter>FBO</Filter>
-    </ClCompile>
-    <ClCompile Include="cTransform.cpp">
-      <Filter>Components</Filter>
-    </ClCompile>
-    <ClCompile Include="cMeshRenderer.cpp">
-      <Filter>Components</Filter>
-    </ClCompile>
-    <ClCompile Include="AnimationSystem.cpp">
-      <Filter>Animation</Filter>
-    </ClCompile>
-    <ClCompile Include="cTextureViewer.cpp">
-      <Filter>Components</Filter>
+      <Filter>Managers\EntityManager</Filter>
     </ClCompile>
     <ClCompile Include="include\imgui\imgui.cpp">
       <Filter>imgui</Filter>
@@ -162,55 +111,88 @@
     <ClCompile Include="include\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="cPingPongFBOs.cpp">
-      <Filter>FBO</Filter>
-    </ClCompile>
-    <ClCompile Include="cShadowDepthFBO.cpp">
-      <Filter>FBO</Filter>
-    </ClCompile>
-    <ClCompile Include="cInstancedRenderer.cpp">
-      <Filter>Components</Filter>
-    </ClCompile>
     <ClCompile Include="cInstancedBrush.cpp">
       <Filter>Components\Brush</Filter>
-    </ClCompile>
-    <ClCompile Include="cBowComponent.cpp">
-      <Filter>Components</Filter>
-    </ClCompile>
-    <ClCompile Include="cProjectile.cpp">
-      <Filter>Components</Filter>
     </ClCompile>
     <ClCompile Include="FMODSoundpanel\cSoundPanel.cpp">
       <Filter>FMOD</Filter>
     </ClCompile>
-    <ClCompile Include="cTarget.cpp">
+    <ClCompile Include="Components\cBowComponent.cpp">
       <Filter>Components</Filter>
     </ClCompile>
-    <ClCompile Include="cParticle.cpp">
+    <ClCompile Include="Components\cInstancedRenderer.cpp">
       <Filter>Components</Filter>
     </ClCompile>
-    <ClCompile Include="cParticleSystem.cpp">
-      <Filter>Particles</Filter>
+    <ClCompile Include="Components\cMeshRenderer.cpp">
+      <Filter>Components</Filter>
     </ClCompile>
-    <ClCompile Include="cGameplaySystem.cpp">
+    <ClCompile Include="Components\cParticle.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\cProjectile.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\cTarget.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\cTextureViewer.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\cTransform.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\AnimationSystem.cpp">
+      <Filter>Systems\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\cEntityManager.cpp">
+      <Filter>Managers\EntityManager</Filter>
+    </ClCompile>
+    <ClCompile Include="FBOs\cPingPongFBOs.cpp">
+      <Filter>FBO</Filter>
+    </ClCompile>
+    <ClCompile Include="FBOs\cShadowDepthFBO.cpp">
+      <Filter>FBO</Filter>
+    </ClCompile>
+    <ClCompile Include="FBOs\cFBO\cFBO.cpp">
+      <Filter>FBO</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\cLightManager.cpp">
+      <Filter>Managers\Light Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\cLightHelper.cpp">
+      <Filter>Managers\Light Manager\Light Helper</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\cVAOManager.cpp">
+      <Filter>Managers\VAOManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\cParticleSystem.cpp">
+      <Filter>Systems\Particles</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\cShader.cpp">
+      <Filter>Managers\ShaderManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\cShaderManager.cpp">
+      <Filter>Managers\ShaderManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\cGameplaySystem.cpp">
       <Filter>Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\cBasicTextureManager\C24BitBMPpixel.cpp">
+      <Filter>Managers\TextureManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\cBasicTextureManager\cBasicTextureManager.cpp">
+      <Filter>Managers\TextureManager</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\cBasicTextureManager\CTextureFromBMP.cpp">
+      <Filter>Managers\TextureManager</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cShaderManager.h">
-      <Filter>ShaderManager</Filter>
-    </ClInclude>
-    <ClInclude Include="cVAOManager.h">
-      <Filter>Meshes\VAOManager</Filter>
-    </ClInclude>
     <ClInclude Include="GLCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="sVertex_types.h">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cLightManager.h">
-      <Filter>Light Manager</Filter>
     </ClInclude>
     <ClInclude Include="SceneLoader\cSceneLoader.h">
       <Filter>SceneLoader</Filter>
@@ -218,111 +200,114 @@
     <ClInclude Include="SceneLoader\sModel.h">
       <Filter>SceneLoader</Filter>
     </ClInclude>
-    <ClInclude Include="cLightHelper.h">
-      <Filter>Light Manager\Light Helper</Filter>
-    </ClInclude>
-    <ClInclude Include="FlyCamera\cFlyCamera.h">
-      <Filter>FlyCamera</Filter>
-    </ClInclude>
-    <ClInclude Include="FlyCamera\iCamera.h">
-      <Filter>FlyCamera</Filter>
-    </ClInclude>
-    <ClInclude Include="cBasicTextureManager\C24BitBMPpixel.h">
-      <Filter>TextureManager</Filter>
-    </ClInclude>
-    <ClInclude Include="cBasicTextureManager\cBasicTextureManager.h">
-      <Filter>TextureManager</Filter>
-    </ClInclude>
-    <ClInclude Include="cBasicTextureManager\CTextureFromBMP.h">
-      <Filter>TextureManager</Filter>
-    </ClInclude>
-    <ClInclude Include="cEntityManager.h">
-      <Filter>EntityManager</Filter>
-    </ClInclude>
     <ClInclude Include="cEntity.h">
-      <Filter>EntityManager</Filter>
-    </ClInclude>
-    <ClInclude Include="cComponent.h">
-      <Filter>Components</Filter>
-    </ClInclude>
-    <ClInclude Include="cTransform.h">
-      <Filter>Components</Filter>
-    </ClInclude>
-    <ClInclude Include="cFBO\cFBO.h">
-      <Filter>FBO</Filter>
-    </ClInclude>
-    <ClInclude Include="cMeshRenderer.h">
-      <Filter>Components</Filter>
-    </ClInclude>
-    <ClInclude Include="AnimationSystem.h">
-      <Filter>Animation</Filter>
-    </ClInclude>
-    <ClInclude Include="cAnimation.h">
-      <Filter>Components</Filter>
-    </ClInclude>
-    <ClInclude Include="cKeyframe.h">
-      <Filter>Components</Filter>
-    </ClInclude>
-    <ClInclude Include="cTextureViewer.h">
-      <Filter>Components</Filter>
-    </ClInclude>
-    <ClInclude Include="cPingPongFBOs.h">
-      <Filter>FBO</Filter>
-    </ClInclude>
-    <ClInclude Include="cShadowDepthFBO.h">
-      <Filter>FBO</Filter>
+      <Filter>Managers\EntityManager</Filter>
     </ClInclude>
     <ClInclude Include="RenderType.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="cInstancedRenderer.h">
-      <Filter>Components</Filter>
-    </ClInclude>
     <ClInclude Include="cInstancedBrush.h">
       <Filter>Components\Brush</Filter>
-    </ClInclude>
-    <ClInclude Include="cBowComponent.h">
-      <Filter>Components</Filter>
-    </ClInclude>
-    <ClInclude Include="cProjectile.h">
-      <Filter>Components</Filter>
     </ClInclude>
     <ClInclude Include="FMODSoundpanel\cSoundPanel.h">
       <Filter>FMOD</Filter>
     </ClInclude>
-    <ClInclude Include="cTarget.h">
+    <ClInclude Include="Components\cAnimation.h">
       <Filter>Components</Filter>
     </ClInclude>
-    <ClInclude Include="cParticleSystem.h">
-      <Filter>Particles</Filter>
-    </ClInclude>
-    <ClInclude Include="cParticle.h">
+    <ClInclude Include="Components\cBowComponent.h">
       <Filter>Components</Filter>
     </ClInclude>
-    <ClInclude Include="cGameplaySystem.h">
+    <ClInclude Include="Components\cComponent.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\cInstancedRenderer.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\cKeyframe.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\cMeshRenderer.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\cParticle.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\cProjectile.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\cTarget.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\cTextureViewer.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\cTransform.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\AnimationSystem.h">
+      <Filter>Systems\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\cEntityManager.h">
+      <Filter>Managers\EntityManager</Filter>
+    </ClInclude>
+    <ClInclude Include="FBOs\cPingPongFBOs.h">
+      <Filter>FBO</Filter>
+    </ClInclude>
+    <ClInclude Include="FBOs\cShadowDepthFBO.h">
+      <Filter>FBO</Filter>
+    </ClInclude>
+    <ClInclude Include="FBOs\cFBO\cFBO.h">
+      <Filter>FBO</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\cLightManager.h">
+      <Filter>Managers\Light Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\cLightHelper.h">
+      <Filter>Managers\Light Manager\Light Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\cVAOManager.h">
+      <Filter>Managers\VAOManager</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\cParticleSystem.h">
+      <Filter>Systems\Particles</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\cShaderManager.h">
+      <Filter>Managers\ShaderManager</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\cGameplaySystem.h">
       <Filter>Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\cBasicTextureManager\C24BitBMPpixel.h">
+      <Filter>Managers\TextureManager</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\cBasicTextureManager\cBasicTextureManager.h">
+      <Filter>Managers\TextureManager</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\cBasicTextureManager\CTextureFromBMP.h">
+      <Filter>Managers\TextureManager</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\fragShader_01.glsl">
-      <Filter>ShaderManager\Shaders</Filter>
+      <Filter>Managers\ShaderManager\Shaders</Filter>
     </None>
     <None Include="assets\shaders\vertShader_01.glsl">
-      <Filter>ShaderManager\Shaders</Filter>
+      <Filter>Managers\ShaderManager\Shaders</Filter>
     </None>
     <None Include="assets\shaders\pingpongShader.glsl">
-      <Filter>ShaderManager\Shaders</Filter>
+      <Filter>Managers\ShaderManager\Shaders</Filter>
     </None>
     <None Include="assets\shaders\shadowFrag.glsl">
-      <Filter>ShaderManager\Shaders\Shadow</Filter>
+      <Filter>Managers\ShaderManager\Shaders\Shadow</Filter>
     </None>
     <None Include="assets\shaders\shadowVert.glsl">
-      <Filter>ShaderManager\Shaders\Shadow</Filter>
+      <Filter>Managers\ShaderManager\Shaders\Shadow</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
     <Xml Include="assets\scenes\project2.xml">
-      <Filter>Scenes</Filter>
+      <Filter>SceneLoader\Scenes</Filter>
     </Xml>
   </ItemGroup>
 </Project>

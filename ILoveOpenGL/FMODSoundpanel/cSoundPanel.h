@@ -1,12 +1,5 @@
-/*
-	Contributers:			Ethan Robertson
-							Gian Tullo
-
-	Purpose:				A Class that interfaces with the console client for stream and sample controls
-	Date:					September 28, 2021
-*/
-
 #pragma once
+
 #include <FMOD/fmod.hpp>
 #include <cstddef>
 #include <vector>
@@ -18,6 +11,7 @@ struct Sound
 	std::string name = "";
 };
 
+//A wrapper class for FMOD that allows you to control audio
 class cSoundPanel
 {
 public:

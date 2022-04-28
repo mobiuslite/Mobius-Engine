@@ -1,7 +1,7 @@
 #include "cEntity.h"
-#include "cTransform.h"
+#include "Components/cTransform.h"
 
-#include "cComponent.h"
+#include "Components/cComponent.h"
 
 #include <typeinfo>
 

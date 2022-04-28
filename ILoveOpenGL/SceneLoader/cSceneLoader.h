@@ -1,16 +1,18 @@
 #pragma once
+
 #include <vector>
 #include <string>
-#include "../cVAOManager.h"
+#include "../Managers/cVAOManager.h"
 #include <glad/glad.h>
 
 #include "sModel.h"
 
-#include "../cBasicTextureManager/cBasicTextureManager.h"
+#include "../Managers/cBasicTextureManager/cBasicTextureManager.h"
 
 #include <glm/vec3.hpp>
-#include "../cEntityManager.h"
+#include "../Managers/cEntityManager.h"
 
+//Loads the scene xml files and loads models into VAO
 class cSceneLoader
 {
 public:

@@ -1,16 +1,16 @@
-#include "cMeshRenderer.h" // glm::mat4
+#include "Components/cMeshRenderer.h" // glm::mat4
 #include "GLCommon.h"
-#include "cVAOManager.h"
+#include "Managers/cVAOManager.h"
 #include <glm/glm.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "cBasicTextureManager/cBasicTextureManager.h"
-#include "cTransform.h"
-#include "cTextureViewer.h"
+#include "Managers/cBasicTextureManager/cBasicTextureManager.h"
+#include "Components/cTransform.h"
+#include "Components/cTextureViewer.h"
 #include "RenderType.h"
-#include "cShaderManager.h"
-#include "cInstancedRenderer.h"
+#include "Managers/cShaderManager.h"
+#include "Components/cInstancedRenderer.h"
 
 void SetUpTextures(cEntity* curEntity, cBasicTextureManager textureManager, std::map<std::string, GLint>* uniformLocations)
 {
