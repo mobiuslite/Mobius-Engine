@@ -53,6 +53,8 @@
 #include "Systems/cParticleSystem.h"
 #include "Systems/cGameplaySystem.h"
 
+#include "cCamera.h"
+
 struct PostProcessingInfo
 {
     float gamma = 1.85f;
@@ -81,23 +83,12 @@ struct WindInfo
 GLuint program;
 cFBO* g_fbo;
 
-// Global things are here:
-
-glm::vec3 cameraEye = glm::vec3(0);
-
-glm::vec3 cameraDir = glm::vec3(0.0f, 0.0f, 1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-glm::vec3 cameraRight = glm::vec3(0);
+cCamera camera;
+float flyCameraSpeed = 8.0f;
 
 bool firstMouse = true;
 float lastX;
 float lastY;
-
-float yaw = 90.0f;
-float pitch = 0.0f;
-
-float flyCameraSpeed = 7.0f;
-float speedMultiple = 3.0f;
 
 float musicVolume = 0.27f;
 float bgVolume = 0.5f;
@@ -139,7 +130,6 @@ size_t selectedRough = 0;
 size_t selectedAO = 0;
 
 float fov = 70.0f;
-float mouseSense = 0.1f;
 
 PostProcessingInfo postProcessing;
 WindInfo windInfo;
@@ -262,7 +252,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         }
         else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE && g_bowComp->aiming)
         {
-            g_bowComp->FireProjectile(cameraEye, cameraDir, g_bowComp->GetAimingValue());
+            g_bowComp->FireProjectile(camera.GetEye(), camera.GetForward(), g_bowComp->GetAimingValue());
             cSoundPanel::GetInstance()->PlaySound("bowFire.mp3");
         }
     }
@@ -293,26 +283,10 @@ void ProcessAsyncMouse(GLFWwindow* window, float deltaTime)
         if ((glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
             && g_MouseIsInsideWindow || !showDebugGui)
         {
+            camera.AddPitch((float)yDelta);
+            camera.AddYaw((float)xDelta);
 
-            xDelta *= mouseSense;
-            yDelta *= mouseSense;
-
-            yaw += (float)xDelta;
-            pitch += (float)yDelta;
-
-            if (pitch > 89.0f)
-                pitch = 89.0f;
-            if (pitch < -89.0f)
-                pitch = -89.0f;
-
-            glm::vec3 direction;
-            direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-            direction.y = sin(glm::radians(pitch));
-            direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-            cameraDir = glm::normalize(direction);
-
-            cameraRight = glm::normalize(glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), cameraDir));
-            cameraUp = glm::cross(cameraDir, cameraRight);
+            camera.Update();
         }
         else if ((glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) && g_MouseIsInsideWindow && showDebugGui)
         {
@@ -368,33 +342,36 @@ void ProcessAsyncKeyboard(GLFWwindow* window, float deltaTime)
                 speed *= 3.0f;
             }
 
+            glm::vec3 camForward = camera.GetForward();
+            glm::vec3 camRight = camera.GetRight();
+
             if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_S) != GLFW_PRESS)
             {
-                cameraEye += (showDebugGui ? cameraDir : glm::vec3(cameraDir.x, 0.0f, cameraDir.z)) * speed * deltaTime;
+                camera.Translate((showDebugGui ? camForward : glm::vec3(camForward.x, 0.0f, camForward.z)) * speed * deltaTime);
             }
             else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_W) != GLFW_PRESS)
             {
-                cameraEye -= (showDebugGui ? cameraDir : glm::vec3(cameraDir.x, 0.0f, cameraDir.z)) * speed * deltaTime;
+                camera.Translate((showDebugGui ? camForward : glm::vec3(camForward.x, 0.0f, camForward.z)) * speed * deltaTime * -1.0f);
             }
 
             if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_D) != GLFW_PRESS)
             {
-                cameraEye += cameraRight * speed * deltaTime;
+                camera.Translate(camRight * speed * deltaTime);
             }
             else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_A) != GLFW_PRESS)
             {
-                cameraEye -= cameraRight * speed * deltaTime;
+                camera.Translate(camRight * speed * deltaTime * -1.0f);
             }
 
             if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_E) != GLFW_PRESS)
             {
                 if(showDebugGui)
-                    cameraEye -= glm::vec3(0.0f, 1.0f, 0.0f) * speed * deltaTime;
+                    camera.Translate(glm::vec3(0.0f, 1.0f, 0.0f) * speed * deltaTime * -1.0f);
             }
             else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_Q) != GLFW_PRESS)
             {
                 if(showDebugGui)
-                    cameraEye += glm::vec3(0.0f, 1.0f, 0.0f) * speed * deltaTime;
+                    camera.Translate(glm::vec3(0.0f, 1.0f, 0.0f) * speed * deltaTime);
             }
         }
     }
@@ -609,7 +586,15 @@ int main(void)
         {
             std::cout << "Loaded scene into VAO manager" << std::endl << std::endl;
 
-            cameraEye = sceneLoader->GetCameraStartingPosition();
+            camera.SetEye(sceneLoader->GetCameraStartingPosition());
+
+            camera.SetDebugMode(false);
+
+            glm::vec2 xBounds = glm::vec2(-5.0f, -40.0f);
+            glm::vec2 zBounds = glm::vec2(-60.0f, -80.0f);
+            float yPos = camera.GetEye().y;
+
+            camera.SetGameplayBounds(xBounds, zBounds, yPos);
         }
         else
         {
@@ -626,7 +611,7 @@ int main(void)
     g_skyBox = g_entityManager.GetEntityByName("Sky");
     g_bow = g_entityManager.GetEntityByName("bow");
     
-    cBowComponent* bowComp = new cBowComponent(g_bow->GetComponent<cTransform>(), &cameraEye, &g_entityManager);
+    cBowComponent* bowComp = new cBowComponent(g_bow->GetComponent<cTransform>(), camera.GetEyePointer(), &g_entityManager);
     g_bow->AddComponent(bowComp);
     g_bowComp = bowComp;
     
@@ -954,6 +939,8 @@ int main(void)
         glViewport(0, 0, g_fbo->width, g_fbo->height);
 
         glUniform2f(normalShader->uniformLocations["screenWidthHeight"], (GLfloat)g_fbo->width, (GLfloat)g_fbo->height);
+
+        glm::vec3 cameraEye = camera.GetEye();
         glUniform4f(normalShader->uniformLocations["eyeLocation"], cameraEye.x, cameraEye.y, cameraEye.z, 1.0f);
 
         glUniformMatrix4fv(normalShader->uniformLocations["lightSpaceMatrix"], 1, GL_FALSE, glm::value_ptr(lightSpaceMat));
@@ -971,6 +958,9 @@ int main(void)
         //glm::vec3 cameraEye = glm::vec3(0.0, 0.0, -4.0f);
         glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
+
+        glm::vec3 cameraDir = camera.GetForward();
+        glm::vec3 cameraUp = camera.GetUp();
 
         v = glm::lookAt(cameraEye,     // "eye"
             cameraEye + cameraDir,  // "at"
@@ -1188,6 +1178,8 @@ int main(void)
             DrawGUI(deltaTime);
             brush.SetActive(true);
             glUniform1f(normalShader->uniformLocations["showReticle"], 0.0f);
+
+            camera.SetDebugMode(true);
         }
         else
         {
@@ -1195,6 +1187,8 @@ int main(void)
             io->WantCaptureMouse = false;
             brush.SetActive(false);
             glUniform1f(normalShader->uniformLocations["showReticle"], 1.0f);
+
+            camera.SetDebugMode(false);
         }
 
         cMeshRenderer* targetMesh = startingTarget->GetComponent<cMeshRenderer>();
@@ -1302,6 +1296,8 @@ void Draw(std::vector<cEntity*>* meshes, cShaderManager::cShaderProgram* program
     glUniform1f(program->uniformLocations["windTime"], (float)glfwGetTime());
     glUniform1f(program->uniformLocations["windStrength"], windInfo.strength);
     glUniform1f(program->uniformLocations["windSize"], windInfo.size);
+
+    glm::vec3 cameraEye = camera.GetEye();
 
     //Draw objects
     for (unsigned int index = 0; index != meshes->size(); index++)
@@ -1569,7 +1565,7 @@ void DrawGUI(float dt)
             ImGui::Spacing();
             if (ImGui::Button("Save Entities"))
             {
-                sceneLoader->SaveScene("project2", cameraEye, &g_entityManager);
+                sceneLoader->SaveScene("project2", camera.GetEye(), &g_entityManager);
             }
 
             if (ImGui::BeginTabItem("Add an Entity"))
@@ -1689,7 +1685,7 @@ void DrawGUI(float dt)
     //Misc
     {
         ImGui::Begin("Misc");
-        ImGui::DragFloat("Mouse Sensitivity", &mouseSense, 0.005f, 0.0001f, 10.0f);
+        ImGui::DragFloat("Mouse Sensitivity", &camera.mouseSense, 0.005f, 0.0001f, 10.0f);
         ImGui::SliderFloat("Camera FOV", &fov, 60.0f, 110.0f);
         ImGui::Separator();
 
@@ -1710,6 +1706,8 @@ void DrawGUI(float dt)
         }
 
         ImGui::Text(std::string("Frame time: %f").c_str(), dt);
+
+        glm::vec3 cameraEye = camera.GetEye();
 
         std::string camPos = "x: " + std::to_string(cameraEye.x) + " y: " + std::to_string(cameraEye.y) + " z: " + std::to_string(cameraEye.z);
         ImGui::Text(camPos.c_str());

@@ -186,6 +186,9 @@
     <ClCompile Include="Managers\cBasicTextureManager\CTextureFromBMP.cpp">
       <Filter>Managers\TextureManager</Filter>
     </ClCompile>
+    <ClCompile Include="cCamera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GLCommon.h">
@@ -286,6 +289,9 @@
     </ClInclude>
     <ClInclude Include="Managers\cBasicTextureManager\CTextureFromBMP.h">
       <Filter>Managers\TextureManager</Filter>
+    </ClInclude>
+    <ClInclude Include="cCamera.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

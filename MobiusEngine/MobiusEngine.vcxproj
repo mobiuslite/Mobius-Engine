@@ -154,6 +154,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="cCamera.cpp" />
     <ClCompile Include="cEntity.cpp" />
     <ClCompile Include="cInstancedBrush.cpp" />
     <ClCompile Include="Components\cBowComponent.cpp" />
@@ -196,6 +197,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cCamera.h" />
     <ClInclude Include="cEntity.h" />
     <ClInclude Include="cInstancedBrush.h" />
     <ClInclude Include="Components\cAnimation.h" />
